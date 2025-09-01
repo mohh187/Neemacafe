@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>منيو نيمة | Neema Menu — جوال + لغتين + داكن/فاتح</title>
+  <title>منيو نيمة | Neema Menu</title>
   <style>
 
      @font-face {
@@ -145,14 +145,14 @@
 
     const STRINGS = {
       ar: {
-        title:'منيو نيمة', tagline:'قائمة جوال • ثنائية اللغة • داكن/فاتح', search:'ابحث باسم الصنف… (مثال: لاتيه، موهيتو)',
+        title:'منيو نيمة', tagline:'مذاق ينبت من الجذور', search:'ابحث باسم الصنف… (مثال: لاتيه، موهيتو)',
         hot_drinks:'المشروبات الساخنة', cold_drinks:'المشروبات الباردة', dessert:'الحَلَى', call_waiter:'طلب النادل',
-        table:'طاولة', footer:'© نيمة كافيه — قائمة تفاعلية للجوال'
+        table:'طاولة', footer:'© كل الحقوق محفوظة - نيمة كافيه'
       },
       en: {
         title:'Neema Menu', tagline:'Mobile Menu • Bilingual • Dark/Light', search:'Search item… (e.g., Latte, Mojito)',
         hot_drinks:'Hot Drinks', cold_drinks:'Cold Drinks', dessert:'Dessert', call_waiter:'Call Waiter',
-        table:'Table', footer:'© Neema Café — Interactive Mobile Menu'
+        table:'Table', footer:'© Neema Cafe — All rights reversed'
       }
     };
 
@@ -242,6 +242,7 @@
           <div class="thumb"><img src="${it.img}" alt="${name}" onerror="this.src='https://placehold.co/200x200?text=Neema'"/></div>
           <div>
             <div class="line"><span class="name">${name}</span><span class="dots"></span><span class="price"><span class="symbol">&#xea;</span>${it.price}</span>
+
             
 </div>
             <div class="sub">${lang==='ar'?'اضغط زر طلب النادل أسفل الصفحة للخدمة':'Use the Call Waiter button below for service'}</div>
