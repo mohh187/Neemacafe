@@ -270,15 +270,52 @@
       tableSelect.onchange = ()=> localStorage.setItem('nima.table', tableSelect.value);
     }
 
-    // Call waiter
-    document.getElementById('callBtn').addEventListener('click', ()=>{
-      const t = tableSelect.value || '؟';
-      const ar = `🔔 طاولة ${t} تحتاج خدمة`;
-      const en = `🔔 Table ${t} needs service`;
-      const text = encodeURIComponent(`${ar} | ${en}`);
-      const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${text}`;
-      window.open(url,'_blank');
-    });
+   // Call waiter
+document.getElementById('callBtn').addEventListener('click', ()=>{
+  const t = tableSelect.value || '؟';
+  const ar = `🔔 طاولة ${t} تحتاج خدمة`;
+  const en = `🔔 Table ${t} needs service`;
+  const text = encodeURIComponent(`${ar} | ${en}`);
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${text}`;
+  
+  // فتح نافذة تليجرام
+  window.open(url,'_blank');
+
+  // إنشاء رسالة منبثقة (Toast)
+  const toast = document.createElement('div');
+  toast.textContent = '🔔 سوف يأتي إليك النادل لخدمتك فوراً!';
+  toast.style.position = 'fixed';
+  toast.style.bottom = '80px'; // فوق شريط الطلب
+  toast.style.left = '50%';
+  toast.style.transform = 'translateX(-50%)';
+  toast.style.padding = '12px 20px';
+  toast.style.borderRadius = '12px';
+  toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+  toast.style.zIndex = '100';
+  toast.style.opacity = '0';
+  toast.style.transition = 'opacity 0.3s ease';
+
+  // ألوان تتوافق مع الداكن والفاتح
+  if(document.body.classList.contains('dark')){
+    toast.style.background = 'var(--brand-dark)';
+    toast.style.color = '#fff';
+  } else {
+    toast.style.background = 'var(--brand)';
+    toast.style.color = '#fff';
+  }
+
+  document.body.appendChild(toast);
+
+  // ظهور تدريجي
+  setTimeout(()=>{ toast.style.opacity = '1'; }, 50);
+
+  // اختفاء بعد 3 ثواني
+  setTimeout(()=>{
+    toast.style.opacity = '0';
+    setTimeout(()=> toast.remove(), 300);
+  }, 3000);
+});
+
 
     // Search filter
     const search = document.getElementById('search');
