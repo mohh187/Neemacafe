@@ -225,12 +225,8 @@
         el.innerHTML = `
           <div class="thumb"><img src="${it.img}" alt="${name}" onerror="this.src='https://placehold.co/200x200?text=Neema'"/></div>
           <div>
-            <div class="line"><span class="name">${name}</span><span class="dots"></span><span class="price">
-  ${it.price} 
-  <svg xmlns="https://i.postimg.cc/HLCt9HZ8/Saudi-Riyal-Symbol.png" viewBox="0 0 120 120" width="18" height="18" fill="currentColor" style="vertical-align: middle;">
-    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="60" font-family="Arial" fill="currentColor">﷼</text>
-  </svg>
-</span>
+            <div class="line"><span class="name">${name}</span><span class="dots"></span><span class="price"><span class="symbol">&#xea;</span>${it.price}</span>
+            
 </div>
             <div class="sub">${lang==='ar'?'اضغط زر طلب النادل أسفل الصفحة للخدمة':'Use the Call Waiter button below for service'}</div>
           </div>`;
