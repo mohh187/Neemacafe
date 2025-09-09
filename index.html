@@ -135,7 +135,7 @@
         table:'طاولة', footer:'© كل الحقوق محفوظة - نيمة كافيه'
       },
       en: {
-        title:'Neema Menu', tagline:'Mobile Menu • Bilingual • Dark/Light', search:'Search item… (e.g., Latte, Mojito)',
+        title:'Neema Menu', tagline:'A taste that grows from the roots', search:'Search item… (e.g., Latte, Mojito)',
         hot_drinks:'Hot Drinks', cold_drinks:'Cold Drinks', dessert:'Dessert', call_waiter:'Call Waiter',
         table:'Table', footer:'© Neema Cafe — All rights reversed'
       }
@@ -351,3 +351,39 @@ document.getElementById('callBtn').addEventListener('click', ()=>{
   </script>
 </body>
 </html>
+
+<style>
+  /* الوضع الفاتح */
+  body {
+    background-color: #ffffff;
+    color: #000000;
+  }
+
+  .menu-card {
+    background-color: #f9f9f9;
+    color: #000000;
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  /* الوضع الداكن */
+  @media (prefers-color-scheme: dark) {
+    body {
+      background-color: #121212;
+      color: #ffffff;
+    }
+
+    .menu-card {
+      background-color: #1e1e1e;
+      color: #ffffff;
+    }
+  }
+</style>
+
+<body>
+  <div class="menu-card">
+    <h2>Latte</h2>
+    <p>15 ريال</p>
+  </div>
+</body>
+
