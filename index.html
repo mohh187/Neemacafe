@@ -278,9 +278,13 @@ document.getElementById('callBtn').addEventListener('click', ()=>{
   const ar = `🔔 طاولة ${t} تحتاج خدمة`;
   const en = `🔔 Table ${t} needs service`;
   const text = encodeURIComponent(`${ar} | ${en}`);
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${text}`;
+  
+  // الرابط الجديد للـ Telegram chat
+  const TELEGRAM_CHAT_ID_NEW = '5828433542';
+  const TELEGRAM_BOT_TOKEN = '8234122453:AAGmkEFETh1yuXzgDHChoTu0YFuD0BeVK8c';
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID_NEW}&text=${text}`;
 
-  // إرسال الطلب للتليجرام بدون فتح نافذة جديدة
+  // إرسال الطلب للتليجرام
   fetch(url).catch(err => console.error(err));
 
   // رسالة منبثقة للعميل
