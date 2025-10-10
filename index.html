@@ -25,8 +25,12 @@ body.dark header{background:rgba(20,20,20,.82)}
 
 .actions{display:flex;gap:8px;align-items:center}
 .btn{border:1px solid var(--border);background:var(--card);color:var(--text);padding:8px 10px;border-radius:10px;font-size:14px;cursor:pointer}
+.btn.small{padding:6px 8px;font-size:12px}
 .btn.primary{background:var(--brand);border-color:transparent;color:#fff}
 .btn.ghost{background:transparent}
+.greeting{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.greeting span{font-size:13px;color:var(--muted)}
+.greeting .welcome-name{font-weight:700;color:var(--brand)}
 
 /* Search */
 .search{display:flex;gap:8px;margin:10px 0 8px}
@@ -119,7 +123,11 @@ footer{color:var(--muted);text-align:center;margin:18px 0 120px}
 .cart-item .meta{font-size:12px;color:var(--muted)}
 .cart-item .qty{justify-content:flex-end}
 .cart .summary{display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-weight:800}
+.cart .loyalty-summary{margin-top:6px;font-size:13px;color:var(--brand);font-weight:600}
 .cart .actions{display:flex;gap:8px;margin-top:12px}
+.cart .discount{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.cart .discount label{font-size:13px;color:var(--muted)}
+.cart .discount input{padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px}
 .empty{color:var(--muted);text-align:center;margin:12px 0}
 
 /* -------- Table Modal -------- */
@@ -132,6 +140,24 @@ footer{color:var(--muted);text-align:center;margin:18px 0 120px}
 .table-modal .sheet .actions{margin-top:16px}
 .table-modal .sheet .error{color:#c0392b;font-size:13px;margin-top:10px;display:none}
 body.dark .table-modal .sheet .error{color:#e57373}
+
+/* -------- Profile Modal -------- */
+.profile-modal{align-items:center}
+.profile-modal .sheet{max-width:420px;border-radius:18px;max-height:80vh;text-align:start;padding:18px;display:flex;flex-direction:column;gap:12px}
+.profile-modal .sheet h3{margin:0}
+.profile-modal .sheet p{margin:0;color:var(--muted);font-size:14px;line-height:1.6}
+.profile-modal .sheet label{font-size:13px;color:var(--muted)}
+.profile-modal .sheet input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px}
+.profile-modal .sheet .note{font-size:12px;color:var(--muted);margin-top:-4px}
+.profile-modal .sheet .actions{display:flex;gap:8px;margin-top:4px}
+
+/* -------- Loyalty Modal -------- */
+.loyalty-modal{align-items:center}
+.loyalty-modal .sheet{max-width:420px;border-radius:18px;max-height:80vh;text-align:center;padding:22px;display:flex;flex-direction:column;gap:14px}
+.loyalty-modal .sheet h3{margin:0}
+.loyalty-modal .sheet p{margin:0;font-size:14px;line-height:1.6;color:var(--muted)}
+.loyalty-modal .sheet strong{color:var(--brand);font-size:16px}
+.loyalty-modal .sheet .actions{display:flex;justify-content:center}
 
 /* -------- Order Log Modal -------- */
 .log-modal{align-items:center}
@@ -146,6 +172,7 @@ body.dark .table-modal .sheet .error{color:#e57373}
 .log-entry .meta{font-size:12px;color:var(--muted);margin-top:6px;display:flex;flex-wrap:wrap;gap:8px}
 .log-entry .items{margin:10px 0 0;padding-inline-start:20px;font-size:13px;color:var(--text)}
 .log-entry .items li{margin-bottom:4px;line-height:1.5}
+.log-entry .loyalty-note{margin-top:8px;font-size:12px;color:var(--brand);font-weight:600}
 .log-modal .sheet .actions{margin-top:6px;display:flex;gap:8px}
   </style>
 </head>
@@ -159,6 +186,10 @@ body.dark .table-modal .sheet .error{color:#e57373}
             <h1 id="title">منيو نيمة</h1>
             <span class="pill" id="tagline">مذاق ينبت من الجذور</span>
           </div>
+        </div>
+        <div class="greeting" id="greetingBar">
+          <span id="greetingText">مرحبا ضيفنا العزيز</span>
+          <button class="btn ghost small" id="profileBtn">👤 تحديث البيانات</button>
         </div>
         <div class="actions">
           <button class="btn ghost" id="orderLogBtn">📜 <span id="orderLogBtnLabel">سجل الطلبات</span></button>
@@ -278,6 +309,11 @@ body.dark .table-modal .sheet .error{color:#e57373}
         <div><span data-i18n="total">الإجمالي</span>:</div>
         <div class="price" id="cartTotal">0 <span class="sar"></span><span class="sar-fallback">ريال</span></div>
       </div>
+      <div class="loyalty-summary" id="cartLoyaltyNote" style="display:none"></div>
+      <div class="discount">
+        <label for="discountInput" id="discountLabel">كود الخصم (اختياري)</label>
+        <input id="discountInput" placeholder="أدخل كود الخصم" autocomplete="off">
+      </div>
       <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
         <label for="tableCart" style="color:var(--muted)"><span data-i18n="table">طاولة</span></label>
         <select id="tableCart" style="flex:1;border:1px solid var(--border);background:var(--card);color:var(--text);padding:8px;border-radius:10px"></select>
@@ -312,11 +348,49 @@ body.dark .table-modal .sheet .error{color:#e57373}
     <div class="sheet">
       <h3 id="orderLogTitle">سجل الطلبات</h3>
       <p id="orderLogDesc">يتم حفظ الطلبات المرسلة من هذا الجهاز هنا للرجوع إليها لاحقًا.</p>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label for="orderLogCustomerSelect" id="orderLogCustomerLabel" style="font-size:13px;color:var(--muted)">اختر العميل</label>
+        <select id="orderLogCustomerSelect" style="flex:1;border:1px solid var(--border);background:var(--card);color:var(--text);padding:8px;border-radius:10px"></select>
+      </div>
       <div class="log-empty" id="orderLogEmpty">لا توجد طلبات مسجلة بعد.</div>
       <div class="log-list" id="orderLogList"></div>
       <div class="actions">
         <button class="btn" id="orderLogCloseBtn">إغلاق</button>
         <button class="btn ghost" id="orderLogClearBtn">🧹 <span id="orderLogClearLabel">حذف السجل</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Modal -->
+  <div class="modal profile-modal" id="profileModal" aria-hidden="true">
+    <div class="backdrop"></div>
+    <div class="sheet">
+      <h3 id="profileModalTitle">بياناتك</h3>
+      <p id="profileModalDesc">أدخل اسمك ورقم جوالك لنرحب بك دائماً كما تحب.</p>
+      <div>
+        <label for="profileName" id="profileNameLabel">الاسم</label>
+        <input id="profileName" placeholder="اسمك الجميل" autocomplete="name">
+      </div>
+      <div>
+        <label for="profilePhone" id="profilePhoneLabel">رقم الجوال</label>
+        <input id="profilePhone" placeholder="05xxxxxxxx" inputmode="tel" autocomplete="tel">
+        <div class="note" id="profileModalNote">تظهر هذه البيانات على الطلبات فقط لخدمتكم بشكل أفضل.</div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="profileSkipBtn">لاحقاً</button>
+        <button class="btn primary" id="profileSaveBtn">حفظ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loyalty Modal -->
+  <div class="modal loyalty-modal" id="loyaltyModal" aria-hidden="true">
+    <div class="backdrop"></div>
+    <div class="sheet">
+      <h3 id="loyaltyTitle">عميلنا المميز</h3>
+      <p id="loyaltyMessage">شكراً لاختيارك مشروبنا المفضل.</p>
+      <div class="actions">
+        <button class="btn primary" id="loyaltyCloseBtn">تمام</button>
       </div>
     </div>
   </div>
@@ -348,7 +422,10 @@ const STRINGS = {
     order_log_button:'سجل الطلبات', order_log_title:'سجل الطلبات',
     order_log_desc:'يتم حفظ الطلبات المرسلة من هذا الجهاز هنا للرجوع إليها لاحقًا.',
     order_log_empty:'لا توجد طلبات مسجلة بعد.',
-    clear_log:'حذف السجل', clear_log_confirm:'هل تريد حذف سجل الطلبات؟',
+    order_log_empty_customer:'لا توجد طلبات مسجلة لهذا العميل بعد.',
+    order_log_customer_label:'اختر العميل',
+    order_log_guest:'طلبات الضيوف',
+    clear_log:'حذف السجل', clear_log_confirm:'هل تريد حذف سجل الطلبات لهذا العميل؟',
     order_sent_saved:'تم إرسال الطلب بنجاح ✅ — حُفظ الطلب في السجل.',
     order_send_failed:'تعذّر إرسال الطلب ❌',
     customize:'التخصيص', less_ice:'ثلج أقل',
@@ -362,7 +439,33 @@ const STRINGS = {
     table_modal_note:'رقم الطاولة موجود على الباركود على الطاولة.',
     table_modal_error:'يرجى اختيار رقم الطاولة لإتمام الطلب',
     order_time_label:'وقت الطلب', order_id_label:'رقم الطلب',
-    confirm:'تأكيد', cancel:'إلغاء'
+    confirm:'تأكيد', cancel:'إلغاء',
+    greeting_guest:'مرحبا ضيفنا العزيز',
+    greeting_named:'مرحبا {name}',
+    greeting_toast:'مرحبا {name}! نورت المكان وتحت ظل النيمة 🤎',
+    profile_button:'👤 تحديث البيانات',
+    profile_modal_title:'بياناتك',
+    profile_modal_desc:'أدخل اسمك ورقم جوالك لنرحب بك دائماً كما تحب.',
+    profile_name_label:'الاسم',
+    profile_phone_label:'رقم الجوال',
+    profile_name_placeholder:'اسمك الجميل',
+    profile_phone_placeholder:'05xxxxxxxx',
+    profile_note:'تظهر هذه البيانات على الطلبات فقط لخدمتكم بشكل أفضل.',
+    profile_skip:'لاحقاً',
+    profile_save:'حفظ',
+    profile_saved:'تم حفظ بياناتك بنجاح 🤎',
+    profile_required:'يرجى إدخال الاسم أو رقم الجوال على الأقل.',
+    discount_label:'كود الخصم (اختياري)',
+    discount_placeholder:'أدخل كود الخصم',
+    discount_code_label:'كود الخصم',
+    customer_name_label:'اسم العميل',
+    customer_phone_label:'رقم التواصل',
+    loyalty_title:'عميلنا المميز',
+    loyalty_message:'شكراً من القلب يا {name}! بعد أربع مرات من طلب <strong>{drink}</strong> المشروب الخامس علينا مجاناً. تفضل للكاشير وسجل بياناتك لتنضم لعائلة نيمة 🤎',
+    loyalty_button:'تمام',
+    loyalty_reward_label:'هدية الولاء',
+    loyalty_discount_label:'خصم الولاء',
+    order_log_loyalty_reward:'هدية الولاء'
   },
   en: {
     title:'Neema Menu', tagline:'A taste that grows from the roots', search:'Search item… (e.g., Latte, Mojito)',
@@ -375,7 +478,10 @@ const STRINGS = {
     order_log_button:'Order Log', order_log_title:'Order Log',
     order_log_desc:'Orders sent from this device are saved here so you can review them later.',
     order_log_empty:'No orders have been saved yet.',
-    clear_log:'Clear log', clear_log_confirm:'Clear all saved orders?',
+    order_log_empty_customer:'No orders saved for this customer yet.',
+    order_log_customer_label:'Choose customer',
+    order_log_guest:'Guest orders',
+    clear_log:'Clear log', clear_log_confirm:'Clear this customer\'s log?',
     order_sent_saved:'Order sent ✅ — Saved to log.',
     order_send_failed:'Failed to send ❌',
     customize:'Customize', less_ice:'Less ice',
@@ -389,7 +495,33 @@ const STRINGS = {
     table_modal_note:'The table number is printed on the barcode at your table.',
     table_modal_error:'Please choose a table number to continue',
     order_time_label:'Order time', order_id_label:'Order ID',
-    confirm:'Confirm', cancel:'Cancel'
+    confirm:'Confirm', cancel:'Cancel',
+    greeting_guest:'Welcome, dear guest',
+    greeting_named:'Hello {name}',
+    greeting_toast:'Welcome back {name}! You light up Neema 🤎',
+    profile_button:'👤 Update info',
+    profile_modal_title:'Your details',
+    profile_modal_desc:'Share your name and phone so we can greet you properly.',
+    profile_name_label:'Name',
+    profile_phone_label:'Phone',
+    profile_name_placeholder:'Your name',
+    profile_phone_placeholder:'+9665...',
+    profile_note:'We only use this info to serve you better on orders.',
+    profile_skip:'Later',
+    profile_save:'Save',
+    profile_saved:'Your details are saved 🤎',
+    profile_required:'Please enter at least a name or phone number.',
+    discount_label:'Discount code (optional)',
+    discount_placeholder:'Enter discount code',
+    discount_code_label:'Discount code',
+    customer_name_label:'Customer name',
+    customer_phone_label:'Phone',
+    loyalty_title:'VIP Guest',
+    loyalty_message:'Thank you so much, {name}! After four {drink} orders, this fifth one is on us. Please see the cashier so we can welcome you into the Neema family 🤎',
+    loyalty_button:'Got it',
+    loyalty_reward_label:'Loyalty treat',
+    loyalty_discount_label:'Loyalty discount',
+    order_log_loyalty_reward:'Loyalty treat'
   }
 };
 
@@ -508,11 +640,16 @@ let pendingTableAction = null;
 let shouldRestoreCart = false;
 let selectedTable = '';
 const ORDER_LOG_KEY = 'nima.orderLog';
-let orderLog = [];
-try{
-  const storedLog = JSON.parse(localStorage.getItem(ORDER_LOG_KEY) || '[]');
-  if(Array.isArray(storedLog)) orderLog = storedLog;
-}catch(e){ orderLog = []; }
+const CUSTOMER_PROFILE_KEY = 'nima.customerProfile';
+const CUSTOMER_REGISTRY_KEY = 'nima.customerRegistry';
+const LOYALTY_KEY = 'nima.loyaltyTracker';
+const SESSION_GREETING_KEY = 'nima.greetedSession';
+let customerProfile = loadCustomerProfile();
+let customerRegistry = loadCustomerRegistry();
+let orderLog = loadOrderLog();
+let loyaltyState = loadLoyaltyState();
+let currentLogViewId = '';
+let currentDiscountCode = '';
 
 /* ===== Helpers ===== */
 const $ = (s)=>document.querySelector(s);
@@ -523,17 +660,123 @@ function priceHTML(p){
   return `${p} <span class="sar" aria-label="${STRINGS[lang].sar_label}"></span><span class="sar-fallback">${lang==='ar'?'ريال':'SAR'}</span>`;
 }
 
+function escapeHtml(str){
+  return String(str || '').replace(/[&<>"']/g, c=>({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[c]));
+}
+
+function loadCustomerProfile(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(CUSTOMER_PROFILE_KEY) || 'null');
+    if(raw && typeof raw === 'object') return raw;
+  }catch(e){}
+  return {};
+}
+
+function saveCustomerProfileData(profile){
+  if(!profile || typeof profile !== 'object') return;
+  customerProfile = profile;
+  localStorage.setItem(CUSTOMER_PROFILE_KEY, JSON.stringify(customerProfile));
+}
+
+function loadCustomerRegistry(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(CUSTOMER_REGISTRY_KEY) || 'null');
+    if(raw && typeof raw === 'object') return raw;
+  }catch(e){}
+  return {};
+}
+
+function saveCustomerRegistry(){
+  try{ localStorage.setItem(CUSTOMER_REGISTRY_KEY, JSON.stringify(customerRegistry)); }
+  catch(e){ console.warn('Unable to persist customer registry', e); }
+}
+
+function ensureCustomerRegistryEntry(id, profile={}){
+  if(!id) return;
+  if(!customerRegistry || typeof customerRegistry !== 'object') customerRegistry = {};
+  const existing = customerRegistry[id] || {};
+  customerRegistry[id] = {
+    name: profile.name !== undefined ? profile.name : (existing.name || ''),
+    phone: profile.phone !== undefined ? profile.phone : (existing.phone || '')
+  };
+  saveCustomerRegistry();
+}
+
+function generateCustomerId(name='', phone=''){
+  const phoneClean = (phone || '').replace(/\D+/g,'');
+  if(phoneClean) return `cust-${phoneClean}`;
+  const base = (name || '').trim().toLowerCase().replace(/[^\w\u0600-\u06FF]+/g,'-').replace(/^-+|-+$/g,'');
+  if(base) return `cust-${base}`;
+  return (customerProfile && customerProfile.id) ? customerProfile.id : 'guest';
+}
+
+function getActiveCustomerId(){
+  return (customerProfile && customerProfile.id) ? customerProfile.id : 'guest';
+}
+
+function loadOrderLog(){
+  let stored = null;
+  try{ stored = JSON.parse(localStorage.getItem(ORDER_LOG_KEY) || 'null'); }
+  catch(e){ stored = null; }
+  if(Array.isArray(stored)){
+    return { customers:{ guest:{ profile:{ name:'', phone:'' }, orders: stored } } };
+  }
+  if(!stored || typeof stored !== 'object') stored = { customers:{} };
+  if(!stored.customers || typeof stored.customers !== 'object') stored.customers = {};
+  return stored;
+}
+
+function ensureCustomerLog(id, profile){
+  if(!id) id = 'guest';
+  if(!orderLog || typeof orderLog !== 'object') orderLog = { customers:{} };
+  if(!orderLog.customers || typeof orderLog.customers !== 'object') orderLog.customers = {};
+  if(!orderLog.customers[id]){
+    orderLog.customers[id] = { profile:{ name:'', phone:'' }, orders:[] };
+  }
+  if(profile){
+    if(profile.name) orderLog.customers[id].profile.name = profile.name;
+    if(profile.phone) orderLog.customers[id].profile.phone = profile.phone;
+  }
+  return orderLog.customers[id];
+}
+
 function saveOrderLog(){
   try{ localStorage.setItem(ORDER_LOG_KEY, JSON.stringify(orderLog)); }
   catch(e){ console.warn('Unable to persist order log', e); }
 }
 
+function loadLoyaltyState(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(LOYALTY_KEY) || 'null');
+    if(raw && typeof raw === 'object') return raw;
+  }catch(e){}
+  return {};
+}
+
+function saveLoyaltyState(){
+  try{ localStorage.setItem(LOYALTY_KEY, JSON.stringify(loyaltyState)); }
+  catch(e){ console.warn('Unable to persist loyalty tracker', e); }
+}
+
 function recordOrderLog(entry){
   if(!entry || typeof entry !== 'object') return;
-  orderLog.unshift(entry);
-  if(orderLog.length>100) orderLog = orderLog.slice(0,100);
+  const customerId = getActiveCustomerId();
+  const profile = {
+    name: customerProfile && customerProfile.name ? customerProfile.name : '',
+    phone: customerProfile && customerProfile.phone ? customerProfile.phone : ''
+  };
+  ensureCustomerRegistryEntry(customerId, profile);
+  const bucket = ensureCustomerLog(customerId, profile);
+  bucket.orders.unshift(entry);
+  if(bucket.orders.length>100) bucket.orders.length = 100;
   saveOrderLog();
-  renderOrderLog();
+  renderOrderLog(customerId);
 }
 
 function formatLogTime(timestamp){
@@ -547,23 +790,83 @@ function formatLogTime(timestamp){
   return date.toLocaleString();
 }
 
-function renderOrderLog(){
+function getCustomerLabel(id){
+  if(!id) return STRINGS[lang].order_log_guest;
+  if(customerProfile && customerProfile.id === id && customerProfile.name){
+    return customerProfile.name;
+  }
+  const reg = customerRegistry && customerRegistry[id];
+  if(reg && reg.name) return reg.name;
+  const stored = orderLog && orderLog.customers && orderLog.customers[id];
+  if(stored && stored.profile && stored.profile.name) return stored.profile.name;
+  if(id === 'guest') return STRINGS[lang].order_log_guest;
+  return `${STRINGS[lang].customer_name_label} ${id}`;
+}
+
+function getOrdersForCustomer(id){
+  const bucket = ensureCustomerLog(id);
+  return Array.isArray(bucket.orders) ? bucket.orders : [];
+}
+
+function renderOrderLog(preferredId){
   const list = document.getElementById('orderLogList');
   const empty = document.getElementById('orderLogEmpty');
+  const selectEl = document.getElementById('orderLogCustomerSelect');
   if(!list || !empty) return;
+  const activeId = preferredId || currentLogViewId || getActiveCustomerId();
+  currentLogViewId = activeId;
+  const optionIds = new Set(['guest']);
+  if(customerProfile && customerProfile.id){
+    optionIds.add(customerProfile.id);
+    ensureCustomerRegistryEntry(customerProfile.id, customerProfile);
+    ensureCustomerLog(customerProfile.id, customerProfile);
+  }
+  Object.keys(customerRegistry || {}).forEach(id=> optionIds.add(id));
+  if(orderLog && orderLog.customers){
+    Object.keys(orderLog.customers).forEach(id=> optionIds.add(id));
+  }
+  const options = Array.from(optionIds).map(id=>({ id, label: getCustomerLabel(id) }));
+  options.sort((a,b)=> a.label.localeCompare(b.label, lang==='ar'?'ar':'en', { sensitivity:'base' }));
+  if(selectEl){
+    selectEl.innerHTML='';
+    options.forEach(opt=>{
+      const o=document.createElement('option');
+      o.value = opt.id;
+      o.textContent = opt.label;
+      selectEl.appendChild(o);
+    });
+    if(options.some(opt=>opt.id===activeId)){
+      selectEl.value = activeId;
+    } else if(options.length){
+      currentLogViewId = options[0].id;
+      selectEl.value = currentLogViewId;
+    }
+  }
+  const orders = getOrdersForCustomer(currentLogViewId);
   list.innerHTML='';
-  if(!orderLog.length){
+  if(!orders.length){
     empty.style.display='block';
+    empty.textContent = STRINGS[lang].order_log_empty_customer || STRINGS[lang].order_log_empty;
     return;
   }
   empty.style.display='none';
-  orderLog.forEach(entry=>{
+  orders.forEach(entry=>{
     const orderId = entry && (entry.orderId || entry.id || entry.code) ? (entry.orderId || entry.id || entry.code) : '#';
     const totalValue = Number(entry && entry.total) || 0;
     const metaParts = [];
     if(entry && entry.table){ metaParts.push(`${STRINGS[lang].table} ${entry.table}`); }
-    const timeText = entry ? formatLogTime(entry.timestamp) : '';
-    if(timeText) metaParts.push(timeText);
+    if(entry && entry.timestamp){
+      const timeText = formatLogTime(entry.timestamp);
+      if(timeText) metaParts.push(timeText);
+    }
+    if(entry && entry.discountCode){ metaParts.push(`${STRINGS[lang].discount_code_label}: ${entry.discountCode}`); }
+    if(entry && Number(entry.loyaltyDiscount) > 0){
+      const discountValue = Number(entry.loyaltyDiscount);
+      metaParts.push(`${STRINGS[lang].loyalty_discount_label}: -${discountValue} ${lang==='ar'?'ريال':'SAR'}`);
+    }
+    if(entry && entry.customer && entry.customer.phone){
+      metaParts.push(`${STRINGS[lang].customer_phone_label}: ${entry.customer.phone}`);
+    }
     const item = document.createElement('div');
     item.className = 'log-entry';
     item.innerHTML = `
@@ -584,8 +887,26 @@ function renderOrderLog(){
       });
       item.appendChild(ul);
     }
+    if(entry && Array.isArray(entry.loyaltyRewards) && entry.loyaltyRewards.length){
+      const note = document.createElement('div');
+      note.className = 'loyalty-note';
+      const lines = entry.loyaltyRewards.map(reward=>{
+        const drink = lang==='ar' ? (reward.drink_ar || reward.drink_en || '') : (reward.drink_en || reward.drink_ar || '');
+        const count = reward.freebies || 1;
+        return `${STRINGS[lang].order_log_loyalty_reward}: ${drink} ×${count}`;
+      });
+      note.textContent = lines.join(' • ');
+      item.appendChild(note);
+    }
     list.appendChild(item);
   });
+  if(selectEl && !selectEl.dataset.bound){
+    selectEl.dataset.bound = '1';
+    selectEl.addEventListener('change', (e)=>{
+      currentLogViewId = e.target.value || 'guest';
+      renderOrderLog(currentLogViewId);
+    });
+  }
 }
 
 function populateTableSelect(select, selectedValue='', disablePlaceholder=true){
@@ -682,15 +1003,37 @@ function renderAll(){
   if(orderLogBtnLabel) orderLogBtnLabel.textContent = STRINGS[lang].order_log_button;
   document.getElementById('orderLogTitle').textContent = STRINGS[lang].order_log_title;
   document.getElementById('orderLogDesc').textContent = STRINGS[lang].order_log_desc;
-  document.getElementById('orderLogEmpty').textContent = STRINGS[lang].order_log_empty;
+  document.getElementById('orderLogEmpty').textContent = STRINGS[lang].order_log_empty_customer || STRINGS[lang].order_log_empty;
   document.getElementById('orderLogCloseBtn').textContent = STRINGS[lang].cancel;
   document.getElementById('orderLogClearLabel').textContent = STRINGS[lang].clear_log;
+  const orderLogCustomerLabel = document.getElementById('orderLogCustomerLabel');
+  if(orderLogCustomerLabel) orderLogCustomerLabel.textContent = STRINGS[lang].order_log_customer_label;
   document.getElementById('tableModalTitle').textContent = STRINGS[lang].table_modal_title;
   document.getElementById('tableModalDesc').textContent = STRINGS[lang].table_modal_desc;
   document.getElementById('tableModalNote').textContent = STRINGS[lang].table_modal_note;
   document.getElementById('tableConfirmBtn').textContent = STRINGS[lang].confirm;
   document.getElementById('tableCancelBtn').textContent = STRINGS[lang].cancel;
   document.getElementById('tablePromptError').textContent = STRINGS[lang].table_modal_error;
+  const profileBtnEl = document.getElementById('profileBtn');
+  if(profileBtnEl) profileBtnEl.textContent = STRINGS[lang].profile_button;
+  document.getElementById('profileModalTitle').textContent = STRINGS[lang].profile_modal_title;
+  document.getElementById('profileModalDesc').textContent = STRINGS[lang].profile_modal_desc;
+  document.getElementById('profileNameLabel').textContent = STRINGS[lang].profile_name_label;
+  document.getElementById('profilePhoneLabel').textContent = STRINGS[lang].profile_phone_label;
+  document.getElementById('profileModalNote').textContent = STRINGS[lang].profile_note;
+  document.getElementById('profileSkipBtn').textContent = STRINGS[lang].profile_skip;
+  document.getElementById('profileSaveBtn').textContent = STRINGS[lang].profile_save;
+  document.getElementById('profileName').placeholder = STRINGS[lang].profile_name_placeholder;
+  document.getElementById('profilePhone').placeholder = STRINGS[lang].profile_phone_placeholder;
+  document.getElementById('loyaltyTitle').textContent = STRINGS[lang].loyalty_title;
+  document.getElementById('loyaltyCloseBtn').textContent = STRINGS[lang].loyalty_button;
+  const discountLabel = document.getElementById('discountLabel');
+  if(discountLabel) discountLabel.textContent = STRINGS[lang].discount_label;
+  const discountInput = document.getElementById('discountInput');
+  if(discountInput){
+    discountInput.placeholder = STRINGS[lang].discount_placeholder;
+    discountInput.value = currentDiscountCode;
+  }
 
   // dir/lang
   document.documentElement.lang = (lang==='ar'?'ar':'en');
@@ -709,7 +1052,34 @@ function renderAll(){
   fillTablesCart();
   updateCartBadge();
   updateCustomizationLabels();
-  renderOrderLog();
+  updateGreeting();
+  renderOrderLog(currentLogViewId || getActiveCustomerId());
+  renderCart();
+}
+
+function updateGreeting(){
+  const textEl = document.getElementById('greetingText');
+  const btn = document.getElementById('profileBtn');
+  if(btn) btn.textContent = STRINGS[lang].profile_button;
+  if(!textEl) return;
+  const name = customerProfile && customerProfile.name ? customerProfile.name.trim() : '';
+  if(name){
+    const safe = escapeHtml(name);
+    const template = STRINGS[lang].greeting_named || STRINGS[lang].greeting_guest;
+    textEl.innerHTML = template.replace('{name}', `<span class="welcome-name">${safe}</span>`);
+  } else {
+    textEl.textContent = STRINGS[lang].greeting_guest;
+  }
+}
+
+function maybeToastGreeting(force=false){
+  if(!(customerProfile && customerProfile.name)) return;
+  const id = customerProfile.id || 'guest';
+  const sessionKey = `${SESSION_GREETING_KEY}:${id}`;
+  if(!force && sessionStorage.getItem(sessionKey)) return;
+  const template = STRINGS[lang].greeting_toast || STRINGS[lang].greeting_named || STRINGS[lang].greeting_guest;
+  toast(template.replace('{name}', customerProfile.name));
+  sessionStorage.setItem(sessionKey, '1');
 }
 
 /* ===== Search ===== */
@@ -861,13 +1231,115 @@ if(orderLogCloseBtn){ orderLogCloseBtn.addEventListener('click', (e)=>{ e.preven
 if(orderLogClearBtn){
   orderLogClearBtn.addEventListener('click', (e)=>{
     e.preventDefault();
-    if(!orderLog.length){ closeOrderLog(); return; }
+    const targetId = currentLogViewId || getActiveCustomerId();
+    const bucket = ensureCustomerLog(targetId);
+    if(!bucket.orders.length){ closeOrderLog(); return; }
     if(!window.confirm(STRINGS[lang].clear_log_confirm)) return;
-    orderLog = [];
+    bucket.orders = [];
     saveOrderLog();
-    renderOrderLog();
+    renderOrderLog(targetId);
   });
 }
+
+/* ===== Profile Modal ===== */
+const profileModalEl = document.getElementById('profileModal');
+const profileBackdrop = document.querySelector('#profileModal .backdrop');
+const profileBtnTrigger = document.getElementById('profileBtn');
+const profileNameInput = document.getElementById('profileName');
+const profilePhoneInput = document.getElementById('profilePhone');
+const profileSaveBtn = document.getElementById('profileSaveBtn');
+const profileSkipBtn = document.getElementById('profileSkipBtn');
+let profileForced = false;
+
+function normalizePhone(value){
+  return (value || '').replace(/\s+/g,'').replace(/[^0-9+]/g,'');
+}
+
+function openProfileModal(force=false){
+  profileForced = !!force;
+  if(profileModalEl){
+    profileModalEl.style.display='flex';
+    profileModalEl.setAttribute('aria-hidden','false');
+  }
+  if(profileSkipBtn) profileSkipBtn.style.display = profileForced ? 'none' : 'inline-flex';
+  if(profileNameInput){
+    profileNameInput.value = customerProfile.name || '';
+    if(profilePhoneInput) profilePhoneInput.value = customerProfile.phone || '';
+    setTimeout(()=> profileNameInput.focus(), 40);
+  }
+}
+
+function closeProfileModal(){
+  if(profileModalEl){
+    profileModalEl.style.display='none';
+    profileModalEl.setAttribute('aria-hidden','true');
+  }
+  profileForced = false;
+}
+
+function handleProfileSave(){
+  const name = (profileNameInput && profileNameInput.value || '').trim();
+  const phone = normalizePhone((profilePhoneInput && profilePhoneInput.value || '').trim());
+  if(!name && !phone){
+    toast(STRINGS[lang].profile_required);
+    if(profileNameInput) profileNameInput.focus();
+    return;
+  }
+  let id = generateCustomerId(name, phone);
+  if(!id) id = 'guest';
+  const updatedProfile = { id, name, phone };
+  saveCustomerProfileData(updatedProfile);
+  ensureCustomerRegistryEntry(id, updatedProfile);
+  const bucket = ensureCustomerLog(id, updatedProfile);
+  if(id !== 'guest' && orderLog && orderLog.customers && orderLog.customers.guest && orderLog.customers.guest.orders.length){
+    const guestOrders = orderLog.customers.guest.orders.slice();
+    if(guestOrders.length){
+      bucket.orders = guestOrders.concat(bucket.orders || []);
+      orderLog.customers.guest.orders = [];
+    }
+  }
+  saveOrderLog();
+  currentLogViewId = id;
+  updateGreeting();
+  maybeToastGreeting(true);
+  toast(STRINGS[lang].profile_saved);
+  closeProfileModal();
+  renderOrderLog(id);
+}
+
+if(profileBtnTrigger){ profileBtnTrigger.addEventListener('click', ()=> openProfileModal(false)); }
+if(profileBackdrop){ profileBackdrop.addEventListener('click', ()=>{ if(!profileForced) closeProfileModal(); }); }
+if(profileSkipBtn){ profileSkipBtn.addEventListener('click', (e)=>{ e.preventDefault(); closeProfileModal(); }); }
+if(profileSaveBtn){ profileSaveBtn.addEventListener('click', (e)=>{ e.preventDefault(); handleProfileSave(); }); }
+
+/* ===== Loyalty Modal ===== */
+const loyaltyModalEl = document.getElementById('loyaltyModal');
+const loyaltyBackdrop = document.querySelector('#loyaltyModal .backdrop');
+const loyaltyMessageEl = document.getElementById('loyaltyMessage');
+const loyaltyCloseBtn = document.getElementById('loyaltyCloseBtn');
+
+function showLoyaltyModal(info){
+  if(!loyaltyModalEl) return;
+  const drinkName = lang==='ar' ? (info && (info.drink_ar || info.drink_en) || '') : (info && (info.drink_en || info.drink_ar) || '');
+  const customerName = customerProfile && customerProfile.name ? customerProfile.name : (lang==='ar'?'ضيفنا العزيز':'dear guest');
+  if(loyaltyMessageEl){
+    const safeDrink = escapeHtml(drinkName);
+    const safeName = escapeHtml(customerName);
+    const template = STRINGS[lang].loyalty_message || '';
+    loyaltyMessageEl.innerHTML = template.replace('{drink}', safeDrink).replace('{name}', `<span class="welcome-name">${safeName}</span>`);
+  }
+  loyaltyModalEl.style.display='flex';
+  loyaltyModalEl.setAttribute('aria-hidden','false');
+}
+
+function closeLoyaltyModal(){
+  if(!loyaltyModalEl) return;
+  loyaltyModalEl.style.display='none';
+  loyaltyModalEl.setAttribute('aria-hidden','true');
+}
+
+if(loyaltyBackdrop){ loyaltyBackdrop.addEventListener('click', closeLoyaltyModal); }
+if(loyaltyCloseBtn){ loyaltyCloseBtn.addEventListener('click', (e)=>{ e.preventDefault(); closeLoyaltyModal(); }); }
 
 /* ===== Call waiter ===== */
 function sendWaiterCall(tableId){
@@ -1051,7 +1523,95 @@ function renderCart(){
       `);
     });
   }
-  $('#cartTotal').innerHTML = priceHTML(cartTotal());
+  const subtotal = cartTotal();
+  const loyaltyCalc = calculateLoyaltyRewards(cart);
+  const loyaltyDiscount = loyaltyCalc.discount;
+  const loyaltyRewards = loyaltyCalc.rewards;
+  const total = Math.max(subtotal - loyaltyDiscount, 0);
+  $('#cartTotal').innerHTML = priceHTML(total);
+  const loyaltyNoteEl = document.getElementById('cartLoyaltyNote');
+  if(loyaltyNoteEl){
+    if(loyaltyDiscount > 0 && loyaltyRewards.length){
+      const currency = lang==='ar'?'ريال':'SAR';
+      const parts = loyaltyRewards.map(reward=>{
+        const drink = lang==='ar' ? (reward.drink_ar || reward.drink_en || '') : (reward.drink_en || reward.drink_ar || '');
+        const qty = reward.freebies || 1;
+        const discount = Number(reward.discount) || 0;
+        return `${drink} ×${qty} (−${discount} ${currency})`;
+      });
+      loyaltyNoteEl.innerHTML = `🎁 ${STRINGS[lang].loyalty_reward_label}: ${parts.join(' • ')}`;
+      loyaltyNoteEl.style.display = 'block';
+    } else {
+      loyaltyNoteEl.style.display = 'none';
+      loyaltyNoteEl.textContent = '';
+    }
+  }
+  const discountInputEl = document.getElementById('discountInput');
+  if(discountInputEl && discountInputEl !== document.activeElement){
+    discountInputEl.value = currentDiscountCode;
+  }
+}
+
+const discountInputEl = document.getElementById('discountInput');
+if(discountInputEl){
+  discountInputEl.addEventListener('input', ()=>{
+    currentDiscountCode = discountInputEl.value.trim();
+  });
+}
+
+function resetDiscountCode(){
+  currentDiscountCode = '';
+  if(discountInputEl) discountInputEl.value = '';
+}
+
+function calculateLoyaltyRewards(cartItems){
+  const rewards = [];
+  let totalDiscount = 0;
+  (cartItems || []).forEach(it=>{
+    if(!it) return;
+    const key = (it.name_en || it.name_ar || '').toLowerCase();
+    if(!key) return;
+    const record = loyaltyState[key] || { count:0, rewardLevel:0, drink_ar: it.name_ar || '', drink_en: it.name_en || '' };
+    const startCount = Number(record.count) || 0;
+    const qty = Number(it.qty) || 0;
+    if(!qty) return;
+    const freebies = Math.floor((startCount + qty) / 5) - Math.floor(startCount / 5);
+    if(freebies > 0){
+      const price = Number(it.price) || 0;
+      const discount = freebies * price;
+      totalDiscount += discount;
+      rewards.push({
+        key,
+        freebies,
+        discount,
+        drink_ar: it.name_ar || record.drink_ar || '',
+        drink_en: it.name_en || record.drink_en || ''
+      });
+    }
+  });
+  return { rewards, discount: totalDiscount };
+}
+
+function handleLoyaltyRewards(entry){
+  if(!entry || !Array.isArray(entry.items)) return;
+  let rewardInfo = null;
+  entry.items.forEach(it=>{
+    const key = ((it && (it.name_en || it.name_ar)) || '').toLowerCase();
+    if(!key) return;
+    const qty = Number(it && it.qty) || 1;
+    const record = loyaltyState[key] || { count:0, rewardLevel:0, drink_ar: it.name_ar || '', drink_en: it.name_en || '' };
+    record.count += qty;
+    if(it.name_ar) record.drink_ar = it.name_ar;
+    if(it.name_en) record.drink_en = it.name_en;
+    const milestone = Math.floor(record.count / 5);
+    if(milestone > (record.rewardLevel || 0) && !rewardInfo){
+      rewardInfo = { drink_ar: record.drink_ar, drink_en: record.drink_en };
+    }
+    record.rewardLevel = Math.max(record.rewardLevel || 0, milestone);
+    loyaltyState[key] = record;
+  });
+  saveLoyaltyState();
+  if(rewardInfo) showLoyaltyModal(rewardInfo);
 }
 
 /* ===== Send order to Telegram ===== */
@@ -1064,21 +1624,59 @@ function performSendOrder(tableIdOverride){
     const line = `${n}${opt} x${it.qty} = ${it.qty*it.price} SAR`;
     return line;
   });
-  const total = cartTotal();
+  const subtotal = cartTotal();
+  const loyaltyCalc = calculateLoyaltyRewards(cart);
+  const loyaltyDiscount = loyaltyCalc.discount;
+  const loyaltyRewards = loyaltyCalc.rewards;
+  const total = Math.max(subtotal - loyaltyDiscount, 0);
   const header_ar = `🧾 طلب جديد — طاولة ${tableId}`;
   const header_en = `🧾 New Order — Table ${tableId}`;
   const orderId = `N${stamp.now.getTime().toString(36).toUpperCase()}`;
   const timeLine = `🕒 ${STRINGS.ar.order_time_label}: ${stamp.ar} | ${STRINGS.en.order_time_label}: ${stamp.en}`;
   const orderIdLine = `🆔 ${STRINGS.ar.order_id_label}: ${orderId} | ${STRINGS.en.order_id_label}: ${orderId}`;
-  const messageLines = [`${header_ar} | ${header_en}`, ...lines, `— Total: ${total} SAR`, timeLine, orderIdLine];
+  const discountCode = currentDiscountCode.trim();
+  const messageLines = [`${header_ar} | ${header_en}`, ...lines];
+  if(loyaltyRewards.length){
+    loyaltyRewards.forEach(reward=>{
+      const drinkAr = reward.drink_ar || reward.drink_en || '';
+      const drinkEn = reward.drink_en || reward.drink_ar || '';
+      messageLines.push(`🎁 ${STRINGS.ar.loyalty_reward_label}: ${drinkAr} مجاني | 🎁 ${STRINGS.en.loyalty_reward_label}: ${drinkEn} is on the house`);
+    });
+  }
+  if(loyaltyDiscount > 0){
+    messageLines.push(`💝 ${STRINGS.ar.loyalty_discount_label}: -${loyaltyDiscount} SAR | 💝 ${STRINGS.en.loyalty_discount_label}: -${loyaltyDiscount} SAR`);
+  }
+  if(discountCode){
+    messageLines.push(`🎟️ ${STRINGS.ar.discount_code_label}: ${discountCode} | ${STRINGS.en.discount_code_label}: ${discountCode}`);
+  }
+  const customerNameValue = customerProfile && customerProfile.name ? customerProfile.name : '';
+  const customerPhoneValue = customerProfile && customerProfile.phone ? customerProfile.phone : '';
+  if(customerNameValue || customerPhoneValue){
+    const nameAr = customerNameValue || '—';
+    const nameEn = customerNameValue || '—';
+    messageLines.push(`👤 ${STRINGS.ar.customer_name_label}: ${nameAr} | ${STRINGS.en.customer_name_label}: ${nameEn}`);
+    if(customerPhoneValue){
+      messageLines.push(`📞 ${STRINGS.ar.customer_phone_label}: ${customerPhoneValue} | ${STRINGS.en.customer_phone_label}: ${customerPhoneValue}`);
+    }
+  }
+  messageLines.push(`— Total: ${total} SAR`, timeLine, orderIdLine);
   const text = messageLines.map(encodeURIComponent).join('%0A');
 
   const orderEntry = {
     id: orderId,
     orderId,
     table: tableId,
+    subtotal,
+    loyaltyDiscount,
     total,
     timestamp: stamp.now.getTime(),
+    discountCode,
+    customer: {
+      id: getActiveCustomerId(),
+      name: customerNameValue || '',
+      phone: customerPhoneValue || ''
+    },
+    loyaltyRewards,
     items: cart.map(it=>({
       name_ar: it.name_ar,
       name_en: it.name_en,
@@ -1108,8 +1706,10 @@ function performSendOrder(tableIdOverride){
     .then(res=>{
       if(!res.ok) throw new Error('telegram');
       recordOrderLog(orderEntry);
+      handleLoyaltyRewards(orderEntry);
       toast(STRINGS[lang].order_sent_saved);
       clearCart();
+      resetDiscountCode();
       closeCart();
     })
     .catch(()=> { toast(STRINGS[lang].order_send_failed); });
@@ -1140,7 +1740,20 @@ function toast(msg){
 function updateLangBtn(){ document.getElementById('langBtn').textContent = (lang==='ar') ? 'English' : 'العربية'; }
 function init(){
   localStorage.removeItem('nima.table');
+  if(customerProfile && (customerProfile.name || customerProfile.phone)){
+    if(!customerProfile.id){
+      customerProfile.id = generateCustomerId(customerProfile.name || '', customerProfile.phone || '');
+      saveCustomerProfileData(customerProfile);
+    }
+    ensureCustomerRegistryEntry(customerProfile.id, customerProfile);
+    ensureCustomerLog(customerProfile.id, customerProfile);
+  }
   renderAll(); updateLangBtn(); updateCartBadge();
+  if(customerProfile && (customerProfile.name || customerProfile.phone)){
+    maybeToastGreeting();
+  } else {
+    setTimeout(()=> openProfileModal(false), 900);
+  }
 }
 init();
   </script>
