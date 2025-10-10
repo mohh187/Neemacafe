@@ -258,6 +258,7 @@
     </div>
   </div>
 
+  <script src="menu-data.js"></script>
   <script>
     const TELEGRAM_BOT_TOKEN = '8234122453:AAGmkEFETh1yuXzgDHChoTu0YFuD0BeVK8c';
     const TELEGRAM_CHAT_ID = '5070730903';
@@ -336,12 +337,18 @@
       }
     };
 
-    const IMG = 'https://i.postimg.cc/g0g9RwM0/Untitled-design-9.png';
-    const data = {
-      hot:{coffee:[{ar:'لاتيه',en:'Latte',price:12,img:IMG},{ar:'اسبريسو',en:'Espresso',price:6,img:IMG}],tea:[{ar:'شاي',en:'Tea',price:3,img:IMG}]},
-      cold:{coffee:[{ar:'لاتيه مثلج',en:'Iced Latte',price:12,img:IMG}],mojito:[{ar:'موهيتو',en:'Mojito',price:17,img:IMG}],other:[{ar:'كركديه',en:'Hibiscus',price:8,img:IMG}]},
-      dessert:{cake:[{ar:'نيمة كيك',en:'Nima Cake',price:18,img:IMG}],side:[{ar:'لقيمات',en:'Luqaimat',price:13,img:IMG}]}
+    const SHARED = window.NEEMA_SHARED || {};
+
+    const EMPTY_MENU_DATA = {
+      hot: { coffee: [], tea: [] },
+      cold: { coffee: [], mojito: [], other: [] },
+      dessert: { cake: [], side: [] }
     };
+
+    const data = SHARED.MENU_DATA || EMPTY_MENU_DATA;
+    if(!SHARED.MENU_DATA){
+      console.warn('[Neema] Shared menu data not found — rendering with empty menu dataset.');
+    }
 
     const $ = s=>document.querySelector(s);
     let cart = [];
