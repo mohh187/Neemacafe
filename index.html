@@ -206,7 +206,7 @@ body.dark .table-modal .sheet .error{color:#e57373}
           </div>
           <div class="actions">
             <button class="btn ghost" id="orderLogBtn">📜 <span id="orderLogBtnLabel">سجل الطلبات</span></button>
-            <button class="btn" id="langBtn">English</button>
+            <button class="btn" id="langBtn">E</button>
             <button class="btn" id="modeBtn">🌙</button>
           </div>
         </div>
@@ -1124,7 +1124,7 @@ modeBtn.onclick = ()=>{
 
 /* ===== Language toggle ===== */
 const langBtn = $('#langBtn');
-function updateLangBtn(){ langBtn.textContent = (lang==='ar') ? 'English' : 'العربية'; }
+function updateLangBtn(){ langBtn.textContent = (lang==='ar') ? 'E' : 'ع'; }
 langBtn.onclick = ()=>{
   lang = (lang==='ar') ? 'en' : 'ar';
   localStorage.setItem('nima.lang', lang);
@@ -1751,7 +1751,7 @@ function toast(msg){
 }
 
 /* ===== Init ===== */
-function updateLangBtn(){ document.getElementById('langBtn').textContent = (lang==='ar') ? 'English' : 'العربية'; }
+function updateLangBtn(){ document.getElementById('langBtn').textContent = (lang==='ar') ? 'E' : 'ع'; }
 function init(){
   localStorage.removeItem('nima.table');
   if(customerProfile && (customerProfile.name || customerProfile.phone)){
