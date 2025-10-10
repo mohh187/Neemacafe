@@ -44,6 +44,20 @@
     .sub{font-size:12px;color:var(--muted)}
     .addBtn{margin-top:6px;padding:4px 6px;font-size:12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:var(--brand-2);color:#fff}
 
+    /* Table modal */
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:200}
+    .modal .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+    .table-modal .sheet{position:relative;background:var(--card);color:var(--text);padding:20px;border-radius:18px;max-width:360px;width:100%;box-shadow:var(--shadow);text-align:center}
+    .table-modal .sheet h3{margin:0 0 10px}
+    .table-modal .sheet p{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.6}
+    .table-modal .sheet .note{margin:6px 0 16px;font-size:13px;line-height:1.5;color:var(--muted)}
+    .table-modal .sheet select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:15px}
+    .table-modal .sheet .actions{display:flex;gap:8px;margin-top:16px}
+    .table-modal .sheet .actions .btn{flex:1}
+    .table-modal .sheet .error{color:#c0392b;font-size:13px;margin-top:12px;display:none}
+    body.dark .table-modal .sheet{background:var(--card);color:var(--text)}
+    body.dark .table-modal .sheet .error{color:#e57373}
+
     .bar{position:fixed;bottom:0;left:0;right:0;z-index:25;background:var(--card);border-top:1px solid var(--border);padding:10px}
     .bar .inner{max-width:960px;margin-inline:auto;display:flex;gap:8px}
     select, .bar .inner .btn{flex:1}
@@ -116,18 +130,50 @@
     <button id="sendOrder" class="btn primary" style="margin-top:8px;">إرسال الطلب / Send Order</button>
   </div>
 
+  <!-- Table Selection Modal -->
+  <div class="modal table-modal" id="tableModal" aria-hidden="true">
+    <div class="backdrop"></div>
+    <div class="sheet">
+      <h3 id="tableModalTitle">حدد رقم الطاولة</h3>
+      <p id="tableModalDesc">يجب اختيار رقم الطاولة قبل متابعة الطلب.</p>
+      <p class="note" id="tableModalNote">رقم الطاولة موجود على الباركود على الطاولة.</p>
+      <select id="tablePrompt"></select>
+      <div class="actions">
+        <button class="btn" id="tableCancelBtn">إلغاء</button>
+        <button class="btn primary" id="tableConfirmBtn">تأكيد</button>
+      </div>
+      <div class="error" id="tablePromptError">يرجى اختيار رقم الطاولة لإتمام الطلب</div>
+    </div>
+  </div>
+
   <script>
     const TELEGRAM_BOT_TOKEN = '8234122453:AAGmkEFETh1yuXzgDHChoTu0YFuD0BeVK8c';
     const TELEGRAM_CHAT_ID = '5070730903';
 
     let lang = localStorage.getItem('nima.lang') || 'ar';
     const STRINGS = {
-      ar: {title:'منيو نيمة', tagline:'قائمة جوال • ثنائية اللغة • داكن/فاتح', search:'ابحث باسم الصنف… (مثال: لاتيه، موهيتو)',
+      ar: {
+        title:'منيو نيمة', tagline:'قائمة جوال • ثنائية اللغة • داكن/فاتح', search:'ابحث باسم الصنف… (مثال: لاتيه، موهيتو)',
         hot_drinks:'المشروبات الساخنة', cold_drinks:'المشروبات الباردة', dessert:'الحَلَى', call_waiter:'طلب النادل',
-        table:'طاولة', footer:'© نيمة كافيه — قائمة تفاعلية للجوال'},
-      en: {title:'Neema Menu', tagline:'Mobile Menu • Bilingual • Dark/Light', search:'Search item… (e.g., Latte, Mojito)',
+        table:'طاولة', footer:'© نيمة كافيه — قائمة تفاعلية للجوال',
+        select_table:'اختر رقم الطاولة', table_modal_title:'حدد رقم الطاولة',
+        table_modal_desc:'يجب اختيار رقم الطاولة قبل متابعة الطلب.',
+        table_modal_note:'رقم الطاولة موجود على الباركود على الطاولة.',
+        table_modal_error:'يرجى اختيار رقم الطاولة لإتمام الطلب',
+        order_time_label:'وقت الطلب', order_id_label:'رقم الطلب',
+        confirm:'تأكيد', cancel:'إلغاء', cart_empty:'السلة فارغة'
+      },
+      en: {
+        title:'Neema Menu', tagline:'Mobile Menu • Bilingual • Dark/Light', search:'Search item… (e.g., Latte, Mojito)',
         hot_drinks:'Hot Drinks', cold_drinks:'Cold Drinks', dessert:'Dessert', call_waiter:'Call Waiter',
-        table:'Table', footer:'© Neema Café — Interactive Mobile Menu'}
+        table:'Table', footer:'© Neema Café — Interactive Mobile Menu',
+        select_table:'Select a table number', table_modal_title:'Choose your table',
+        table_modal_desc:'Please pick a table number before continuing.',
+        table_modal_note:'The table number is printed on the barcode at your table.',
+        table_modal_error:'Please choose a table number to continue',
+        order_time_label:'Order time', order_id_label:'Order ID',
+        confirm:'Confirm', cancel:'Cancel', cart_empty:'Cart is empty'
+      }
     };
 
     const IMG = 'https://i.postimg.cc/g0g9RwM0/Untitled-design-9.png';
@@ -139,8 +185,22 @@
 
     const $ = s=>document.querySelector(s);
     let cart = [];
-    const mount = (id, arr)=>{
-      const root=document.getElementById(id); root.innerHTML='';
+    let selectedTable = '';
+    let pendingTableAction = null;
+    let restoreCartVisibility = false;
+
+    const tableSelect = document.getElementById('table');
+    const tableModalEl = document.getElementById('tableModal');
+    const tablePromptSelect = document.getElementById('tablePrompt');
+    const tablePromptError = document.getElementById('tablePromptError');
+    const tableConfirmBtn = document.getElementById('tableConfirmBtn');
+    const tableCancelBtn = document.getElementById('tableCancelBtn');
+    const tableModalBackdrop = document.querySelector('#tableModal .backdrop');
+
+    function mount(id, arr){
+      const root=document.getElementById(id);
+      if(!root) return;
+      root.innerHTML='';
       arr.forEach(it=>{
         const name = (lang==='ar'?it.ar:it.en);
         const el=document.createElement('div'); el.className='item';
@@ -149,11 +209,18 @@
           <div>
             <div class="line"><span class="name">${name}</span><span class="dots"></span><span class="price">${it.price} ريال</span></div>
             <div class="sub">${lang==='ar'?'اضغط زر إضافة للسلة':'Use Add to Cart button'}</div>
-            <button class="addBtn" onclick='addToCart(${JSON.stringify(it)})'>${lang==='ar'?'أضف للسلة':'Add to Cart'}</button>
           </div>`;
+        const btn = document.createElement('button');
+        btn.className='addBtn';
+        btn.textContent = lang==='ar'?'أضف للسلة':'Add to Cart';
+        btn.addEventListener('click', ev=>{
+          ev.stopPropagation();
+          ensureTableSelection(()=> addToCart(it));
+        });
+        el.lastElementChild.appendChild(btn);
         root.appendChild(el);
       });
-    };
+    }
 
     function addToCart(item){
       const existing = cart.find(i=>i.ar===item.ar);
@@ -163,39 +230,179 @@
     }
 
     function renderCart(){
-      const container = document.getElementById('cart-items'); container.innerHTML='';
-      let total=0; cart.forEach(i=>{total+=i.price*i.qty; const el=document.createElement('div');
-        el.innerHTML=`${i.ar} (${i.en}) x${i.qty} = ${i.price*i.qty} ريال <button onclick="removeFromCart('${i.ar}')">❌</button>`;
-        container.appendChild(el);
+      const container = document.getElementById('cart-items');
+      const cartBox = document.getElementById('cart');
+      if(!container || !cartBox) return;
+      container.innerHTML='';
+      let total=0;
+      cart.forEach(i=>{
+        total+=i.price*i.qty;
+        const name = lang==='ar'?i.ar:i.en;
+        const alt = lang==='ar'?i.en:i.ar;
+        const row=document.createElement('div');
+        const span=document.createElement('span');
+        span.textContent = `${name} (${alt}) x${i.qty} = ${i.price*i.qty} ريال`;
+        const btn=document.createElement('button');
+        btn.textContent='❌';
+        btn.addEventListener('click',()=> removeFromCart(i.ar));
+        row.appendChild(span);
+        row.appendChild(btn);
+        container.appendChild(row);
       });
       document.getElementById('cart-total').textContent=total;
-      document.getElementById('cart').style.display = cart.length?'block':'none';
+      cartBox.style.display = cart.length?'block':'none';
     }
 
-    function removeFromCart(name){cart=cart.filter(i=>i.ar!==name); renderCart();}
+    function removeFromCart(name){
+      cart=cart.filter(i=>i.ar!==name);
+      renderCart();
+    }
 
-    document.getElementById('sendOrder').addEventListener('click',()=>{
-      if(!cart.length)return alert(lang==='ar'?'السلة فارغة':'Cart is empty');
-      const table = document.getElementById('table').value||'؟';
-      let msg = `🛒 ${lang==='ar'?`طلب طاولة ${table}`:`Table ${table} order`}:\n`;
-      cart.forEach(i=>{msg+=`${i.ar} (${i.en}) x${i.qty} = ${i.price*i.qty} ريال\n`;});
-      const total = cart.reduce((sum,i)=>sum + i.price*i.qty,0);
-      msg+=`${lang==='ar'?'الإجمالي':'Total'}: ${total} ريال`;
-      const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(msg)}`;
-      window.open(url,'_blank');
-      alert(lang==='ar'?'تم إرسال الطلب! النادل سيأتي إليك فوراً!':'Order sent! Waiter will come to you immediately!');
-      cart=[]; renderCart();
+    function populateTableOptions(select, disablePlaceholder=true){
+      if(!select) return;
+      select.innerHTML='';
+      const placeholder=document.createElement('option');
+      placeholder.value='';
+      placeholder.textContent = STRINGS[lang].select_table;
+      if(disablePlaceholder) placeholder.disabled = true;
+      if(!selectedTable) placeholder.selected = true;
+      select.appendChild(placeholder);
+      for(let i=1;i<=15;i++){
+        const option=document.createElement('option');
+        option.value=String(i);
+        option.textContent = `${STRINGS[lang].table} ${i}`;
+        select.appendChild(option);
+      }
+      if(selectedTable) select.value = selectedTable;
+    }
+
+    function setTableValue(val){
+      selectedTable = val || '';
+      if(tableSelect) tableSelect.value = selectedTable;
+      if(tablePromptSelect) tablePromptSelect.value = selectedTable;
+    }
+
+    function getCurrentTableValue(){
+      if(selectedTable) return selectedTable;
+      return (tableSelect && tableSelect.value) || '';
+    }
+
+    function buildTimestampInfo(){
+      const now = new Date();
+      const options = { dateStyle: 'short', timeStyle: 'short' };
+      let timestampAr = now.toLocaleString('ar-SA');
+      let timestampEn = now.toLocaleString('en-GB');
+      if(typeof Intl !== 'undefined' && Intl.DateTimeFormat){
+        try{ timestampAr = new Intl.DateTimeFormat('ar-SA', options).format(now); }catch(e){}
+        try{ timestampEn = new Intl.DateTimeFormat('en-GB', options).format(now); }catch(e){}
+      }
+      return { now, ar: timestampAr, en: timestampEn };
+    }
+
+    function fillTables(){
+      populateTableOptions(tableSelect, true);
+      if(tableSelect){
+        tableSelect.onchange = ()=>{
+          const val = tableSelect.value;
+          if(val){ setTableValue(val); }
+        };
+      }
+    }
+
+    function updateTableModalTexts(){
+      const title=document.getElementById('tableModalTitle');
+      const desc=document.getElementById('tableModalDesc');
+      const note=document.getElementById('tableModalNote');
+      if(title) title.textContent = STRINGS[lang].table_modal_title;
+      if(desc) desc.textContent = STRINGS[lang].table_modal_desc;
+      if(note) note.textContent = STRINGS[lang].table_modal_note;
+      if(tableConfirmBtn) tableConfirmBtn.textContent = STRINGS[lang].confirm;
+      if(tableCancelBtn) tableCancelBtn.textContent = STRINGS[lang].cancel;
+      if(tablePromptError) tablePromptError.textContent = STRINGS[lang].table_modal_error;
+      populateTableOptions(tablePromptSelect, false);
+    }
+
+    function isCartVisible(){
+      const cartBox = document.getElementById('cart');
+      return cartBox && cartBox.style.display === 'block';
+    }
+
+    function openTableModal(){
+      populateTableOptions(tablePromptSelect, false);
+      if(tablePromptError) tablePromptError.style.display='none';
+      if(tableModalEl){
+        tableModalEl.style.display='flex';
+        tableModalEl.setAttribute('aria-hidden','false');
+        setTimeout(()=>{ if(tablePromptSelect) tablePromptSelect.focus(); },30);
+      }
+    }
+
+    function closeTableModal(){
+      if(tableModalEl){
+        tableModalEl.style.display='none';
+        tableModalEl.setAttribute('aria-hidden','true');
+      }
+      if(tablePromptError) tablePromptError.style.display='none';
+      pendingTableAction = null;
+      restoreCartVisibility = false;
+    }
+
+    function ensureTableSelection(action, options={}){
+      const forcePrompt = !!options.forcePrompt;
+      const restorePref = typeof options.restoreCart === 'boolean' ? options.restoreCart : isCartVisible();
+      const current = getCurrentTableValue();
+      if(current && !forcePrompt){
+        setTableValue(current);
+        if(typeof action === 'function') action(current);
+        return true;
+      }
+      pendingTableAction = typeof action === 'function' ? action : null;
+      restoreCartVisibility = restorePref;
+      openTableModal();
+      return false;
+    }
+
+    if(tableModalBackdrop) tableModalBackdrop.addEventListener('click', closeTableModal);
+    if(tableCancelBtn) tableCancelBtn.addEventListener('click', e=>{ e.preventDefault(); closeTableModal(); });
+    if(tablePromptSelect) tablePromptSelect.addEventListener('change', ()=>{ if(tablePromptError) tablePromptError.style.display='none'; });
+    if(tableConfirmBtn) tableConfirmBtn.addEventListener('click', e=>{
+      e.preventDefault();
+      const val = tablePromptSelect ? tablePromptSelect.value : '';
+      if(!val){
+        if(tablePromptError) tablePromptError.style.display='block';
+        if(tablePromptSelect) tablePromptSelect.focus();
+        return;
+      }
+      if(tablePromptError) tablePromptError.style.display='none';
+      setTableValue(val);
+      if(tableModalEl){
+        tableModalEl.style.display='none';
+        tableModalEl.setAttribute('aria-hidden','true');
+      }
+      const action = pendingTableAction;
+      const shouldRestore = restoreCartVisibility;
+      pendingTableAction = null;
+      restoreCartVisibility = false;
+      if(shouldRestore){
+        const cartBox = document.getElementById('cart');
+        if(cartBox && cart.length){ cartBox.style.display='block'; }
+      }
+      if(action) action(val);
     });
 
     function renderAll(){
-      document.getElementById('title').textContent = STRINGS[lang].title;
-      document.getElementById('tagline').textContent = STRINGS[lang].tagline;
-      document.getElementById('search').placeholder = STRINGS[lang].search;
+      const titleEl = document.getElementById('title');
+      const tagEl = document.getElementById('tagline');
+      const searchEl = document.getElementById('search');
+      const footEl = document.getElementById('foot');
+      if(titleEl) titleEl.textContent = STRINGS[lang].title;
+      if(tagEl) tagEl.textContent = STRINGS[lang].tagline;
+      if(searchEl) searchEl.placeholder = STRINGS[lang].search;
       document.querySelectorAll('[data-i18n="hot_drinks"]').forEach(e=>e.textContent=STRINGS[lang].hot_drinks);
       document.querySelectorAll('[data-i18n="cold_drinks"]').forEach(e=>e.textContent=STRINGS[lang].cold_drinks);
       document.querySelectorAll('[data-i18n="dessert"]').forEach(e=>e.textContent=STRINGS[lang].dessert);
       document.querySelectorAll('[data-i18n="call_waiter"]').forEach(e=>e.textContent=STRINGS[lang].call_waiter);
-      document.getElementById('foot').textContent = STRINGS[lang].footer;
+      if(footEl) footEl.textContent = STRINGS[lang].footer;
       document.documentElement.lang = lang==='ar'?'ar':'en';
       document.documentElement.dir = lang==='ar'?'rtl':'ltr';
       mount('hot-coffee', data.hot.coffee);
@@ -205,43 +412,127 @@
       mount('cold-other', data.cold.other);
       mount('dessert-cake', data.dessert.cake);
       mount('dessert-side', data.dessert.side);
+      const cartTitle = document.querySelector('#cart h3');
+      if(cartTitle) cartTitle.textContent = lang==='ar'?'سلة الطلبات':'Cart';
+      const sendOrderBtn = document.getElementById('sendOrder');
+      if(sendOrderBtn) sendOrderBtn.textContent = lang==='ar'?'إرسال الطلب':'Send Order';
+      fillTables();
+      updateTableModalTexts();
+      renderCart();
     }
 
-    const tableSelect = document.getElementById('table');
-    function fillTables(){
-      tableSelect.innerHTML='';
-      for(let i=1;i<=15;i++){const o=document.createElement('option'); o.value=i; o.textContent = `${STRINGS[lang].table} ${i}`; tableSelect.appendChild(o);}
-      const saved=localStorage.getItem('nima.table'); if(saved) tableSelect.value=saved;
-      tableSelect.onchange = ()=>localStorage.setItem('nima.table', tableSelect.value);
+    function performSendOrder(tableOverride){
+      const stamp = buildTimestampInfo();
+      const table = tableOverride || getCurrentTableValue() || (lang==='ar'?'؟':'?');
+      const lines = cart.map(i=>`${i.ar} (${i.en}) x${i.qty} = ${i.price*i.qty} SAR`);
+      const total = cart.reduce((sum,i)=>sum + i.price*i.qty,0);
+      const headerAr = `🧾 طلب جديد — طاولة ${table}`;
+      const headerEn = `🧾 New Order — Table ${table}`;
+      const orderId = `N${stamp.now.getTime().toString(36).toUpperCase()}`;
+      const timeLine = `🕒 ${STRINGS.ar.order_time_label}: ${stamp.ar} | ${STRINGS.en.order_time_label}: ${stamp.en}`;
+      const orderIdLine = `🆔 ${STRINGS.ar.order_id_label}: ${orderId} | ${STRINGS.en.order_id_label}: ${orderId}`;
+      const messageLines = [`${headerAr} | ${headerEn}`, ...lines, `— Total: ${total} SAR`, timeLine, orderIdLine];
+      const text = messageLines.map(encodeURIComponent).join('%0A');
+
+      const acceptMessage = `✅ تم قبول الطلب ${orderId} | ✅ Order ${orderId} accepted`;
+      const readyMessage = `🏁 تم تجهيز الطلب ${orderId} | 🏁 Order ${orderId} ready`;
+      const acceptUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(acceptMessage)}`;
+      const readyUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(readyMessage)}`;
+      const replyMarkup = encodeURIComponent(JSON.stringify({
+        inline_keyboard:[
+          [{ text:'✅ قبول الطلب | Accept', url: acceptUrl }],
+          [{ text:'🏁 تم تجهيز الطلب | Ready', url: readyUrl }]
+        ]
+      }));
+
+      const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${text}&reply_markup=${replyMarkup}`;
+      fetch(url)
+        .then(()=>{
+          alert(lang==='ar'?'تم إرسال الطلب! سيتم تنبيه الطاقم فوراً.':'Order sent! The staff has been notified.');
+          cart=[];
+          renderCart();
+        })
+        .catch(()=>{
+          alert(lang==='ar'?'تعذّر إرسال الطلب، حاول مرة أخرى.':'Could not send the order, please try again.');
+        });
     }
 
-    document.getElementById('callBtn').addEventListener('click',()=>{
-      const t = tableSelect.value || '؟';
-      const ar = `🔔 طاولة ${t} تحتاج خدمة`;
-      const en = `🔔 Table ${t} needs service`;
-      alert(lang==='ar'?'النادل سيأتي إليك فوراً!':'Waiter will come to you immediately!');
-      const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(ar+' | '+en)}`;
-      window.open(url,'_blank');
-    });
+    const sendOrderBtn = document.getElementById('sendOrder');
+    if(sendOrderBtn){
+      sendOrderBtn.addEventListener('click', ()=>{
+        if(!cart.length){ alert(STRINGS[lang].cart_empty); return; }
+        ensureTableSelection(tableValue=> performSendOrder(tableValue), { restoreCart: isCartVisible() });
+      });
+    }
+
+    const callBtn = document.getElementById('callBtn');
+    if(callBtn){
+      function sendWaiterCall(tableId){
+        const fallback = lang==='ar'?'؟':'?';
+        const t = tableId || fallback;
+        const stamp = buildTimestampInfo();
+        const timeLine = `🕒 ${STRINGS.ar.order_time_label}: ${stamp.ar} | ${STRINGS.en.order_time_label}: ${stamp.en}`;
+        const lines = [`🔔 طاولة ${t} تحتاج خدمة`, `🔔 Table ${t} needs service`, timeLine];
+        const textParam = lines.map(encodeURIComponent).join('%0A');
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${textParam}`;
+        fetch(url).catch(()=>{});
+        alert(lang==='ar'?'تم تنبيه النادل وسيصل إليك قريباً.':'The waiter has been notified and will arrive shortly.');
+      }
+
+      callBtn.addEventListener('click', ()=>{
+        ensureTableSelection(tableValue=> sendWaiterCall(tableValue), { forcePrompt:true, restoreCart:false });
+      });
+    }
 
     const search = document.getElementById('search');
-    search.addEventListener('input', ()=>{
-      const q = search.value.trim().toLowerCase();
-      const f = arr => arr.filter(x=> (x.ar+x.en).toLowerCase().includes(q));
-      mount('hot-coffee', f(data.hot.coffee));
-      mount('hot-tea', f(data.hot.tea));
-      mount('cold-coffee', f(data.cold.coffee));
-      mount('cold-mojito', f(data.cold.mojito));
-      mount('cold-other', f(data.cold.other));
-      mount('dessert-cake', f(data.dessert.cake));
-      mount('dessert-side', f(data.dessert.side));
-      if(!q) renderAll();
-    });
+    if(search){
+      search.addEventListener('input', ()=>{
+        const q = search.value.trim().toLowerCase();
+        const f = arr => arr.filter(x=> (x.ar + x.en).toLowerCase().includes(q));
+        if(q){
+          mount('hot-coffee', f(data.hot.coffee));
+          mount('hot-tea', f(data.hot.tea));
+          mount('cold-coffee', f(data.cold.coffee));
+          mount('cold-mojito', f(data.cold.mojito));
+          mount('cold-other', f(data.cold.other));
+          mount('dessert-cake', f(data.dessert.cake));
+          mount('dessert-side', f(data.dessert.side));
+        } else {
+          renderAll();
+        }
+      });
+    }
 
     const modeBtn = document.getElementById('modeBtn');
-    const initialMode = localStorage.getItem('nima.mode')||'light';
-    if(initialMode==='dark') document.body.classList.add('dark');
-    modeBtn.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
-    modeBtn.onclick = ()=>{document.body.classList.toggle('dark'); localStorage.setItem('nima.mode', document.body.classList.contains('dark')?'dark':'light'); modeBtn.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';};
+    if(modeBtn){
+      const initialMode = localStorage.getItem('nima.mode')||'light';
+      if(initialMode==='dark') document.body.classList.add('dark');
+      modeBtn.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+      modeBtn.onclick = ()=>{
+        document.body.classList.toggle('dark');
+        localStorage.setItem('nima.mode', document.body.classList.contains('dark')?'dark':'light');
+        modeBtn.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+      };
+    }
 
-    const langBtn = document
+    const langBtn = document.getElementById('langBtn');
+    function updateLangBtn(){ if(langBtn) langBtn.textContent = (lang==='ar') ? 'English' : 'العربية'; }
+    if(langBtn){
+      langBtn.onclick = ()=>{
+        lang = (lang==='ar') ? 'en' : 'ar';
+        localStorage.setItem('nima.lang', lang);
+        renderAll();
+        updateLangBtn();
+      };
+    }
+
+    function init(){
+      localStorage.removeItem('nima.table');
+      renderAll();
+      updateLangBtn();
+    }
+
+    init();
+  </script>
+</body>
+</html>

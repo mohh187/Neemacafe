@@ -121,6 +121,17 @@ footer{color:var(--muted);text-align:center;margin:18px 0 120px}
 .cart .summary{display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-weight:800}
 .cart .actions{display:flex;gap:8px;margin-top:12px}
 .empty{color:var(--muted);text-align:center;margin:12px 0}
+
+/* -------- Table Modal -------- */
+.table-modal{align-items:center}
+.table-modal .sheet{max-width:420px;border-radius:18px;max-height:80vh;text-align:center;padding:18px}
+.table-modal .sheet h3{margin:4px 0 10px}
+.table-modal .sheet p{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.6}
+.table-modal .sheet select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:15px}
+.table-modal .sheet .note{margin:4px 0 14px;color:var(--muted);font-size:13px;line-height:1.5}
+.table-modal .sheet .actions{margin-top:16px}
+.table-modal .sheet .error{color:#c0392b;font-size:13px;margin-top:10px;display:none}
+body.dark .table-modal .sheet .error{color:#e57373}
   </style>
 </head>
 <body>
@@ -263,6 +274,22 @@ footer{color:var(--muted);text-align:center;margin:18px 0 120px}
     </div>
   </div>
 
+  <!-- Table Selection Modal -->
+  <div class="modal table-modal" id="tableModal" aria-hidden="true">
+    <div class="backdrop"></div>
+    <div class="sheet">
+      <h3 id="tableModalTitle">حدد رقم الطاولة</h3>
+      <p id="tableModalDesc">يجب اختيار رقم الطاولة قبل متابعة الطلب.</p>
+      <p class="note" id="tableModalNote">رقم الطاولة موجود على الباركود على الطاولة.</p>
+      <select id="tablePrompt"></select>
+      <div class="actions">
+        <button class="btn" id="tableCancelBtn">إلغاء</button>
+        <button class="btn primary" id="tableConfirmBtn">تأكيد</button>
+      </div>
+      <div class="error" id="tablePromptError">يرجى اختيار رقم الطاولة لإتمام الطلب</div>
+    </div>
+  </div>
+
   <div class="bar">
     <div class="inner">
       <select id="table"></select>
@@ -291,7 +318,14 @@ const STRINGS = {
     ginger:'زنجبيل', cardamom:'هبهان',
     strength:'القوة', heavy:'ثقيلة', light:'خفيفة', balanced:'موزونة',
     sugar_external:'سكر خارجي', sugar_none:'بدون سكر', sugar_less:'سكر قليل', sugar_normal:'سكر عادي',
-    water_cold:'بارد (من الثلاجة)', water_room:'غير مبرد (درجة الغرفة)'
+    water_cold:'بارد (من الثلاجة)', water_room:'غير مبرد (درجة الغرفة)',
+    select_table:'اختر رقم الطاولة',
+    table_modal_title:'حدد رقم الطاولة',
+    table_modal_desc:'يجب اختيار رقم الطاولة قبل متابعة الطلب.',
+    table_modal_note:'رقم الطاولة موجود على الباركود على الطاولة.',
+    table_modal_error:'يرجى اختيار رقم الطاولة لإتمام الطلب',
+    order_time_label:'وقت الطلب', order_id_label:'رقم الطلب',
+    confirm:'تأكيد', cancel:'إلغاء'
   },
   en: {
     title:'Neema Menu', tagline:'A taste that grows from the roots', search:'Search item… (e.g., Latte, Mojito)',
@@ -305,7 +339,14 @@ const STRINGS = {
     ginger:'Ginger', cardamom:'Cardamom',
     strength:'Strength', heavy:'Strong', light:'Light', balanced:'Balanced',
     sugar_external:'Sugar on the side', sugar_none:'No sugar', sugar_less:'Less sugar', sugar_normal:'Regular sugar',
-    water_cold:'Cold (chilled)', water_room:'Room temperature'
+    water_cold:'Cold (chilled)', water_room:'Room temperature',
+    select_table:'Select a table number',
+    table_modal_title:'Choose your table',
+    table_modal_desc:'Please pick a table number before continuing.',
+    table_modal_note:'The table number is printed on the barcode at your table.',
+    table_modal_error:'Please choose a table number to continue',
+    order_time_label:'Order time', order_id_label:'Order ID',
+    confirm:'Confirm', cancel:'Cancel'
   }
 };
 
@@ -420,6 +461,9 @@ function saveCart(){ localStorage.setItem('nima.cart', JSON.stringify(cart)); }
 function cartCount(){ return cart.reduce((s,i)=>s+i.qty,0); }
 function cartTotal(){ return cart.reduce((s,i)=>s+i.qty*i.price,0); }
 function updateCartBadge(){ document.getElementById('cartCount').textContent = cartCount(); }
+let pendingTableAction = null;
+let shouldRestoreCart = false;
+let selectedTable = '';
 
 /* ===== Helpers ===== */
 const $ = (s)=>document.querySelector(s);
@@ -428,6 +472,56 @@ function register(item, cat){ const id = REG.push({item,cat})-1; return id; }
 
 function priceHTML(p){
   return `${p} <span class="sar" aria-label="${STRINGS[lang].sar_label}"></span><span class="sar-fallback">${lang==='ar'?'ريال':'SAR'}</span>`;
+}
+
+function populateTableSelect(select, selectedValue='', disablePlaceholder=true){
+  if(!select) return;
+  select.innerHTML='';
+  const placeholder = document.createElement('option');
+  placeholder.value='';
+  placeholder.textContent = STRINGS[lang].select_table;
+  if(disablePlaceholder){ placeholder.disabled = true; }
+  if(!selectedValue){ placeholder.selected = true; }
+  select.appendChild(placeholder);
+  for(let i=1;i<=15;i++){
+    const o=document.createElement('option');
+    o.value=String(i);
+    o.textContent = `${STRINGS[lang].table} ${i}`;
+    select.appendChild(o);
+  }
+  if(selectedValue){ select.value = selectedValue; }
+}
+
+function setTableValue(val){
+  selectedTable = val || '';
+  const baseSelect = document.getElementById('table');
+  const cartSelectEl = document.getElementById('tableCart');
+  if(baseSelect) baseSelect.value = selectedTable;
+  if(cartSelectEl) cartSelectEl.value = selectedTable;
+}
+
+function getCurrentTableValue(){
+  if(selectedTable) return selectedTable;
+  const baseSelect = document.getElementById('table');
+  const cartSelectEl = document.getElementById('tableCart');
+  return (baseSelect && baseSelect.value) || (cartSelectEl && cartSelectEl.value) || '';
+}
+
+function buildTimestampInfo(){
+  const now = new Date();
+  const options = { dateStyle: 'short', timeStyle: 'short' };
+  let timestampAr = now.toLocaleString('ar-SA');
+  let timestampEn = now.toLocaleString('en-GB');
+  if(typeof Intl !== 'undefined' && Intl.DateTimeFormat){
+    try{ timestampAr = new Intl.DateTimeFormat('ar-SA', options).format(now); }catch(e){}
+    try{ timestampEn = new Intl.DateTimeFormat('en-GB', options).format(now); }catch(e){}
+  }
+  return { now, ar: timestampAr, en: timestampEn };
+}
+
+function isCartOpen(){
+  const sheet = document.getElementById('cartSheet');
+  return sheet && sheet.style.display === 'flex';
 }
 
 function makeItemEl(it, cat){
@@ -470,6 +564,12 @@ function renderAll(){
   document.querySelectorAll('[data-i18n="send_order"]').forEach(e=> e.textContent = STRINGS[lang].send_order);
   document.querySelectorAll('[data-i18n="clear"]').forEach(e=> e.textContent = STRINGS[lang].clear);
   document.querySelectorAll('[data-i18n="empty"]').forEach(e=> e.textContent = STRINGS[lang].empty);
+  document.getElementById('tableModalTitle').textContent = STRINGS[lang].table_modal_title;
+  document.getElementById('tableModalDesc').textContent = STRINGS[lang].table_modal_desc;
+  document.getElementById('tableModalNote').textContent = STRINGS[lang].table_modal_note;
+  document.getElementById('tableConfirmBtn').textContent = STRINGS[lang].confirm;
+  document.getElementById('tableCancelBtn').textContent = STRINGS[lang].cancel;
+  document.getElementById('tablePromptError').textContent = STRINGS[lang].table_modal_error;
 
   // dir/lang
   document.documentElement.lang = (lang==='ar'?'ar':'en');
@@ -528,36 +628,110 @@ langBtn.onclick = ()=>{
 /* ===== Tables ===== */
 const tableSelect = $('#table');
 function fillTables(){
-  tableSelect.innerHTML='';
-  for(let i=1;i<=15;i++){
-    const o=document.createElement('option');
-    o.value=i; o.textContent = `${STRINGS[lang].table} ${i}`; tableSelect.appendChild(o);
-  }
-  const saved = localStorage.getItem('nima.table');
-  if(saved) tableSelect.value=saved;
-  tableSelect.onchange = ()=> localStorage.setItem('nima.table', tableSelect.value);
+  populateTableSelect(tableSelect, selectedTable, true);
+  tableSelect.onchange = ()=>{
+    const val = tableSelect.value;
+    if(val){ setTableValue(val); }
+  };
 }
 function fillTablesCart(){
   const sel = $('#tableCart');
-  sel.innerHTML='';
-  for(let i=1;i<=15;i++){
-    const o=document.createElement('option');
-    o.value=i; o.textContent = `${STRINGS[lang].table} ${i}`; sel.appendChild(o);
+  populateTableSelect(sel, selectedTable, true);
+  sel.onchange = ()=>{
+    const val = sel.value;
+    if(val){ setTableValue(val); }
+  };
+}
+
+/* ===== Table enforcement ===== */
+const tableModalEl = document.getElementById('tableModal');
+const tablePromptSelect = document.getElementById('tablePrompt');
+const tablePromptError = document.getElementById('tablePromptError');
+const tableConfirmBtn = document.getElementById('tableConfirmBtn');
+const tableCancelBtn = document.getElementById('tableCancelBtn');
+const tableModalBackdrop = document.querySelector('#tableModal .backdrop');
+
+function openTableModal(){
+  populateTableSelect(tablePromptSelect, selectedTable, false);
+  tablePromptError.style.display='none';
+  tableModalEl.style.display='flex';
+  tableModalEl.setAttribute('aria-hidden','false');
+  setTimeout(()=> tablePromptSelect.focus(), 30);
+}
+
+function closeTableModal(){
+  tableModalEl.style.display='none';
+  tableModalEl.setAttribute('aria-hidden','true');
+  tablePromptError.style.display='none';
+  pendingTableAction = null;
+  shouldRestoreCart = false;
+}
+
+function ensureTableSelection(action, options={}){
+  const forcePrompt = !!options.forcePrompt;
+  const restoreCartPref = typeof options.restoreCart === 'boolean' ? options.restoreCart : isCartOpen();
+  const current = getCurrentTableValue();
+  if(current && !forcePrompt){
+    setTableValue(current);
+    if(typeof action === 'function') action(current);
+    return true;
   }
-  const saved = localStorage.getItem('nima.table');
-  if(saved) sel.value=saved;
-  sel.onchange = ()=> localStorage.setItem('nima.table', sel.value);
+  pendingTableAction = typeof action === 'function' ? action : null;
+  shouldRestoreCart = restoreCartPref;
+  openTableModal();
+  return false;
+}
+
+if(tableModalBackdrop){ tableModalBackdrop.addEventListener('click', ()=> closeTableModal()); }
+if(tableCancelBtn){ tableCancelBtn.addEventListener('click', (e)=>{ e.preventDefault(); closeTableModal(); }); }
+if(tablePromptSelect){
+  tablePromptSelect.addEventListener('change', ()=>{
+    if(tablePromptError) tablePromptError.style.display='none';
+  });
+}
+if(tableConfirmBtn){
+  tableConfirmBtn.addEventListener('click', (e)=>{
+    e.preventDefault();
+    const val = tablePromptSelect.value;
+    if(!val){
+      tablePromptError.style.display='block';
+      tablePromptSelect.focus();
+      return;
+    }
+    tablePromptError.style.display='none';
+    setTableValue(val);
+    tableModalEl.style.display='none';
+    tableModalEl.setAttribute('aria-hidden','true');
+    const action = pendingTableAction;
+    const restoreCart = shouldRestoreCart;
+    pendingTableAction = null;
+    shouldRestoreCart = false;
+    if(restoreCart) openCart();
+    if(action) action(val);
+  });
 }
 
 /* ===== Call waiter ===== */
-$('#callBtn').addEventListener('click', ()=>{
-  const t = tableSelect.value || '؟';
-  const ar = `🔔 طاولة ${t} تحتاج خدمة`;
-  const en = `🔔 Table ${t} needs service`;
-  const text = encodeURIComponent(`${ar} | ${en}`);
+function sendWaiterCall(tableId){
+  const fallback = lang==='ar' ? '؟' : '?';
+  const t = tableId || fallback;
+  const stamp = buildTimestampInfo();
+  const timeLine = `🕒 ${STRINGS.ar.order_time_label}: ${stamp.ar} | ${STRINGS.en.order_time_label}: ${stamp.en}`;
+  const lines = [
+    `🔔 طاولة ${t} تحتاج خدمة`,
+    `🔔 Table ${t} needs service`,
+    timeLine
+  ];
+  const text = lines.map(encodeURIComponent).join('%0A');
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID_NEW}&text=${text}`;
   fetch(url).catch(console.error);
   toast(STRINGS[lang].waiter_toast);
+}
+
+$('#callBtn').addEventListener('click', ()=>{
+  ensureTableSelection((tableId)=>{
+    sendWaiterCall(tableId);
+  }, { forcePrompt:true, restoreCart:false });
 });
 
 /* ===== Product Modal logic ===== */
@@ -659,9 +833,11 @@ function gatherCustomization(){
 function addCurrentToCart(){
   const q = parseInt($('#pQty').textContent)||1;
   const options = gatherCustomization();
-  addToCart(currentProduct, q, options);
-  closeProduct();
-  toast(STRINGS[lang].added);
+  ensureTableSelection(()=>{
+    addToCart(currentProduct, q, options);
+    closeProduct();
+    toast(STRINGS[lang].added);
+  });
 }
 
 /* ===== Cart logic ===== */
@@ -721,9 +897,9 @@ function renderCart(){
 }
 
 /* ===== Send order to Telegram ===== */
-function sendOrder(){
-  if(cart.length===0){ toast(lang==='ar'?'السلة فارغة':'Cart is empty'); return; }
-  const tableId = document.getElementById('tableCart').value || document.getElementById('table').value || '?';
+function performSendOrder(tableIdOverride){
+  const stamp = buildTimestampInfo();
+  const tableId = tableIdOverride || getCurrentTableValue() || '?';
   const lines = cart.map(it=>{
     const n = (lang==='ar'?it.name_ar:it.name_en);
     const opt = (it.options && it.options.length) ? ` (${it.options.join(', ')})` : '';
@@ -733,14 +909,34 @@ function sendOrder(){
   const total = cartTotal();
   const header_ar = `🧾 طلب جديد — طاولة ${tableId}`;
   const header_en = `🧾 New Order — Table ${tableId}`;
-  const body = lines.map(encodeURIComponent).join('%0A');
-  const footer = `%0A— Total: ${total} SAR`;
-  const text = encodeURIComponent(`${header_ar} | ${header_en}`) + `%0A` + body + footer;
+  const orderId = `N${stamp.now.getTime().toString(36).toUpperCase()}`;
+  const timeLine = `🕒 ${STRINGS.ar.order_time_label}: ${stamp.ar} | ${STRINGS.en.order_time_label}: ${stamp.en}`;
+  const orderIdLine = `🆔 ${STRINGS.ar.order_id_label}: ${orderId} | ${STRINGS.en.order_id_label}: ${orderId}`;
+  const messageLines = [`${header_ar} | ${header_en}`, ...lines, `— Total: ${total} SAR`, timeLine, orderIdLine];
+  const text = messageLines.map(encodeURIComponent).join('%0A');
 
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID_NEW}&text=${text}`;
+  const acceptMessage = `✅ تم قبول الطلب ${orderId} | ✅ Order ${orderId} accepted`;
+  const readyMessage = `🏁 تم تجهيز الطلب ${orderId} | 🏁 Order ${orderId} ready`;
+  const acceptUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID_NEW}&text=${encodeURIComponent(acceptMessage)}`;
+  const readyUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID_NEW}&text=${encodeURIComponent(readyMessage)}`;
+  const replyMarkup = encodeURIComponent(JSON.stringify({
+    inline_keyboard: [
+      [{ text: '✅ قبول الطلب | Accept', url: acceptUrl }],
+      [{ text: '🏁 تم تجهيز الطلب | Ready', url: readyUrl }]
+    ]
+  }));
+
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID_NEW}&text=${text}&reply_markup=${replyMarkup}`;
   fetch(url)
     .then(()=> { toast(lang==='ar'?'تم إرسال الطلب بنجاح ✅':'Order sent ✅'); clearCart(); closeCart(); })
     .catch(()=> { toast(lang==='ar'?'تعذّر إرسال الطلب ❌':'Failed to send ❌'); });
+}
+
+function sendOrder(){
+  if(cart.length===0){ toast(lang==='ar'?'السلة فارغة':'Cart is empty'); return; }
+  ensureTableSelection((tableId)=>{
+    performSendOrder(tableId);
+  }, { restoreCart: isCartOpen() });
 }
 
 /* ===== Toast ===== */
@@ -760,6 +956,7 @@ function toast(msg){
 /* ===== Init ===== */
 function updateLangBtn(){ document.getElementById('langBtn').textContent = (lang==='ar') ? 'English' : 'العربية'; }
 function init(){
+  localStorage.removeItem('nima.table');
   renderAll(); updateLangBtn(); updateCartBadge();
 }
 init();
