@@ -272,7 +272,7 @@
         table_modal_desc:'يجب اختيار رقم الطاولة قبل متابعة الطلب.',
         table_modal_note:'رقم الطاولة موجود على الباركود على الطاولة.',
         table_modal_error:'يرجى اختيار رقم الطاولة لإتمام الطلب',
-        order_time_label:'وقت الطلب', order_id_label:'رقم الطلب',
+        order_time_label:'وقت الطلب', order_id_label:'رقم الطلب', total_due_label:'الإجمالي المستحق',
         confirm:'تأكيد', cancel:'إلغاء', cart_empty:'السلة فارغة',
         order_log_button:'سجل الطلبات', order_log_title:'سجل الطلبات',
         order_log_desc:'يتم حفظ الطلبات المرسلة من هذا الجهاز هنا للرجوع إليها لاحقًا.',
@@ -307,7 +307,7 @@
         table_modal_desc:'Please pick a table number before continuing.',
         table_modal_note:'The table number is printed on the barcode at your table.',
         table_modal_error:'Please choose a table number to continue',
-        order_time_label:'Order time', order_id_label:'Order ID',
+        order_time_label:'Order time', order_id_label:'Order ID', total_due_label:'Total due',
         confirm:'Confirm', cancel:'Cancel', cart_empty:'Cart is empty',
         order_log_button:'Order Log', order_log_title:'Order Log',
         order_log_desc:'Orders sent from this device are saved here so you can review them later.',
@@ -804,16 +804,32 @@
       return (tableSelect && tableSelect.value) || '';
     }
 
+    function formatArTime12h(date){
+      let hours = date.getHours();
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const period = hours >= 12 ? 'مساءً' : 'صباحًا';
+      hours = hours % 12 || 12;
+      return `${hours}:${minutes} ${period}`;
+    }
+
     function buildTimestampInfo(){
       const now = new Date();
-      const options = { dateStyle: 'short', timeStyle: 'short' };
-      let timestampAr = now.toLocaleString('ar-SA');
-      let timestampEn = now.toLocaleString('en-GB');
+      let dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+      let timeStr = formatArTime12h(now);
       if(typeof Intl !== 'undefined' && Intl.DateTimeFormat){
-        try{ timestampAr = new Intl.DateTimeFormat('ar-SA', options).format(now); }catch(e){}
-        try{ timestampEn = new Intl.DateTimeFormat('en-GB', options).format(now); }catch(e){}
+        try{
+          const dateFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-gregory', { year:'numeric', month:'2-digit', day:'2-digit' });
+          dateStr = dateFormatter.format(now);
+        }catch(e){}
+        try{
+          const timeFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-gregory', { hour:'numeric', minute:'2-digit', hour12:true });
+          let formatted = timeFormatter.format(now);
+          if(formatted.includes('ص')) formatted = formatted.replace('ص', 'صباحًا');
+          if(formatted.includes('م')) formatted = formatted.replace('م', 'مساءً');
+          timeStr = formatted;
+        }catch(e){}
       }
-      return { now, ar: timestampAr, en: timestampEn };
+      return { now, date: dateStr, time: timeStr, full: `${dateStr} ${timeStr}` };
     }
 
     function fillTables(){
@@ -1137,7 +1153,10 @@
     function performSendOrder(tableOverride){
       const stamp = buildTimestampInfo();
       const table = tableOverride || getCurrentTableValue() || (lang==='ar'?'؟':'?');
-      const lines = cart.map(i=>`${i.ar} (${i.en}) x${i.qty} = ${i.price*i.qty} SAR`);
+      const itemLines = cart.map(i=>{
+        const name = i.ar || i.en || '';
+        return `• ${name} ×${i.qty} — ${i.price * i.qty} ريال`;
+      });
       const subtotal = cart.reduce((sum,i)=>sum + i.price*i.qty,0);
       const loyaltyCalc = calculateLoyaltyRewards(cart.map(i=>({
         name_ar:i.ar,
@@ -1148,38 +1167,40 @@
       const loyaltyDiscount = loyaltyCalc.discount;
       const loyaltyRewards = loyaltyCalc.rewards;
       const total = Math.max(subtotal - loyaltyDiscount, 0);
-      const headerAr = `🧾 طلب جديد — طاولة ${table}`;
-      const headerEn = `🧾 New Order — Table ${table}`;
+      const headerLine = `🧾 طلب جديد — طاولة ${table}`;
       const orderId = `N${stamp.now.getTime().toString(36).toUpperCase()}`;
-      const timeLine = `🕒 ${STRINGS.ar.order_time_label}: ${stamp.ar} | ${STRINGS.en.order_time_label}: ${stamp.en}`;
-      const orderIdLine = `🆔 ${STRINGS.ar.order_id_label}: ${orderId} | ${STRINGS.en.order_id_label}: ${orderId}`;
+      const orderIdLine = `🆔 ${STRINGS.ar.order_id_label}: ${orderId}`;
+      const timeLine = `⏰ ${STRINGS.ar.order_time_label}: ${stamp.date} — ${stamp.time}`;
       const discountCode = currentDiscountCode.trim();
-      const messageLines = [`${headerAr} | ${headerEn}`, ...lines];
+      const messageLines = [
+        headerLine,
+        orderIdLine,
+        timeLine,
+        '📋 تفاصيل الطلب:',
+        ...itemLines
+      ];
       if(loyaltyRewards.length){
         loyaltyRewards.forEach(reward=>{
           const drinkAr = reward.drink_ar || reward.drink_en || '';
-          const drinkEn = reward.drink_en || reward.drink_ar || '';
-          messageLines.push(`🎁 ${STRINGS.ar.loyalty_reward_label}: ${drinkAr} مجاني | 🎁 ${STRINGS.en.loyalty_reward_label}: ${drinkEn} is on the house`);
+          messageLines.push(`🎁 ${STRINGS.ar.loyalty_reward_label}: ${drinkAr} مجاني`);
         });
       }
       if(loyaltyDiscount > 0){
-        messageLines.push(`💝 ${STRINGS.ar.loyalty_discount_label}: -${loyaltyDiscount} SAR | 💝 ${STRINGS.en.loyalty_discount_label}: -${loyaltyDiscount} SAR`);
+        messageLines.push(`💝 ${STRINGS.ar.loyalty_discount_label}: -${loyaltyDiscount} ريال`);
       }
       if(discountCode){
-        messageLines.push(`🎟️ ${STRINGS.ar.discount_code_label}: ${discountCode} | ${STRINGS.en.discount_code_label}: ${discountCode}`);
+        messageLines.push(`🎟️ ${STRINGS.ar.discount_code_label}: ${discountCode}`);
       }
       const customerNameValue = customerProfile && customerProfile.name ? customerProfile.name : '';
       const customerPhoneValue = customerProfile && customerProfile.phone ? customerProfile.phone : '';
-      if(customerNameValue || customerPhoneValue){
-        const nameAr = customerNameValue || '—';
-        const nameEn = customerNameValue || '—';
-        messageLines.push(`👤 ${STRINGS.ar.customer_name_label}: ${nameAr} | ${STRINGS.en.customer_name_label}: ${nameEn}`);
-        if(customerPhoneValue){
-          messageLines.push(`📞 ${STRINGS.ar.customer_phone_label}: ${customerPhoneValue} | ${STRINGS.en.customer_phone_label}: ${customerPhoneValue}`);
-        }
+      if(customerNameValue){
+        messageLines.push(`👤 ${STRINGS.ar.customer_name_label}: ${customerNameValue}`);
       }
-      messageLines.push(`— Total: ${total} SAR`, timeLine, orderIdLine);
-      const text = messageLines.map(encodeURIComponent).join('%0A');
+      if(customerPhoneValue){
+        messageLines.push(`📞 ${STRINGS.ar.customer_phone_label}: ${customerPhoneValue}`);
+      }
+      messageLines.push(`💵 ${STRINGS.ar.total_due_label || 'الإجمالي المستحق'}: ${total} ريال`);
+      const text = messageLines.map(encodeURIComponent).join('%0A%0A');
 
       const orderEntry = {
         id: orderId,
@@ -1216,7 +1237,7 @@
 
       const replyMarkup = encodeURIComponent(JSON.stringify({
         inline_keyboard:[
-          [{ text:'✅ قبول الطلب | Accept', url: acceptUrl.toString() }]
+          [{ text:'✅ قبول الطلب', url: acceptUrl.toString() }]
         ]
       }));
 
@@ -1250,9 +1271,8 @@
         const fallback = lang==='ar'?'؟':'?';
         const t = tableId || fallback;
         const stamp = buildTimestampInfo();
-        const timeLine = `🕒 ${STRINGS.ar.order_time_label}: ${stamp.ar} | ${STRINGS.en.order_time_label}: ${stamp.en}`;
-        const lines = [`🔔 طاولة ${t} تحتاج خدمة`, `🔔 Table ${t} needs service`, timeLine];
-        const textParam = lines.map(encodeURIComponent).join('%0A');
+        const lines = [`🔔 طاولة ${t} تحتاج خدمة`, `⏰ ${STRINGS.ar.order_time_label}: ${stamp.full}`];
+        const textParam = lines.map(encodeURIComponent).join('%0A%0A');
         const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${textParam}`;
         fetch(url).catch(()=>{});
         toast(lang==='ar'?'تم تنبيه النادل وسيصل إليك قريباً.':'The waiter has been notified and will arrive shortly.');

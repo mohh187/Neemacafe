@@ -95,15 +95,50 @@
       window.close();
     }
 
+    function formatArTime12h(date){
+      let hours = date.getHours();
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const suffix = hours >= 12 ? 'مساءً' : 'صباحًا';
+      hours = hours % 12 || 12;
+      return `${hours}:${minutes} ${suffix}`;
+    }
+
+    function formatEnTime12h(date){
+      let hours = date.getHours();
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const suffix = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+      return `${hours}:${minutes} ${suffix}`;
+    }
+
     function formatDate(date){
-      const opts = { dateStyle:'short', timeStyle:'short' };
-      let ar = date.toLocaleString('ar-SA');
-      let en = date.toLocaleString('en-GB');
+      if(!(date instanceof Date) || isNaN(date)) return { ar:'', en:'' };
+      let dateAr = `${date.getFullYear()}/${String(date.getMonth()+1).padStart(2,'0')}/${String(date.getDate()).padStart(2,'0')}`;
+      let dateEn = dateAr;
+      let timeAr = formatArTime12h(date);
+      let timeEn = formatEnTime12h(date);
       if(typeof Intl !== 'undefined' && Intl.DateTimeFormat){
-        try{ ar = new Intl.DateTimeFormat('ar-SA', opts).format(date); }catch(e){}
-        try{ en = new Intl.DateTimeFormat('en-GB', opts).format(date); }catch(e){}
+        try{
+          const dateFormatterAr = new Intl.DateTimeFormat('ar-SA-u-ca-gregory', { year:'numeric', month:'2-digit', day:'2-digit' });
+          dateAr = dateFormatterAr.format(date);
+        }catch(e){}
+        try{
+          const timeFormatterAr = new Intl.DateTimeFormat('ar-SA-u-ca-gregory', { hour:'numeric', minute:'2-digit', hour12:true });
+          let formatted = timeFormatterAr.format(date);
+          if(formatted.includes('ص')) formatted = formatted.replace('ص', 'صباحًا');
+          if(formatted.includes('م')) formatted = formatted.replace('م', 'مساءً');
+          timeAr = formatted;
+        }catch(e){}
+        try{
+          const dateFormatterEn = new Intl.DateTimeFormat('en-GB', { year:'numeric', month:'2-digit', day:'2-digit' });
+          dateEn = dateFormatterEn.format(date);
+        }catch(e){}
+        try{
+          const timeFormatterEn = new Intl.DateTimeFormat('en-GB', { hour:'numeric', minute:'2-digit', hour12:true });
+          timeEn = timeFormatterEn.format(date);
+        }catch(e){}
       }
-      return { ar, en };
+      return { ar: `${dateAr} ${timeAr}`, en: `${dateEn} ${timeEn}` };
     }
 
     function formatDuration(ms){
@@ -171,9 +206,9 @@
       const lines = [
         `✅ تم قبول الطلب ${orderId}`,
         `🧾 طاولة ${tableId}`,
-        orderTime ? `⌚ وقت الطلب: ${orderTime.ar} | Order: ${orderTime.en}` : null,
-        `🕒 وقت القبول: ${acceptTime.ar} | Accepted: ${acceptTime.en}`,
-        sinceOrder ? `⏱️ المدة منذ الطلب: ${sinceOrder.ar} | Since order: ${sinceOrder.en}` : null
+        orderTime ? `⌚ وقت الطلب: ${orderTime.ar}` : null,
+        `🕒 وقت القبول: ${acceptTime.ar}`,
+        sinceOrder ? `⏱️ المدة منذ الطلب: ${sinceOrder.ar}` : null
       ].filter(Boolean);
 
       const readyUrl = new URL(window.location.href);
@@ -187,11 +222,11 @@
 
       const replyMarkup = {
         inline_keyboard: [
-          [{ text: '🏁 تم تجهيز الطلب | Ready', url: readyUrl.toString() }]
+          [{ text: '🏁 تم تجهيز الطلب', url: readyUrl.toString() }]
         ]
       };
 
-      await sendTelegramMessage(lines.join('\n'), replyMarkup);
+      await sendTelegramMessage(lines.join('\n\n'), replyMarkup);
       showStatus('success', `تم قبول الطلب ${orderId}.`, `Order ${orderId} accepted.`);
       showHint('يمكنك العودة لمتابعة الطلبات الجديدة في تيليجرام.', 'You can return to Telegram to watch new orders.');
       revealClose();
@@ -208,12 +243,12 @@
       const lines = [
         `🏁 تم تجهيز الطلب ${orderId}`,
         `🧾 طاولة ${tableId}`,
-        orderTime ? `⌚ وقت الطلب: ${orderTime.ar} | Order: ${orderTime.en}` : null,
-        `🕒 وقت التجهيز: ${readyTime.ar} | Ready: ${readyTime.en}`,
-        prepDuration ? `⏱️ مدة التحضير: ${prepDuration.ar} | Prep time: ${prepDuration.en}` : null
+        orderTime ? `⌚ وقت الطلب: ${orderTime.ar}` : null,
+        `🕒 وقت التجهيز: ${readyTime.ar}`,
+        prepDuration ? `⏱️ مدة التحضير: ${prepDuration.ar}` : null
       ].filter(Boolean);
 
-      await sendTelegramMessage(lines.join('\n'));
+      await sendTelegramMessage(lines.join('\n\n'));
       showStatus('success', `تم تسجيل تجهيز الطلب ${orderId}.`, `Order ${orderId} marked as ready.`);
       showHint('سيتم إعلام الفريق في تيليجرام فوراً.', 'The team in Telegram will be notified immediately.');
       revealClose();

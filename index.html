@@ -452,7 +452,7 @@ const STRINGS = {
     table_modal_desc:'يجب اختيار رقم الطاولة قبل متابعة الطلب.',
     table_modal_note:'رقم الطاولة موجود على الباركود على الطاولة.',
     table_modal_error:'يرجى اختيار رقم الطاولة لإتمام الطلب',
-    order_time_label:'وقت الطلب', order_id_label:'رقم الطلب',
+    order_time_label:'وقت الطلب', order_id_label:'رقم الطلب', total_due_label:'الإجمالي المستحق',
     confirm:'تأكيد', cancel:'إلغاء',
     greeting_guest:'مرحبا ضيفنا العزيز',
     greeting_named:'مرحبا {name}',
@@ -508,7 +508,7 @@ const STRINGS = {
     table_modal_desc:'Please pick a table number before continuing.',
     table_modal_note:'The table number is printed on the barcode at your table.',
     table_modal_error:'Please choose a table number to continue',
-    order_time_label:'Order time', order_id_label:'Order ID',
+    order_time_label:'Order time', order_id_label:'Order ID', total_due_label:'Total due',
     confirm:'Confirm', cancel:'Cancel',
     greeting_guest:'Welcome, dear guest',
     greeting_named:'Hello {name}',
@@ -956,16 +956,32 @@ function getCurrentTableValue(){
   return (baseSelect && baseSelect.value) || (cartSelectEl && cartSelectEl.value) || '';
 }
 
+function formatArTime12h(date){
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const period = hours >= 12 ? 'مساءً' : 'صباحًا';
+  hours = hours % 12 || 12;
+  return `${hours}:${minutes} ${period}`;
+}
+
 function buildTimestampInfo(){
   const now = new Date();
-  const options = { dateStyle: 'short', timeStyle: 'short' };
-  let timestampAr = now.toLocaleString('ar-SA');
-  let timestampEn = now.toLocaleString('en-GB');
+  let dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+  let timeStr = formatArTime12h(now);
   if(typeof Intl !== 'undefined' && Intl.DateTimeFormat){
-    try{ timestampAr = new Intl.DateTimeFormat('ar-SA', options).format(now); }catch(e){}
-    try{ timestampEn = new Intl.DateTimeFormat('en-GB', options).format(now); }catch(e){}
+    try{
+      const dateFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-gregory', { year:'numeric', month:'2-digit', day:'2-digit' });
+      dateStr = dateFormatter.format(now);
+    }catch(e){}
+    try{
+      const timeFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-gregory', { hour:'numeric', minute:'2-digit', hour12:true });
+      let formatted = timeFormatter.format(now);
+      if(formatted.includes('ص')) formatted = formatted.replace('ص', 'صباحًا');
+      if(formatted.includes('م')) formatted = formatted.replace('م', 'مساءً');
+      timeStr = formatted;
+    }catch(e){}
   }
-  return { now, ar: timestampAr, en: timestampEn };
+  return { now, date: dateStr, time: timeStr, full: `${dateStr} ${timeStr}` };
 }
 
 function isCartOpen(){
@@ -1360,13 +1376,11 @@ function sendWaiterCall(tableId){
   const fallback = lang==='ar' ? '؟' : '?';
   const t = tableId || fallback;
   const stamp = buildTimestampInfo();
-  const timeLine = `🕒 ${STRINGS.ar.order_time_label}: ${stamp.ar} | ${STRINGS.en.order_time_label}: ${stamp.en}`;
   const lines = [
     `🔔 طاولة ${t} تحتاج خدمة`,
-    `🔔 Table ${t} needs service`,
-    timeLine
+    `⏰ ${STRINGS.ar.order_time_label}: ${stamp.full}`
   ];
-  const text = lines.map(encodeURIComponent).join('%0A');
+  const text = lines.map(encodeURIComponent).join('%0A%0A');
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID_NEW}&text=${text}`;
   fetch(url).catch(console.error);
   toast(STRINGS[lang].waiter_toast);
@@ -1632,49 +1646,50 @@ function handleLoyaltyRewards(entry){
 function performSendOrder(tableIdOverride){
   const stamp = buildTimestampInfo();
   const tableId = tableIdOverride || getCurrentTableValue() || '?';
-  const lines = cart.map(it=>{
-    const n = (lang==='ar'?it.name_ar:it.name_en);
-    const opt = (it.options && it.options.length) ? ` (${it.options.join(', ')})` : '';
-    const line = `${n}${opt} x${it.qty} = ${it.qty*it.price} SAR`;
-    return line;
+  const itemLines = cart.map(it=>{
+    const n = it.name_ar || it.name_en || '';
+    const opt = (it.options && it.options.length) ? ` (${it.options.join('، ')})` : '';
+    return `• ${n}${opt} ×${it.qty} — ${it.qty * it.price} ريال`;
   });
   const subtotal = cartTotal();
   const loyaltyCalc = calculateLoyaltyRewards(cart);
   const loyaltyDiscount = loyaltyCalc.discount;
   const loyaltyRewards = loyaltyCalc.rewards;
   const total = Math.max(subtotal - loyaltyDiscount, 0);
-  const header_ar = `🧾 طلب جديد — طاولة ${tableId}`;
-  const header_en = `🧾 New Order — Table ${tableId}`;
+  const headerLine = `🧾 طلب جديد — طاولة ${tableId}`;
   const orderId = `N${stamp.now.getTime().toString(36).toUpperCase()}`;
-  const timeLine = `🕒 ${STRINGS.ar.order_time_label}: ${stamp.ar} | ${STRINGS.en.order_time_label}: ${stamp.en}`;
-  const orderIdLine = `🆔 ${STRINGS.ar.order_id_label}: ${orderId} | ${STRINGS.en.order_id_label}: ${orderId}`;
+  const orderIdLine = `🆔 ${STRINGS.ar.order_id_label}: ${orderId}`;
+  const timeLine = `⏰ ${STRINGS.ar.order_time_label}: ${stamp.date} — ${stamp.time}`;
   const discountCode = currentDiscountCode.trim();
-  const messageLines = [`${header_ar} | ${header_en}`, ...lines];
+  const messageLines = [
+    headerLine,
+    orderIdLine,
+    timeLine,
+    '📋 تفاصيل الطلب:',
+    ...itemLines
+  ];
   if(loyaltyRewards.length){
     loyaltyRewards.forEach(reward=>{
       const drinkAr = reward.drink_ar || reward.drink_en || '';
-      const drinkEn = reward.drink_en || reward.drink_ar || '';
-      messageLines.push(`🎁 ${STRINGS.ar.loyalty_reward_label}: ${drinkAr} مجاني | 🎁 ${STRINGS.en.loyalty_reward_label}: ${drinkEn} is on the house`);
+      messageLines.push(`🎁 ${STRINGS.ar.loyalty_reward_label}: ${drinkAr} مجاني`);
     });
   }
   if(loyaltyDiscount > 0){
-    messageLines.push(`💝 ${STRINGS.ar.loyalty_discount_label}: -${loyaltyDiscount} SAR | 💝 ${STRINGS.en.loyalty_discount_label}: -${loyaltyDiscount} SAR`);
+    messageLines.push(`💝 ${STRINGS.ar.loyalty_discount_label}: -${loyaltyDiscount} ريال`);
   }
   if(discountCode){
-    messageLines.push(`🎟️ ${STRINGS.ar.discount_code_label}: ${discountCode} | ${STRINGS.en.discount_code_label}: ${discountCode}`);
+    messageLines.push(`🎟️ ${STRINGS.ar.discount_code_label}: ${discountCode}`);
   }
   const customerNameValue = customerProfile && customerProfile.name ? customerProfile.name : '';
   const customerPhoneValue = customerProfile && customerProfile.phone ? customerProfile.phone : '';
-  if(customerNameValue || customerPhoneValue){
-    const nameAr = customerNameValue || '—';
-    const nameEn = customerNameValue || '—';
-    messageLines.push(`👤 ${STRINGS.ar.customer_name_label}: ${nameAr} | ${STRINGS.en.customer_name_label}: ${nameEn}`);
-    if(customerPhoneValue){
-      messageLines.push(`📞 ${STRINGS.ar.customer_phone_label}: ${customerPhoneValue} | ${STRINGS.en.customer_phone_label}: ${customerPhoneValue}`);
-    }
+  if(customerNameValue){
+    messageLines.push(`👤 ${STRINGS.ar.customer_name_label}: ${customerNameValue}`);
   }
-  messageLines.push(`— Total: ${total} SAR`, timeLine, orderIdLine);
-  const text = messageLines.map(encodeURIComponent).join('%0A');
+  if(customerPhoneValue){
+    messageLines.push(`📞 ${STRINGS.ar.customer_phone_label}: ${customerPhoneValue}`);
+  }
+  messageLines.push(`💵 ${STRINGS.ar.total_due_label || 'الإجمالي المستحق'}: ${total} ريال`);
+  const text = messageLines.map(encodeURIComponent).join('%0A%0A');
 
   const orderEntry = {
     id: orderId,
@@ -1711,7 +1726,7 @@ function performSendOrder(tableIdOverride){
 
   const replyMarkup = encodeURIComponent(JSON.stringify({
     inline_keyboard: [
-      [{ text: '✅ قبول الطلب | Accept', url: acceptUrl.toString() }]
+      [{ text: '✅ قبول الطلب', url: acceptUrl.toString() }]
     ]
   }));
 
