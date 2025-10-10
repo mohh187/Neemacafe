@@ -58,6 +58,21 @@
     body.dark .table-modal .sheet{background:var(--card);color:var(--text)}
     body.dark .table-modal .sheet .error{color:#e57373}
 
+    /* Order log modal */
+    .log-modal{align-items:center}
+    .log-modal .sheet{position:relative;background:var(--card);color:var(--text);padding:20px;border-radius:18px;max-width:420px;width:100%;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;max-height:80vh}
+    .log-modal .sheet h3{margin:0}
+    .log-modal .sheet p{margin:0;color:var(--muted);font-size:14px;line-height:1.6}
+    .log-modal .sheet .log-empty{color:var(--muted);text-align:center;padding:18px 0;font-size:14px}
+    .log-modal .sheet .log-list{flex:1 1 auto;overflow:auto;display:flex;flex-direction:column;gap:12px;padding:2px}
+    .log-entry{border:1px solid var(--border);border-radius:14px;padding:12px;background:var(--card);box-shadow:0 6px 16px rgba(0,0,0,.04)}
+    .log-entry h4{margin:0;font-size:15px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .log-entry h4 .total{font-weight:800;color:var(--brand)}
+    .log-entry .meta{font-size:12px;color:var(--muted);margin-top:6px;display:flex;flex-wrap:wrap;gap:8px}
+    .log-entry .items{margin:10px 0 0;padding-inline-start:20px;font-size:13px;color:var(--text)}
+    .log-entry .items li{margin-bottom:4px;line-height:1.5}
+    .log-modal .sheet .actions{display:flex;gap:8px}
+
     .bar{position:fixed;bottom:0;left:0;right:0;z-index:25;background:var(--card);border-top:1px solid var(--border);padding:10px}
     .bar .inner{max-width:960px;margin-inline:auto;display:flex;gap:8px}
     select, .bar .inner .btn{flex:1}
@@ -81,6 +96,7 @@
           </div>
         </div>
         <div class="actions">
+          <button class="btn ghost" id="orderLogBtn">📜 <span id="orderLogBtnLabel">سجل الطلبات</span></button>
           <button class="btn" id="langBtn">English</button>
           <button class="btn" id="modeBtn">🌙</button>
         </div>
@@ -126,7 +142,7 @@
   <div id="cart">
     <h3>سلة الطلبات / Cart</h3>
     <div id="cart-items"></div>
-    <div style="margin-top:8px;"><strong>الإجمالي / Total: </strong><span id="cart-total">0</span> ريال</div>
+    <div style="margin-top:8px;"><strong>الإجمالي / Total: </strong><span id="cart-total">0</span></div>
     <button id="sendOrder" class="btn primary" style="margin-top:8px;">إرسال الطلب / Send Order</button>
   </div>
 
@@ -146,6 +162,20 @@
     </div>
   </div>
 
+  <div class="modal log-modal" id="orderLogModal" aria-hidden="true">
+    <div class="backdrop"></div>
+    <div class="sheet">
+      <h3 id="orderLogTitle">سجل الطلبات</h3>
+      <p id="orderLogDesc">يتم حفظ الطلبات المرسلة من هذا الجهاز هنا للرجوع إليها لاحقًا.</p>
+      <div class="log-empty" id="orderLogEmpty">لا توجد طلبات مسجلة بعد.</div>
+      <div class="log-list" id="orderLogList"></div>
+      <div class="actions">
+        <button class="btn" id="orderLogCloseBtn">إغلاق</button>
+        <button class="btn ghost" id="orderLogClearBtn">🧹 <span id="orderLogClearLabel">حذف السجل</span></button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const TELEGRAM_BOT_TOKEN = '8234122453:AAGmkEFETh1yuXzgDHChoTu0YFuD0BeVK8c';
     const TELEGRAM_CHAT_ID = '5070730903';
@@ -161,7 +191,13 @@
         table_modal_note:'رقم الطاولة موجود على الباركود على الطاولة.',
         table_modal_error:'يرجى اختيار رقم الطاولة لإتمام الطلب',
         order_time_label:'وقت الطلب', order_id_label:'رقم الطلب',
-        confirm:'تأكيد', cancel:'إلغاء', cart_empty:'السلة فارغة'
+        confirm:'تأكيد', cancel:'إلغاء', cart_empty:'السلة فارغة',
+        order_log_button:'سجل الطلبات', order_log_title:'سجل الطلبات',
+        order_log_desc:'يتم حفظ الطلبات المرسلة من هذا الجهاز هنا للرجوع إليها لاحقًا.',
+        order_log_empty:'لا توجد طلبات مسجلة بعد.',
+        clear_log:'حذف السجل', clear_log_confirm:'هل تريد حذف سجل الطلبات؟',
+        order_sent_saved:'تم إرسال الطلب بنجاح ✅ — حُفظ الطلب في السجل.',
+        order_send_failed:'تعذّر إرسال الطلب ❌'
       },
       en: {
         title:'Neema Menu', tagline:'Mobile Menu • Bilingual • Dark/Light', search:'Search item… (e.g., Latte, Mojito)',
@@ -172,7 +208,13 @@
         table_modal_note:'The table number is printed on the barcode at your table.',
         table_modal_error:'Please choose a table number to continue',
         order_time_label:'Order time', order_id_label:'Order ID',
-        confirm:'Confirm', cancel:'Cancel', cart_empty:'Cart is empty'
+        confirm:'Confirm', cancel:'Cancel', cart_empty:'Cart is empty',
+        order_log_button:'Order Log', order_log_title:'Order Log',
+        order_log_desc:'Orders sent from this device are saved here so you can review them later.',
+        order_log_empty:'No orders have been saved yet.',
+        clear_log:'Clear log', clear_log_confirm:'Clear all saved orders?',
+        order_sent_saved:'Order sent ✅ — Saved to log.',
+        order_send_failed:'Failed to send ❌'
       }
     };
 
@@ -186,6 +228,12 @@
     const $ = s=>document.querySelector(s);
     let cart = [];
     let selectedTable = '';
+    const ORDER_LOG_KEY = 'nima.orderLog';
+    let orderLog = [];
+    try{
+      const storedLog = JSON.parse(localStorage.getItem(ORDER_LOG_KEY) || '[]');
+      if(Array.isArray(storedLog)) orderLog = storedLog;
+    }catch(e){ orderLog = []; }
     let pendingTableAction = null;
     let restoreCartVisibility = false;
 
@@ -196,6 +244,11 @@
     const tableConfirmBtn = document.getElementById('tableConfirmBtn');
     const tableCancelBtn = document.getElementById('tableCancelBtn');
     const tableModalBackdrop = document.querySelector('#tableModal .backdrop');
+    const orderLogModalEl = document.getElementById('orderLogModal');
+    const orderLogBackdrop = document.querySelector('#orderLogModal .backdrop');
+    const orderLogBtn = document.getElementById('orderLogBtn');
+    const orderLogCloseBtn = document.getElementById('orderLogCloseBtn');
+    const orderLogClearBtn = document.getElementById('orderLogClearBtn');
 
     function mount(id, arr){
       const root=document.getElementById(id);
@@ -241,7 +294,7 @@
         const alt = lang==='ar'?i.en:i.ar;
         const row=document.createElement('div');
         const span=document.createElement('span');
-        span.textContent = `${name} (${alt}) x${i.qty} = ${i.price*i.qty} ريال`;
+        span.textContent = `${name} (${alt}) x${i.qty} = ${formatPrice(i.price*i.qty)}`;
         const btn=document.createElement('button');
         btn.textContent='❌';
         btn.addEventListener('click',()=> removeFromCart(i.ar));
@@ -249,8 +302,79 @@
         row.appendChild(btn);
         container.appendChild(row);
       });
-      document.getElementById('cart-total').textContent=total;
+      const totalEl = document.getElementById('cart-total');
+      if(totalEl) totalEl.textContent = formatPrice(total);
       cartBox.style.display = cart.length?'block':'none';
+    }
+
+    function saveOrderLog(){
+      try{ localStorage.setItem(ORDER_LOG_KEY, JSON.stringify(orderLog)); }
+      catch(e){}
+    }
+
+    function recordOrderLog(entry){
+      if(!entry || typeof entry !== 'object') return;
+      orderLog.unshift(entry);
+      if(orderLog.length>100) orderLog = orderLog.slice(0,100);
+      saveOrderLog();
+      renderOrderLog();
+    }
+
+    function formatPrice(value){
+      const amount = Number(value) || 0;
+      return `${amount} ${lang==='ar'?'ريال':'SAR'}`;
+    }
+
+    function formatLogTime(timestamp){
+      if(!timestamp) return '';
+      const date = new Date(timestamp);
+      const options = { dateStyle:'short', timeStyle:'short' };
+      if(typeof Intl !== 'undefined' && Intl.DateTimeFormat){
+        try{ return new Intl.DateTimeFormat(lang==='ar'?'ar-SA':'en-GB', options).format(date); }
+        catch(e){}
+      }
+      return date.toLocaleString();
+    }
+
+    function renderOrderLog(){
+      const list = document.getElementById('orderLogList');
+      const empty = document.getElementById('orderLogEmpty');
+      if(!list || !empty) return;
+      list.innerHTML='';
+      if(!orderLog.length){
+        empty.style.display='block';
+        return;
+      }
+      empty.style.display='none';
+      orderLog.forEach(entry=>{
+        const orderId = entry && (entry.orderId || entry.id || entry.code) ? (entry.orderId || entry.id || entry.code) : '#';
+        const totalValue = Number(entry && entry.total) || 0;
+        const metaParts = [];
+        if(entry && entry.table){ metaParts.push(`${STRINGS[lang].table} ${entry.table}`); }
+        const timeText = entry ? formatLogTime(entry.timestamp) : '';
+        if(timeText) metaParts.push(timeText);
+        const item = document.createElement('div');
+        item.className='log-entry';
+        item.innerHTML = `
+          <h4>
+            <span>${orderId}</span>
+            <span class="total">${formatPrice(totalValue)}</span>
+          </h4>
+          <div class="meta">${metaParts.join(' • ')}</div>
+        `;
+        if(entry && Array.isArray(entry.items) && entry.items.length){
+          const ul = document.createElement('ul');
+          ul.className='items';
+          entry.items.forEach(it=>{
+            const name = lang==='ar' ? (it.name_ar || it.name_en || '') : (it.name_en || it.name_ar || '');
+            const opts = it.options && it.options.length ? ` — ${it.options.join(lang==='ar'?'، ':' / ')}` : '';
+            const qty = it.qty || 1;
+            ul.insertAdjacentHTML('beforeend', `<li>${name} ×${qty}${opts}</li>`);
+          });
+          item.appendChild(ul);
+        }
+        list.appendChild(item);
+      });
     }
 
     function removeFromCart(name){
@@ -390,6 +514,35 @@
       if(action) action(val);
     });
 
+    function openOrderLog(){
+      renderOrderLog();
+      if(orderLogModalEl){
+        orderLogModalEl.style.display='flex';
+        orderLogModalEl.setAttribute('aria-hidden','false');
+      }
+    }
+
+    function closeOrderLog(){
+      if(orderLogModalEl){
+        orderLogModalEl.style.display='none';
+        orderLogModalEl.setAttribute('aria-hidden','true');
+      }
+    }
+
+    if(orderLogBackdrop) orderLogBackdrop.addEventListener('click', closeOrderLog);
+    if(orderLogBtn) orderLogBtn.addEventListener('click', openOrderLog);
+    if(orderLogCloseBtn) orderLogCloseBtn.addEventListener('click', e=>{ e.preventDefault(); closeOrderLog(); });
+    if(orderLogClearBtn){
+      orderLogClearBtn.addEventListener('click', e=>{
+        e.preventDefault();
+        if(!orderLog.length){ closeOrderLog(); return; }
+        if(!window.confirm(STRINGS[lang].clear_log_confirm)) return;
+        orderLog = [];
+        saveOrderLog();
+        renderOrderLog();
+      });
+    }
+
     function renderAll(){
       const titleEl = document.getElementById('title');
       const tagEl = document.getElementById('tagline');
@@ -403,6 +556,18 @@
       document.querySelectorAll('[data-i18n="dessert"]').forEach(e=>e.textContent=STRINGS[lang].dessert);
       document.querySelectorAll('[data-i18n="call_waiter"]').forEach(e=>e.textContent=STRINGS[lang].call_waiter);
       if(footEl) footEl.textContent = STRINGS[lang].footer;
+      const logBtnLabel = document.getElementById('orderLogBtnLabel');
+      if(logBtnLabel) logBtnLabel.textContent = STRINGS[lang].order_log_button;
+      const logTitle = document.getElementById('orderLogTitle');
+      const logDesc = document.getElementById('orderLogDesc');
+      const logEmpty = document.getElementById('orderLogEmpty');
+      const logClose = document.getElementById('orderLogCloseBtn');
+      const logClear = document.getElementById('orderLogClearLabel');
+      if(logTitle) logTitle.textContent = STRINGS[lang].order_log_title;
+      if(logDesc) logDesc.textContent = STRINGS[lang].order_log_desc;
+      if(logEmpty) logEmpty.textContent = STRINGS[lang].order_log_empty;
+      if(logClose) logClose.textContent = STRINGS[lang].cancel;
+      if(logClear) logClear.textContent = STRINGS[lang].clear_log;
       document.documentElement.lang = lang==='ar'?'ar':'en';
       document.documentElement.dir = lang==='ar'?'rtl':'ltr';
       mount('hot-coffee', data.hot.coffee);
@@ -419,6 +584,7 @@
       fillTables();
       updateTableModalTexts();
       renderCart();
+      renderOrderLog();
     }
 
     function performSendOrder(tableOverride){
@@ -433,6 +599,21 @@
       const orderIdLine = `🆔 ${STRINGS.ar.order_id_label}: ${orderId} | ${STRINGS.en.order_id_label}: ${orderId}`;
       const messageLines = [`${headerAr} | ${headerEn}`, ...lines, `— Total: ${total} SAR`, timeLine, orderIdLine];
       const text = messageLines.map(encodeURIComponent).join('%0A');
+
+      const orderEntry = {
+        id: orderId,
+        orderId,
+        table,
+        total,
+        timestamp: stamp.now.getTime(),
+        items: cart.map(i=>({
+          name_ar: i.ar,
+          name_en: i.en,
+          qty: i.qty,
+          price: i.price,
+          options: []
+        }))
+      };
 
       const statusBase = new URL('order-status.html', window.location.href);
       statusBase.search = '';
@@ -451,13 +632,15 @@
 
       const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${text}&reply_markup=${replyMarkup}`;
       fetch(url)
-        .then(()=>{
-          alert(lang==='ar'?'تم إرسال الطلب! سيتم تنبيه الطاقم فوراً.':'Order sent! The staff has been notified.');
+        .then(res=>{
+          if(!res.ok) throw new Error('telegram');
+          recordOrderLog(orderEntry);
+          alert(STRINGS[lang].order_sent_saved);
           cart=[];
           renderCart();
         })
         .catch(()=>{
-          alert(lang==='ar'?'تعذّر إرسال الطلب، حاول مرة أخرى.':'Could not send the order, please try again.');
+          alert(STRINGS[lang].order_send_failed);
         });
     }
 

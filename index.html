@@ -132,6 +132,21 @@ footer{color:var(--muted);text-align:center;margin:18px 0 120px}
 .table-modal .sheet .actions{margin-top:16px}
 .table-modal .sheet .error{color:#c0392b;font-size:13px;margin-top:10px;display:none}
 body.dark .table-modal .sheet .error{color:#e57373}
+
+/* -------- Order Log Modal -------- */
+.log-modal{align-items:center}
+.log-modal .sheet{max-width:520px;border-radius:18px;max-height:82vh;padding:18px;display:flex;flex-direction:column;gap:12px}
+.log-modal .sheet h3{margin:0}
+.log-modal .sheet p{margin:0;color:var(--muted);font-size:14px;line-height:1.6}
+.log-modal .sheet .log-empty{color:var(--muted);text-align:center;padding:22px 0;font-size:14px}
+.log-modal .sheet .log-list{flex:1 1 auto;overflow:auto;display:flex;flex-direction:column;gap:12px;padding:2px}
+.log-entry{border:1px solid var(--border);border-radius:14px;padding:12px;background:var(--card);box-shadow:0 6px 16px rgba(0,0,0,.04)}
+.log-entry h4{margin:0;font-size:15px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.log-entry h4 .total{font-weight:800;color:var(--brand)}
+.log-entry .meta{font-size:12px;color:var(--muted);margin-top:6px;display:flex;flex-wrap:wrap;gap:8px}
+.log-entry .items{margin:10px 0 0;padding-inline-start:20px;font-size:13px;color:var(--text)}
+.log-entry .items li{margin-bottom:4px;line-height:1.5}
+.log-modal .sheet .actions{margin-top:6px;display:flex;gap:8px}
   </style>
 </head>
 <body>
@@ -146,6 +161,7 @@ body.dark .table-modal .sheet .error{color:#e57373}
           </div>
         </div>
         <div class="actions">
+          <button class="btn ghost" id="orderLogBtn">📜 <span id="orderLogBtnLabel">سجل الطلبات</span></button>
           <button class="btn" id="langBtn">English</button>
           <button class="btn" id="modeBtn">🌙</button>
         </div>
@@ -290,6 +306,21 @@ body.dark .table-modal .sheet .error{color:#e57373}
     </div>
   </div>
 
+  <!-- Order Log Modal -->
+  <div class="modal log-modal" id="orderLogModal" aria-hidden="true">
+    <div class="backdrop"></div>
+    <div class="sheet">
+      <h3 id="orderLogTitle">سجل الطلبات</h3>
+      <p id="orderLogDesc">يتم حفظ الطلبات المرسلة من هذا الجهاز هنا للرجوع إليها لاحقًا.</p>
+      <div class="log-empty" id="orderLogEmpty">لا توجد طلبات مسجلة بعد.</div>
+      <div class="log-list" id="orderLogList"></div>
+      <div class="actions">
+        <button class="btn" id="orderLogCloseBtn">إغلاق</button>
+        <button class="btn ghost" id="orderLogClearBtn">🧹 <span id="orderLogClearLabel">حذف السجل</span></button>
+      </div>
+    </div>
+  </div>
+
   <div class="bar">
     <div class="inner">
       <select id="table"></select>
@@ -314,6 +345,12 @@ const STRINGS = {
     added:'تمت إضافة المنتج إلى السلة', qty:'الكمية', add_to_cart:'إضافة للسلة',
     kcal:'سعرة حرارية', sar_label:'ريال سعودي', back:'رجوع',
     waiter_toast:'🔔 سوف يأتي إليك النادل لخدمتك فوراً!',
+    order_log_button:'سجل الطلبات', order_log_title:'سجل الطلبات',
+    order_log_desc:'يتم حفظ الطلبات المرسلة من هذا الجهاز هنا للرجوع إليها لاحقًا.',
+    order_log_empty:'لا توجد طلبات مسجلة بعد.',
+    clear_log:'حذف السجل', clear_log_confirm:'هل تريد حذف سجل الطلبات؟',
+    order_sent_saved:'تم إرسال الطلب بنجاح ✅ — حُفظ الطلب في السجل.',
+    order_send_failed:'تعذّر إرسال الطلب ❌',
     customize:'التخصيص', less_ice:'ثلج أقل',
     ginger:'زنجبيل', cardamom:'هبهان',
     strength:'القوة', heavy:'ثقيلة', light:'خفيفة', balanced:'موزونة',
@@ -335,6 +372,12 @@ const STRINGS = {
     added:'Item added to cart', qty:'Qty', add_to_cart:'Add to Cart',
     kcal:'kcal', sar_label:'Saudi Riyal', back:'Back',
     waiter_toast:'🔔 A waiter is on the way!',
+    order_log_button:'Order Log', order_log_title:'Order Log',
+    order_log_desc:'Orders sent from this device are saved here so you can review them later.',
+    order_log_empty:'No orders have been saved yet.',
+    clear_log:'Clear log', clear_log_confirm:'Clear all saved orders?',
+    order_sent_saved:'Order sent ✅ — Saved to log.',
+    order_send_failed:'Failed to send ❌',
     customize:'Customize', less_ice:'Less ice',
     ginger:'Ginger', cardamom:'Cardamom',
     strength:'Strength', heavy:'Strong', light:'Light', balanced:'Balanced',
@@ -464,6 +507,12 @@ function updateCartBadge(){ document.getElementById('cartCount').textContent = c
 let pendingTableAction = null;
 let shouldRestoreCart = false;
 let selectedTable = '';
+const ORDER_LOG_KEY = 'nima.orderLog';
+let orderLog = [];
+try{
+  const storedLog = JSON.parse(localStorage.getItem(ORDER_LOG_KEY) || '[]');
+  if(Array.isArray(storedLog)) orderLog = storedLog;
+}catch(e){ orderLog = []; }
 
 /* ===== Helpers ===== */
 const $ = (s)=>document.querySelector(s);
@@ -472,6 +521,71 @@ function register(item, cat){ const id = REG.push({item,cat})-1; return id; }
 
 function priceHTML(p){
   return `${p} <span class="sar" aria-label="${STRINGS[lang].sar_label}"></span><span class="sar-fallback">${lang==='ar'?'ريال':'SAR'}</span>`;
+}
+
+function saveOrderLog(){
+  try{ localStorage.setItem(ORDER_LOG_KEY, JSON.stringify(orderLog)); }
+  catch(e){ console.warn('Unable to persist order log', e); }
+}
+
+function recordOrderLog(entry){
+  if(!entry || typeof entry !== 'object') return;
+  orderLog.unshift(entry);
+  if(orderLog.length>100) orderLog = orderLog.slice(0,100);
+  saveOrderLog();
+  renderOrderLog();
+}
+
+function formatLogTime(timestamp){
+  if(!timestamp) return '';
+  const date = new Date(timestamp);
+  const options = { dateStyle:'short', timeStyle:'short' };
+  if(typeof Intl !== 'undefined' && Intl.DateTimeFormat){
+    try{ return new Intl.DateTimeFormat(lang==='ar'?'ar-SA':'en-GB', options).format(date); }
+    catch(e){}
+  }
+  return date.toLocaleString();
+}
+
+function renderOrderLog(){
+  const list = document.getElementById('orderLogList');
+  const empty = document.getElementById('orderLogEmpty');
+  if(!list || !empty) return;
+  list.innerHTML='';
+  if(!orderLog.length){
+    empty.style.display='block';
+    return;
+  }
+  empty.style.display='none';
+  orderLog.forEach(entry=>{
+    const orderId = entry && (entry.orderId || entry.id || entry.code) ? (entry.orderId || entry.id || entry.code) : '#';
+    const totalValue = Number(entry && entry.total) || 0;
+    const metaParts = [];
+    if(entry && entry.table){ metaParts.push(`${STRINGS[lang].table} ${entry.table}`); }
+    const timeText = entry ? formatLogTime(entry.timestamp) : '';
+    if(timeText) metaParts.push(timeText);
+    const item = document.createElement('div');
+    item.className = 'log-entry';
+    item.innerHTML = `
+      <h4>
+        <span>${orderId}</span>
+        <span class="total">${priceHTML(totalValue)}</span>
+      </h4>
+      <div class="meta">${metaParts.join(' • ')}</div>
+    `;
+    if(entry && Array.isArray(entry.items) && entry.items.length){
+      const ul = document.createElement('ul');
+      ul.className = 'items';
+      entry.items.forEach(it=>{
+        const name = lang==='ar' ? (it.name_ar || it.name_en || '') : (it.name_en || it.name_ar || '');
+        const opts = it.options && it.options.length ? ` — ${it.options.join(lang==='ar'?'، ':' / ')}` : '';
+        const qty = it.qty || 1;
+        ul.insertAdjacentHTML('beforeend', `<li>${name} ×${qty}${opts}</li>`);
+      });
+      item.appendChild(ul);
+    }
+    list.appendChild(item);
+  });
 }
 
 function populateTableSelect(select, selectedValue='', disablePlaceholder=true){
@@ -564,6 +678,13 @@ function renderAll(){
   document.querySelectorAll('[data-i18n="send_order"]').forEach(e=> e.textContent = STRINGS[lang].send_order);
   document.querySelectorAll('[data-i18n="clear"]').forEach(e=> e.textContent = STRINGS[lang].clear);
   document.querySelectorAll('[data-i18n="empty"]').forEach(e=> e.textContent = STRINGS[lang].empty);
+  const orderLogBtnLabel = document.getElementById('orderLogBtnLabel');
+  if(orderLogBtnLabel) orderLogBtnLabel.textContent = STRINGS[lang].order_log_button;
+  document.getElementById('orderLogTitle').textContent = STRINGS[lang].order_log_title;
+  document.getElementById('orderLogDesc').textContent = STRINGS[lang].order_log_desc;
+  document.getElementById('orderLogEmpty').textContent = STRINGS[lang].order_log_empty;
+  document.getElementById('orderLogCloseBtn').textContent = STRINGS[lang].cancel;
+  document.getElementById('orderLogClearLabel').textContent = STRINGS[lang].clear_log;
   document.getElementById('tableModalTitle').textContent = STRINGS[lang].table_modal_title;
   document.getElementById('tableModalDesc').textContent = STRINGS[lang].table_modal_desc;
   document.getElementById('tableModalNote').textContent = STRINGS[lang].table_modal_note;
@@ -588,6 +709,7 @@ function renderAll(){
   fillTablesCart();
   updateCartBadge();
   updateCustomizationLabels();
+  renderOrderLog();
 }
 
 /* ===== Search ===== */
@@ -708,6 +830,42 @@ if(tableConfirmBtn){
     shouldRestoreCart = false;
     if(restoreCart) openCart();
     if(action) action(val);
+  });
+}
+
+/* ===== Order Log Modal ===== */
+const orderLogModalEl = document.getElementById('orderLogModal');
+const orderLogBackdrop = document.querySelector('#orderLogModal .backdrop');
+const orderLogBtn = document.getElementById('orderLogBtn');
+const orderLogCloseBtn = document.getElementById('orderLogCloseBtn');
+const orderLogClearBtn = document.getElementById('orderLogClearBtn');
+
+function openOrderLog(){
+  renderOrderLog();
+  if(orderLogModalEl){
+    orderLogModalEl.style.display='flex';
+    orderLogModalEl.setAttribute('aria-hidden','false');
+  }
+}
+
+function closeOrderLog(){
+  if(orderLogModalEl){
+    orderLogModalEl.style.display='none';
+    orderLogModalEl.setAttribute('aria-hidden','true');
+  }
+}
+
+if(orderLogBackdrop){ orderLogBackdrop.addEventListener('click', ()=> closeOrderLog()); }
+if(orderLogBtn){ orderLogBtn.addEventListener('click', ()=> openOrderLog()); }
+if(orderLogCloseBtn){ orderLogCloseBtn.addEventListener('click', (e)=>{ e.preventDefault(); closeOrderLog(); }); }
+if(orderLogClearBtn){
+  orderLogClearBtn.addEventListener('click', (e)=>{
+    e.preventDefault();
+    if(!orderLog.length){ closeOrderLog(); return; }
+    if(!window.confirm(STRINGS[lang].clear_log_confirm)) return;
+    orderLog = [];
+    saveOrderLog();
+    renderOrderLog();
   });
 }
 
@@ -915,6 +1073,21 @@ function performSendOrder(tableIdOverride){
   const messageLines = [`${header_ar} | ${header_en}`, ...lines, `— Total: ${total} SAR`, timeLine, orderIdLine];
   const text = messageLines.map(encodeURIComponent).join('%0A');
 
+  const orderEntry = {
+    id: orderId,
+    orderId,
+    table: tableId,
+    total,
+    timestamp: stamp.now.getTime(),
+    items: cart.map(it=>({
+      name_ar: it.name_ar,
+      name_en: it.name_en,
+      qty: it.qty,
+      price: it.price,
+      options: Array.isArray(it.options) ? it.options : []
+    }))
+  };
+
   const statusBase = new URL('order-status.html', window.location.href);
   statusBase.search = '';
   statusBase.searchParams.set('order', orderId);
@@ -932,8 +1105,14 @@ function performSendOrder(tableIdOverride){
 
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID_NEW}&text=${text}&reply_markup=${replyMarkup}`;
   fetch(url)
-    .then(()=> { toast(lang==='ar'?'تم إرسال الطلب بنجاح ✅':'Order sent ✅'); clearCart(); closeCart(); })
-    .catch(()=> { toast(lang==='ar'?'تعذّر إرسال الطلب ❌':'Failed to send ❌'); });
+    .then(res=>{
+      if(!res.ok) throw new Error('telegram');
+      recordOrderLog(orderEntry);
+      toast(STRINGS[lang].order_sent_saved);
+      clearCart();
+      closeCart();
+    })
+    .catch(()=> { toast(STRINGS[lang].order_send_failed); });
 }
 
 function sendOrder(){
