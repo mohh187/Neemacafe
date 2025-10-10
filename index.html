@@ -916,19 +916,17 @@ function performSendOrder(tableIdOverride){
   const text = messageLines.map(encodeURIComponent).join('%0A');
 
   const statusBase = new URL('order-status.html', window.location.href);
+  statusBase.search = '';
   statusBase.searchParams.set('order', orderId);
   statusBase.searchParams.set('table', tableId);
-  const buildStatusUrl = (action)=>{
-    const url = new URL(statusBase.toString());
-    url.searchParams.set('action', action);
-    return url.toString();
-  };
-  const acceptUrl = buildStatusUrl('accept');
-  const readyUrl = buildStatusUrl('ready');
+  statusBase.searchParams.set('issued', String(stamp.now.getTime()));
+  statusBase.searchParams.set('chat', TELEGRAM_CHAT_ID_NEW);
+  const acceptUrl = new URL(statusBase.toString());
+  acceptUrl.searchParams.set('action', 'accept');
+
   const replyMarkup = encodeURIComponent(JSON.stringify({
     inline_keyboard: [
-      [{ text: '✅ قبول الطلب | Accept', url: acceptUrl }],
-      [{ text: '🏁 تم تجهيز الطلب | Ready', url: readyUrl }]
+      [{ text: '✅ قبول الطلب | Accept', url: acceptUrl.toString() }]
     ]
   }));
 

@@ -435,17 +435,17 @@
       const text = messageLines.map(encodeURIComponent).join('%0A');
 
       const statusBase = new URL('order-status.html', window.location.href);
+      statusBase.search = '';
       statusBase.searchParams.set('order', orderId);
       statusBase.searchParams.set('table', table);
-      const buildStatusUrl = action => {
-        const u = new URL(statusBase.toString());
-        u.searchParams.set('action', action);
-        return u.toString();
-      };
+      statusBase.searchParams.set('issued', String(stamp.now.getTime()));
+      statusBase.searchParams.set('chat', TELEGRAM_CHAT_ID);
+      const acceptUrl = new URL(statusBase.toString());
+      acceptUrl.searchParams.set('action', 'accept');
+
       const replyMarkup = encodeURIComponent(JSON.stringify({
         inline_keyboard:[
-          [{ text:'✅ قبول الطلب | Accept', url: buildStatusUrl('accept') }],
-          [{ text:'🏁 تم تجهيز الطلب | Ready', url: buildStatusUrl('ready') }]
+          [{ text:'✅ قبول الطلب | Accept', url: acceptUrl.toString() }]
         ]
       }));
 
