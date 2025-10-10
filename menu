@@ -434,14 +434,18 @@
       const messageLines = [`${headerAr} | ${headerEn}`, ...lines, `— Total: ${total} SAR`, timeLine, orderIdLine];
       const text = messageLines.map(encodeURIComponent).join('%0A');
 
-      const acceptMessage = `✅ تم قبول الطلب ${orderId} | ✅ Order ${orderId} accepted`;
-      const readyMessage = `🏁 تم تجهيز الطلب ${orderId} | 🏁 Order ${orderId} ready`;
-      const acceptUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(acceptMessage)}`;
-      const readyUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(readyMessage)}`;
+      const statusBase = new URL('order-status.html', window.location.href);
+      statusBase.searchParams.set('order', orderId);
+      statusBase.searchParams.set('table', table);
+      const buildStatusUrl = action => {
+        const u = new URL(statusBase.toString());
+        u.searchParams.set('action', action);
+        return u.toString();
+      };
       const replyMarkup = encodeURIComponent(JSON.stringify({
         inline_keyboard:[
-          [{ text:'✅ قبول الطلب | Accept', url: acceptUrl }],
-          [{ text:'🏁 تم تجهيز الطلب | Ready', url: readyUrl }]
+          [{ text:'✅ قبول الطلب | Accept', url: buildStatusUrl('accept') }],
+          [{ text:'🏁 تم تجهيز الطلب | Ready', url: buildStatusUrl('ready') }]
         ]
       }));
 

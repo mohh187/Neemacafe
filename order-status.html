@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>متابعة الطلب | Order Status</title>
+  <style>
+    :root{
+      --brand:#8b5e3c; --brand-dark:#70492d; --bg:#f5f1eb; --card:#ffffff; --text:#1f1f1f; --muted:#6f6b65; --success:#2e7d32; --danger:#c0392b;
+    }
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .card{background:var(--card);border-radius:18px;box-shadow:0 18px 40px rgba(0,0,0,.12);max-width:420px;width:100%;padding:26px;text-align:center;position:relative;overflow:hidden}
+    .card::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(139,94,60,.12),rgba(212,163,115,.08));opacity:0.9}
+    .card > *{position:relative;z-index:1}
+    h1{margin:0 0 6px;font-size:22px}
+    .order-label{font-size:15px;margin:6px 0;color:var(--muted)}
+    .order-label strong{color:var(--text)}
+    .status{margin:16px 0;font-weight:600;font-size:15px}
+    .timer{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0;font-size:28px;font-weight:700;color:var(--brand)}
+    .timer.hidden{display:none}
+    .meta{font-size:13px;color:var(--muted);margin:8px 0;line-height:1.6}
+    .actions{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+    .btn{border:none;border-radius:12px;padding:12px 16px;font-size:15px;font-weight:600;cursor:pointer;transition:transform .2s ease,box-shadow .2s ease}
+    .btn:active{transform:scale(.98)}
+    .btn.primary{background:var(--brand);color:#fff;box-shadow:0 10px 24px rgba(139,94,60,.28)}
+    .btn.outline{background:transparent;color:var(--brand);border:2px solid rgba(139,94,60,.4)}
+    .btn:disabled{opacity:.55;cursor:not-allowed;box-shadow:none;transform:none}
+    .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--brand-dark);color:#fff;padding:12px 20px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transition:opacity .25s ease}
+    .toast.show{opacity:1}
+    .alert{padding:12px;border-radius:12px;margin:14px 0;font-size:14px;line-height:1.7}
+    .alert.success{background:rgba(46,125,50,.1);color:var(--success)}
+    .alert.error{background:rgba(192,57,43,.12);color:var(--danger)}
+    .hint{font-size:12px;color:var(--muted);margin-top:18px;line-height:1.6}
+    .badge{display:inline-flex;align-items:center;gap:6px;background:rgba(139,94,60,.1);color:var(--brand);padding:4px 10px;border-radius:999px;font-size:13px;font-weight:600}
+    .elapsed{font-weight:700}
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <h1>متابعة الطلب | Order Follow-up</h1>
+    <div class="order-label">🆔 <strong id="orderId">—</strong></div>
+    <div class="order-label">🍽️ <strong id="tableId">—</strong></div>
+    <div class="badge" id="statusBadge">بانتظار الإجراء | Awaiting action</div>
+    <div class="status" id="statusText">اضغط على زر قبول الطلب لبدء المتابعة. | Tap “Accept” to start tracking.</div>
+    <div class="timer hidden" id="timerBox">
+      ⏱️ <span id="timerValue">00:00</span>
+    </div>
+    <div class="meta" id="acceptedInfo"></div>
+    <div class="meta" id="readyInfo"></div>
+    <div class="actions">
+      <button class="btn primary" id="acceptBtn">✅ قبول الطلب | Accept</button>
+      <button class="btn outline" id="readyBtn">🏁 تم تجهيز الطلب | Ready</button>
+    </div>
+    <p class="hint">سيتم إرسال التحديث إلى تيليجرام فوراً. | Telegram will be notified instantly. <br>يُرجى مشاركة هذا الرابط مع الطاقم فقط.</p>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script>
+    const TELEGRAM_BOT_TOKEN = '8234122453:AAGmkEFETh1yuXzgDHChoTu0YFuD0BeVK8c';
+    const TELEGRAM_CHAT_ID = '5828433542';
+
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('order') || '';
+    const tableId = params.get('table') || '';
+    let action = params.get('action') || 'accept';
+
+    const orderLabel = document.getElementById('orderId');
+    const tableLabel = document.getElementById('tableId');
+    const statusText = document.getElementById('statusText');
+    const statusBadge = document.getElementById('statusBadge');
+    const timerBox = document.getElementById('timerBox');
+    const timerValue = document.getElementById('timerValue');
+    const acceptedInfo = document.getElementById('acceptedInfo');
+    const readyInfo = document.getElementById('readyInfo');
+    const acceptBtn = document.getElementById('acceptBtn');
+    const readyBtn = document.getElementById('readyBtn');
+    const toastEl = document.getElementById('toast');
+    const card = document.getElementById('card');
+
+    const storageKey = orderId ? `nima.order.${orderId}` : '';
+    let state = storageKey ? JSON.parse(localStorage.getItem(storageKey) || '{}') : {};
+    let acceptedAt = state.acceptedAt || null;
+    let readyAt = state.readyAt || null;
+    let timerInterval = null;
+
+    function saveState(){
+      if(!storageKey) return;
+      const payload = { acceptedAt: acceptedAt || null, readyAt: readyAt || null };
+      localStorage.setItem(storageKey, JSON.stringify(payload));
+    }
+
+    function showToast(message){
+      toastEl.textContent = message;
+      toastEl.classList.add('show');
+      setTimeout(()=> toastEl.classList.remove('show'), 2600);
+    }
+
+    function buildTimestamp(){
+      const now = new Date();
+      const opts = { dateStyle:'short', timeStyle:'short' };
+      let ar = now.toLocaleString('ar-SA');
+      let en = now.toLocaleString('en-GB');
+      if(window.Intl && Intl.DateTimeFormat){
+        try{ ar = new Intl.DateTimeFormat('ar-SA', opts).format(now); }catch(e){}
+        try{ en = new Intl.DateTimeFormat('en-GB', opts).format(now); }catch(e){}
+      }
+      return { now, ar, en };
+    }
+
+    function formatDuration(ms){
+      if(ms < 0) ms = 0;
+      const totalSeconds = Math.floor(ms / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      const pad = n => String(n).padStart(2, '0');
+      const clock = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+      const enParts = [];
+      if(hours) enParts.push(`${hours}h`);
+      if(minutes) enParts.push(`${minutes}m`);
+      enParts.push(`${seconds}s`);
+      const arParts = [];
+      if(hours) arParts.push(`${hours} ساعة`);
+      if(minutes) arParts.push(`${minutes} دقيقة`);
+      arParts.push(`${seconds} ثانية`);
+      return { clock, ar: arParts.join(' و '), en: enParts.join(' '), hours, minutes, seconds };
+    }
+
+    async function sendTelegramMessage(text){
+      const payload = { chat_id: TELEGRAM_CHAT_ID, text };
+      const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if(!response.ok){
+        throw new Error('Telegram update failed');
+      }
+      return response.json().catch(()=>null);
+    }
+
+    function updateTimer(){
+      if(!acceptedAt){
+        timerBox.classList.add('hidden');
+        timerValue.textContent = '00:00';
+        return;
+      }
+      if(!timerInterval){
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+      const endPoint = readyAt || Date.now();
+      const diff = endPoint - acceptedAt;
+      const formatted = formatDuration(diff);
+      timerBox.classList.remove('hidden');
+      timerValue.textContent = formatted.clock;
+      timerBox.style.color = readyAt ? '#2e7d32' : 'var(--brand)';
+      if(readyAt && timerInterval){
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      return formatted;
+    }
+
+    function updateMeta(){
+      if(acceptedAt){
+        const stamp = new Date(acceptedAt);
+        let ar = stamp.toLocaleString('ar-SA');
+        let en = stamp.toLocaleString('en-GB');
+        if(window.Intl && Intl.DateTimeFormat){
+          const opts = { dateStyle:'short', timeStyle:'short' };
+          try{ ar = new Intl.DateTimeFormat('ar-SA', opts).format(stamp); }catch(e){}
+          try{ en = new Intl.DateTimeFormat('en-GB', opts).format(stamp); }catch(e){}
+        }
+        acceptedInfo.textContent = `✅ تم قبول الطلب عند ${ar} | ✅ Order accepted at ${en}`;
+      } else {
+        acceptedInfo.textContent = '';
+      }
+      if(readyAt){
+        const diff = formatDuration(readyAt - acceptedAt);
+        const stamp = new Date(readyAt);
+        let ar = stamp.toLocaleString('ar-SA');
+        let en = stamp.toLocaleString('en-GB');
+        if(window.Intl && Intl.DateTimeFormat){
+          const opts = { dateStyle:'short', timeStyle:'short' };
+          try{ ar = new Intl.DateTimeFormat('ar-SA', opts).format(stamp); }catch(e){}
+          try{ en = new Intl.DateTimeFormat('en-GB', opts).format(stamp); }catch(e){}
+        }
+        readyInfo.innerHTML = `🏁 تم تجهيز الطلب عند ${ar} (${diff.ar})<br>🏁 Order ready at ${en} (${diff.en})`;
+      } else {
+        readyInfo.innerHTML = '';
+      }
+    }
+
+    function setStatus(type, message){
+      statusText.textContent = message;
+      if(type === 'accepted'){
+        statusBadge.textContent = 'تم قبول الطلب | Order accepted';
+        statusBadge.style.background = 'rgba(46,125,50,.12)';
+        statusBadge.style.color = '#2e7d32';
+      } else if(type === 'ready'){
+        statusBadge.textContent = 'جاهز للتسليم | Ready to serve';
+        statusBadge.style.background = 'rgba(46,125,50,.18)';
+        statusBadge.style.color = '#2e7d32';
+      } else if(type === 'warning'){
+        statusBadge.textContent = 'تنبيه | Warning';
+        statusBadge.style.background = 'rgba(241,196,15,.18)';
+        statusBadge.style.color = '#a67c00';
+      } else if(type === 'error'){
+        statusBadge.textContent = 'حدث خطأ | Error';
+        statusBadge.style.background = 'rgba(192,57,43,.18)';
+        statusBadge.style.color = '#c0392b';
+      } else {
+        statusBadge.textContent = 'بانتظار الإجراء | Awaiting action';
+        statusBadge.style.background = 'rgba(139,94,60,.12)';
+        statusBadge.style.color = 'var(--brand)';
+      }
+    }
+
+    function guardOrder(){
+      if(!orderId){
+        setStatus('error', 'لم يتم العثور على رقم الطلب. | Missing order ID.');
+        acceptBtn.disabled = true;
+        readyBtn.disabled = true;
+        card.classList.add('error');
+        return false;
+      }
+      return true;
+    }
+
+    async function handleAccept(auto=false){
+      if(!guardOrder()) return;
+      if(acceptedAt){
+        setStatus(readyAt ? 'ready' : 'accepted', readyAt ? 'تم تجهيز الطلب مسبقاً. | Order already marked ready.' : 'تم قبول الطلب مسبقاً، نواصل العد التنازلي. | Order already accepted, timer running.');
+        updateTimer();
+        updateMeta();
+        return;
+      }
+      acceptBtn.disabled = true;
+      try{
+        const stamp = buildTimestamp();
+        const tableText = tableId ? tableId : (params.get('table') || (navigator.language.startsWith('ar') ? '؟' : '?'));
+        const message = `✅ تم قبول الطلب ${orderId} — طاولة ${tableText} عند ${stamp.ar} | ✅ Order ${orderId} accepted — Table ${tableText} at ${stamp.en}`;
+        await sendTelegramMessage(message);
+        acceptedAt = Date.now();
+        readyAt = null;
+        saveState();
+        setStatus('accepted', 'تم قبول الطلب وبدأ حساب الوقت. | Order accepted and timer started.');
+        showToast('✅ تم قبول الطلب | Order accepted');
+        updateTimer();
+        updateMeta();
+        readyBtn.disabled = false;
+      } catch(err){
+        setStatus('error', 'تعذّر إرسال التحديث، حاول مرة أخرى. | Could not update Telegram.');
+        showToast('❌ تعذّر إرسال التحديث | Failed to send');
+        acceptBtn.disabled = false;
+      }
+    }
+
+    async function handleReady(){
+      if(!guardOrder()) return;
+      if(!acceptedAt){
+        showToast('⚠️ يرجى قبول الطلب أولاً | Accept the order first');
+        setStatus('warning', 'يرجى قبول الطلب قبل تحديد أنه جاهز. | Accept the order before marking ready.');
+        return;
+      }
+      if(readyAt){
+        setStatus('ready', 'تم تجهيز الطلب مسبقاً. | Order already marked ready.');
+        updateTimer();
+        updateMeta();
+        return;
+      }
+      readyBtn.disabled = true;
+      try{
+        const now = Date.now();
+        const diff = formatDuration(now - acceptedAt);
+        const stamp = buildTimestamp();
+        const tableText = tableId ? tableId : (params.get('table') || (navigator.language.startsWith('ar') ? '؟' : '?'));
+        const message = `🏁 تم تجهيز الطلب ${orderId} — طاولة ${tableText} خلال ${diff.ar} | 🏁 Order ${orderId} ready — Table ${tableText} after ${diff.en}`;
+        await sendTelegramMessage(message);
+        readyAt = now;
+        saveState();
+        setStatus('ready', 'تم تسجيل تجهيز الطلب مع الوقت المستغرق. | Order marked ready with elapsed time.');
+        showToast('🏁 تم تجهيز الطلب | Order ready');
+        updateTimer();
+        updateMeta();
+      } catch(err){
+        setStatus('error', 'تعذّر إرسال التحديث، حاول مرة أخرى. | Could not update Telegram.');
+        showToast('❌ تعذّر إرسال التحديث | Failed to send');
+        readyBtn.disabled = false;
+      }
+    }
+
+    acceptBtn.addEventListener('click', ()=> handleAccept());
+    readyBtn.addEventListener('click', ()=> handleReady());
+
+    function init(){
+      orderLabel.textContent = orderId || '—';
+      tableLabel.textContent = tableId ? `طاولة ${tableId} | Table ${tableId}` : '—';
+      if(!guardOrder()) return;
+      readyBtn.disabled = !acceptedAt;
+      if(acceptedAt){
+        acceptBtn.disabled = true;
+        readyBtn.disabled = false;
+        updateTimer();
+        updateMeta();
+        setStatus(readyAt ? 'ready' : 'accepted', readyAt ? 'تم تجهيز الطلب مسبقاً. | Order already ready.' : 'تم قبول الطلب مسبقاً، نواصل العد. | Order already accepted, timer running.');
+      }
+      if(readyAt){
+        readyBtn.disabled = true;
+      }
+      if(action === 'accept' && !acceptedAt){
+        handleAccept(true);
+      } else if(action === 'ready'){
+        handleReady();
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
