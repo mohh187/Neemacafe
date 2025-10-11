@@ -1,0 +1,87 @@
+(function(global){
+  const IMG_DEFAULT = 'https://i.postimg.cc/Y0GT5M1f/image.png';
+
+  const MENU_DATA = {
+    hot: {
+      coffee: [
+        {ar:'ڤي 60', en:'V60', price:13, cal:5, img:IMG_DEFAULT},
+        {ar:'قهوة اليوم', en:'Coffee of the Day', price:8, cal:5, img:IMG_DEFAULT},
+        {ar:'امريكانو (صغير)', en:'Americano (Small)', price:6, cal:5, img:IMG_DEFAULT},
+        {ar:'امريكانو (وسط)', en:'Americano (Medium)', price:8, cal:10, img:IMG_DEFAULT},
+        {ar:'اسبريسو', en:'Espresso', price:6, cal:5, img:IMG_DEFAULT},
+        {ar:'قهوة تركي', en:'Turkish Coffee', price:8, cal:15, img:IMG_DEFAULT},
+        {ar:'جبنة (قهوة سودانية)', en:'Jabana (Sudanese Coffee)', price:6, cal:10, img:IMG_DEFAULT},
+        {ar:'جبنة في جبنة (وسط)', en:'Jabana in Jabana (Medium)', price:16, cal:20, img:IMG_DEFAULT},
+        {ar:'سبانش', en:'Spanish Latte (Hot)', price:12, cal:180, img:IMG_DEFAULT},
+        {ar:'وايت موكا', en:'White Mocha (Hot)', price:18, cal:280, img:IMG_DEFAULT},
+        {ar:'لاتيه', en:'Latte (Hot)', price:12, cal:190, img:IMG_DEFAULT},
+        {ar:'كابتشينو', en:'Cappuccino', price:12, cal:120, img:IMG_DEFAULT},
+        {ar:'كورتادو', en:'Cortado', price:7, cal:90, img:IMG_DEFAULT},
+        {ar:'فلات وايت', en:'Flat White', price:12, cal:150, img:IMG_DEFAULT},
+        {ar:'ميكاتو', en:'Macchiato', price:7, cal:25, img:IMG_DEFAULT},
+        {ar:'قهوة فرنسي', en:'French Coffee', price:9, cal:120, img:IMG_DEFAULT}
+      ],
+      tea: [
+        {ar:'شاي', en:'Tea', price:3, cal:2, img:IMG_DEFAULT},
+        {ar:'شاي مقنن', en:'Strong Tea', price:6, cal:2, img:IMG_DEFAULT},
+        {ar:'شاي حليب', en:'Milk Tea', price:6, cal:140, img:IMG_DEFAULT},
+        {ar:'هوت شوكلت', en:'Hot Chocolate', price:13, cal:300, img:IMG_DEFAULT},
+        {ar:'ماتشا', en:'Matcha (Hot)', price:16, cal:180, img:IMG_DEFAULT}
+      ]
+    },
+    cold: {
+      coffee: [
+        {ar:'ڤي 60', en:'V60 (Iced)', price:13, cal:5, img:'https://i.postimg.cc/L8dVZxHs/12.png'},
+        {ar:'قهوة اليوم', en:'Coffee of the Day (Iced)', price:8, cal:5, img:IMG_DEFAULT},
+        {ar:'امريكانو', en:'Iced Americano', price:9, cal:5, img:IMG_DEFAULT},
+        {ar:'سبانش', en:'Spanish Latte (Iced)', price:17, cal:180, img:IMG_DEFAULT},
+        {ar:'لاتيه', en:'Iced Latte', price:12, cal:190, img:IMG_DEFAULT},
+        {ar:'سبانش لاتيه', en:'Spanish Latte', price:14, cal:220, img:IMG_DEFAULT},
+        {ar:'وايت موكا', en:'White Mocha (Iced)', price:18, cal:300, img:IMG_DEFAULT},
+        {ar:'نيمة شيكن', en:'Neema Chicken (Cold Drink)', price:19, cal:220, img:IMG_DEFAULT},
+        {ar:'بستاشيو لاتيه', en:'Pistachio Latte (Iced)', price:18, cal:280, img:IMG_DEFAULT}
+      ],
+      mojito: [
+        {ar:'موهيتو', en:'Mojito', price:17, cal:120, img:IMG_DEFAULT},
+        {ar:'موهيتو مكس', en:'Mojito Mix', price:18, cal:140, img:IMG_DEFAULT},
+        {ar:'موهيتو بلو بيري/كود رد', en:'Blueberry Mojito / Code Red', price:17, cal:170, img:'https://i.postimg.cc/BQwV7rxQ/8.png'},
+        {ar:'موهيتو بلو بيري/سفن آب', en:'Blueberry Mojito / 7up', price:15, cal:150, img:'https://i.postimg.cc/BQwV7rxQ/8.png'},
+        {ar:'موهيتو فراولة/كود رد', en:'Strawberry Mojito / Code Red', price:17, cal:170, img:IMG_DEFAULT},
+        {ar:'موهيتو فراولة/سفن آب', en:'Strawberry Mojito / 7up', price:15, cal:150, img:IMG_DEFAULT},
+        {ar:'موهيتو بطيخ/كود رد', en:'Watermelon Mojito / Code Red', price:17, cal:160, img:IMG_DEFAULT},
+        {ar:'موهيتو بطيخ/سفن آب', en:'Watermelon Mojito / 7up', price:15, cal:140, img:IMG_DEFAULT},
+        {ar:'موهيتو باشن فروت/كود رد', en:'Passion Fruit Mojito / Code Red', price:17, cal:170, img:IMG_DEFAULT},
+        {ar:'موهيتو باشن فروت/سفن آب', en:'Passion Fruit Mojito / 7up', price:15, cal:150, img:IMG_DEFAULT}
+      ],
+      other:[
+        {ar:'كركديه', en:'Hibiscus', price:8, cal:50, img:'https://i.postimg.cc/Fz9MmhB2/11.png'},
+        {ar:'سموذي كركدي', en:'Hibiscus Smoothie', price:15, cal:180, img:'https://i.postimg.cc/7YNLg64T/2.png'},
+        {ar:'ماء', en:'Water', price:1, cal:0, img:'https://i.postimg.cc/ZqfZw7K8/f11d7585-3f1a-4bb1-95d4-c10e9393bad7-500x500-684-HWh-Kqw4-JSS2b-Dk6wp-FGnd5sxpq-Xz-Ch-ZAXt-Bnk.webp'}
+      ]
+    },
+    dessert: {
+      cake: [
+        {ar:'نيمة كيك', en:'Neema Cake', price:18, cal:420, img:'https://i.postimg.cc/YCRwSnF5/image.jpg'},
+        {ar:'مولتن دارك تشوكليت', en:'Molten Dark Chocolate', price:17, cal:450, img:'https://i.postimg.cc/QNqLmY4H/images.jpg'}
+      ],
+      side: [
+        {ar:'ينسون', en:'Anise Tea', price:4, cal:5, img:'https://i.postimg.cc/9FfdSzpy/images.jpg'},
+        {ar:'بسكويت شاي كبير', en:'Tea Biscuit (Large)', price:8, cal:200, img:'https://i.postimg.cc/L8t8331D/4-1.png'},
+        {ar:'بسكويت شاي صغير', en:'Tea Biscuit (Small)', price:3, cal:100, img:'https://i.postimg.cc/L8t8331D/4-1.png'},
+        {ar:'لقيمات', en:'Luqaimat', price:13, cal:320, img:'https://i.postimg.cc/ZnmSR1fh/image.webp'}
+      ]
+    }
+  };
+
+  function getLangToggleLabel(currentLang){
+    return currentLang === 'ar' ? 'E' : 'ع';
+  }
+
+  const frozen = {
+    IMG_DEFAULT,
+    MENU_DATA: Object.freeze(MENU_DATA),
+    getLangToggleLabel
+  };
+
+  global.NEEMA_SHARED = Object.assign({}, global.NEEMA_SHARED || {}, frozen);
+})(typeof window !== 'undefined' ? window : globalThis);
