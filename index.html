@@ -186,6 +186,7 @@ body.dark .table-modal .sheet .error{color:#e57373}
 .log-entry .items li{margin-bottom:4px;line-height:1.5}
 .log-entry .loyalty-note{margin-top:8px;font-size:12px;color:var(--brand);font-weight:600}
 .log-modal .sheet .actions{margin-top:6px;display:flex;gap:8px}
+
   </style>
 </head>
 <body>
@@ -1080,17 +1081,11 @@ modeBtn.onclick = ()=>{
 
 /* ===== Language toggle ===== */
 const langBtn = $('#langBtn');
-function applyLangButtonLabel(){
-  if(!langBtn) return;
-  const labelFn = (SHARED && typeof SHARED.getLangToggleLabel === 'function')
-    ? SHARED.getLangToggleLabel
-    : (currentLang => currentLang === 'ar' ? 'E' : 'ع');
-  langBtn.textContent = labelFn(lang);
-}
+function updateLangBtn(){ langBtn.textContent = (lang==='ar') ? 'E' : 'ع'; }
 langBtn.onclick = ()=>{
   lang = (lang==='ar') ? 'en' : 'ar';
   localStorage.setItem('nima.lang', lang);
-  renderAll(); applyLangButtonLabel();
+  renderAll(); updateLangBtn();
 };
 
 /* ===== Tables ===== */
@@ -1722,7 +1717,7 @@ function init(){
     ensureCustomerRegistryEntry(customerProfile.id, customerProfile);
     ensureCustomerLog(customerProfile.id, customerProfile);
   }
-  renderAll(); applyLangButtonLabel(); updateCartBadge();
+  renderAll(); updateLangBtn(); updateCartBadge();
   if(customerProfile && (customerProfile.name || customerProfile.phone)){
     maybeToastGreeting();
   } else {
