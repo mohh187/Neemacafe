@@ -1080,11 +1080,17 @@ modeBtn.onclick = ()=>{
 
 /* ===== Language toggle ===== */
 const langBtn = $('#langBtn');
-function updateLangBtn(){ langBtn.textContent = (lang==='ar') ? 'E' : 'ع'; }
+function applyLangButtonLabel(){
+  if(!langBtn) return;
+  const labelFn = (SHARED && typeof SHARED.getLangToggleLabel === 'function')
+    ? SHARED.getLangToggleLabel
+    : (currentLang => currentLang === 'ar' ? 'E' : 'ع');
+  langBtn.textContent = labelFn(lang);
+}
 langBtn.onclick = ()=>{
   lang = (lang==='ar') ? 'en' : 'ar';
   localStorage.setItem('nima.lang', lang);
-  renderAll(); updateLangBtn();
+  renderAll(); applyLangButtonLabel();
 };
 
 /* ===== Tables ===== */
@@ -1716,7 +1722,7 @@ function init(){
     ensureCustomerRegistryEntry(customerProfile.id, customerProfile);
     ensureCustomerLog(customerProfile.id, customerProfile);
   }
-  renderAll(); updateLangBtn(); updateCartBadge();
+  renderAll(); applyLangButtonLabel(); updateCartBadge();
   if(customerProfile && (customerProfile.name || customerProfile.phone)){
     maybeToastGreeting();
   } else {

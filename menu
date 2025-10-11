@@ -1322,13 +1322,19 @@
     }
 
     const langBtn = document.getElementById('langBtn');
-    function updateLangBtn(){ if(langBtn) langBtn.textContent = (lang==='ar') ? 'E' : 'ع'; }
+    function applyLangButtonLabel(){
+      if(!langBtn) return;
+      const labelFn = (SHARED && typeof SHARED.getLangToggleLabel === 'function')
+        ? SHARED.getLangToggleLabel
+        : (currentLang => currentLang === 'ar' ? 'E' : 'ع');
+      langBtn.textContent = labelFn(lang);
+    }
     if(langBtn){
       langBtn.onclick = ()=>{
         lang = (lang==='ar') ? 'en' : 'ar';
         localStorage.setItem('nima.lang', lang);
         renderAll();
-        updateLangBtn();
+        applyLangButtonLabel();
       };
     }
 
@@ -1356,7 +1362,7 @@
         ensureCustomerLog(customerProfile.id, customerProfile);
       }
       renderAll();
-      updateLangBtn();
+      applyLangButtonLabel();
       if(customerProfile && (customerProfile.name || customerProfile.phone)){
         maybeToastGreeting();
       } else {

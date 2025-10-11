@@ -73,9 +73,14 @@
     }
   };
 
+  function getLangToggleLabel(currentLang){
+    return currentLang === 'ar' ? 'E' : 'ع';
+  }
+
   const frozen = {
     IMG_DEFAULT,
-    MENU_DATA: Object.freeze(MENU_DATA)
+    MENU_DATA: Object.freeze(MENU_DATA),
+    getLangToggleLabel
   };
 
   global.NEEMA_SHARED = Object.assign({}, global.NEEMA_SHARED || {}, frozen);
