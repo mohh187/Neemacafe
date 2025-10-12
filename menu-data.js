@@ -46,46 +46,56 @@
         {
           ar:'موهيتو مكس',
           en:'Mojito Mix',
+          price:15,
+          defaultVariantKey:'7up',
           img:'https://i.postimg.cc/3NmwKS5s/image.png',
           variants:[
-            {key:'code-red', ar:'كود رد', en:'Code Red', price:18, cal:140, img:'https://i.postimg.cc/3NmwKS5s/image.png'},
-            {key:'7up', ar:'سفن آب', en:'7up', price:15, cal:140, img:'https://i.postimg.cc/XJTJ6Mh5/image.png'}
+            {key:'7up', ar:'سفن آب', en:'7up', price:15, cal:140, img:'https://i.postimg.cc/XJTJ6Mh5/image.png'},
+            {key:'code-red', ar:'كود رد', en:'Code Red', price:18, cal:140, img:'https://i.postimg.cc/3NmwKS5s/image.png'}
           ]
         },
         {
           ar:'موهيتو بلو بيري',
           en:'Blueberry Mojito',
+          price:15,
+          defaultVariantKey:'7up',
           img:'https://i.postimg.cc/BQwV7rxQ/8.png',
           variants:[
-            {key:'code-red', ar:'كود رد', en:'Code Red', price:17, cal:170},
-            {key:'7up', ar:'سفن آب', en:'7up', price:15, cal:150}
+            {key:'7up', ar:'سفن آب', en:'7up', price:15, cal:150},
+            {key:'code-red', ar:'كود رد', en:'Code Red', price:17, cal:170}
           ]
         },
         {
           ar:'موهيتو فراولة',
           en:'Strawberry Mojito',
+          price:15,
+          defaultVariantKey:'7up',
           img:'https://i.postimg.cc/PxLx7f6K/image.png',
           variants:[
-            {key:'code-red', ar:'كود رد', en:'Code Red', price:17, cal:170},
-            {key:'7up', ar:'سفن آب', en:'7up', price:15, cal:150}
+            {key:'7up', ar:'سفن آب', en:'7up', price:15, cal:150},
+            {key:'code-red', ar:'كود رد', en:'Code Red', price:17, cal:170}
           ]
         },
         {
           ar:'موهيتو بطيخ',
           en:'Watermelon Mojito',
+          price:15,
+          defaultVariantKey:'7up',
           img:IMG_DEFAULT,
           variants:[
-            {key:'code-red', ar:'كود رد', en:'Code Red', price:17, cal:160},
-            {key:'7up', ar:'سفن آب', en:'7up', price:15, cal:140}
+            {key:'7up', ar:'سفن آب', en:'7up', price:15, cal:140},
+            {key:'code-red', ar:'كود رد', en:'Code Red', price:17, cal:160}
           ]
         },
         {
           ar:'موهيتو باشن فروت',
           en:'Passion Fruit Mojito',
+          price:15,
+          defaultVariantKey:'7up',
           img:'https://i.postimg.cc/cHVHGqjn/image.png',
           variants:[
-            {key:'code-red', ar:'كود رد', en:'Code Red', price:17, cal:170},
-            {key:'7up', ar:'سفن آب', en:'7up', price:15, cal:150}
+            {key:'7up', ar:'سفن آب', en:'7up', price:15, cal:150},
+            {key:'code-red', ar:'كود رد', en:'Code Red', price:17, cal:170}
           ]
         }
       ],

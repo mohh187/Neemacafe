@@ -415,6 +415,20 @@
       return !!(item && Array.isArray(item.variants) && item.variants.length);
     }
 
+    function getDefaultVariant(item){
+      if(!isVariantItem(item)) return null;
+      const desiredKey = (item.defaultVariantKey || '').toString().toLowerCase();
+      if(desiredKey){
+        const match = item.variants.find(variant=>{
+          if(!variant) return false;
+          const variantKey = (variant.key || '').toString().toLowerCase();
+          return variantKey === desiredKey;
+        });
+        if(match) return match;
+      }
+      return item.variants.find(Boolean) || null;
+    }
+
     function getItemKey(item){
       if(!item || typeof item !== 'object') return '';
       if(item.key) return String(item.key);
@@ -426,6 +440,11 @@
     function getItemPriceLabel(item){
       const currency = lang==='ar'?'ريال':'SAR';
       if(isVariantItem(item)){
+        const defaultVariant = getDefaultVariant(item);
+        if(defaultVariant){
+          const defaultPrice = Number(defaultVariant.price);
+          if(Number.isFinite(defaultPrice)) return `${defaultPrice} ${currency}`;
+        }
         const prices = item.variants.map(v=> Number(v && v.price)).filter(v=> Number.isFinite(v));
         if(prices.length){
           const min = Math.min(...prices);
@@ -642,6 +661,8 @@
       if(optionModalCancel) optionModalCancel.textContent = STRINGS[lang].option_modal_cancel;
       if(optionModalOptions){
         optionModalOptions.innerHTML='';
+        const defaultVariant = getDefaultVariant(item);
+        const defaultKey = defaultVariant && (defaultVariant.key || '').toString().toLowerCase();
         (item.variants || []).forEach(variant=>{
           if(!variant) return;
           const btn=document.createElement('button');
@@ -650,6 +671,7 @@
           const optionMain=document.createElement('span');
           optionMain.className='option-main';
           const variantLabel = lang==='ar' ? (variant.ar || variant.en || '') : (variant.en || variant.ar || '');
+          const variantKey = (variant.key || '').toString().toLowerCase();
           if(variant.img){
             const thumb=document.createElement('span');
             thumb.className='thumb';
@@ -661,7 +683,10 @@
           }
           const label=document.createElement('span');
           label.className='label';
-          label.textContent = variantLabel;
+          const defaultTag = defaultKey && variantKey === defaultKey
+            ? (lang==='ar' ? ' (افتراضي)' : ' (Default)')
+            : '';
+          label.textContent = `${variantLabel}${defaultTag}`;
           optionMain.appendChild(label);
           btn.appendChild(optionMain);
           const priceText = formatVariantPrice(variant);
@@ -682,7 +707,7 @@
     function openOptionModal(item){
       if(!isVariantItem(item)) return;
       if(!optionModalEl){
-        const fallbackVariant = item.variants && item.variants[0] ? item.variants[0] : null;
+        const fallbackVariant = getDefaultVariant(item);
         addToCart(item, fallbackVariant);
         return;
       }
@@ -724,6 +749,11 @@
 
     function addToCart(item, variant=null){
       if(!item) return;
+      if(isVariantItem(item) && !variant){
+        openOptionModal(item);
+        toast(lang==='ar' ? 'اختر النوع قبل الإضافة للسلة.' : 'Please choose a flavor before adding to the cart.');
+        return;
+      }
       const baseKey = getItemKey(item);
       const variantLabelAr = variant ? (variant.ar || variant.en || '') : '';
       const variantLabelEn = variant ? (variant.en || variant.ar || '') : '';
