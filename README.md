@@ -5,6 +5,7 @@ This repo contains two builds of the interactive Neema Café menu:
 - `index.html` – the production-ready build with the full loyalty and logging experience.
 - `menu` – the compact legacy build that shares the same functionality and strings.
 - `menu-data.js` – the shared catalogue of drinks and desserts that both builds render.
+- `menu-admin.html` – لوحة تحكم باللغة العربية لتحديث بيانات المنيو، مع حفظ محلي وتصدير JSON.
 - `order-status.html` – lightweight view Telegram uses when a waiter accepts or finishes an order.
 
 ## Using the shared menu data in another page
@@ -29,7 +30,10 @@ Including `menu-data.js` on the page ensures both menu builds use the same catal
 
 ## Customising the catalogue
 
-Edit `menu-data.js` to update prices, calories, or images. Every change automatically propagates to both menu builds the next time the page loads because they read from the shared module.
+You now have two options when updating the menu:
+
+1. **لوحة التحكم (`menu-admin.html`)** – صفحة تفاعلية تسمح بإضافة الأصناف، حذفها، تعديل الأسعار، الصور، والوصف مع حفظ تلقائي في `localStorage`. بعد حفظ التعديلات سيقرأ كل من `index.html` و`menu` البيانات المحدّثة مباشرة عند فتحهما من نفس المتصفح. يمكنك أيضًا تصدير ملف JSON أو استيراده لمشاركة التعديلات.
+2. **تعديل الملف يدويًا** – ما زال بالإمكان تحرير `menu-data.js` مباشرة لتغيير الأسعار أو البطاقات. هذا الخيار مفيد عند نشر التغييرات في المستودع أو مشاركة الملف مع بقية الفريق.
 
 ## Persisted data keys
 
@@ -41,5 +45,6 @@ The menu stores customer preferences and order history in `localStorage`. These 
 - `nima.customerRegistry` – known customers for multi-guest logs.
 - `nima.orderLog` – history of orders sent from the device.
 - `nima.loyaltyTracker` – loyalty counts per drink.
+- `neema.menuData.custom` – نسخة محلية من أصناف المنيو يتم إنشاؤها من خلال لوحة التحكم.
 
 Clearing browser storage resets the greeting, loyalty counts, and saved customer details.

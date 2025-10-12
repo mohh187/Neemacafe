@@ -572,6 +572,7 @@ const STRINGS = {
 
 const SHARED = window.NEEMA_SHARED || {};
 const IMG_DEFAULT = SHARED.IMG_DEFAULT || 'https://i.postimg.cc/Y0GT5M1f/image.png';
+const MENU_STORAGE_KEY = 'neema.menuData.custom';
 
 const EMPTY_MENU_DATA = {
   hot: { coffee: [], tea: [] },
@@ -579,10 +580,47 @@ const EMPTY_MENU_DATA = {
   dessert: { cake: [], side: [] }
 };
 
-const data = SHARED.MENU_DATA || EMPTY_MENU_DATA;
-if(!SHARED.MENU_DATA){
-  console.warn('[Neema] Shared menu data not found — rendering with empty menu dataset.');
+function cloneMenu(obj){
+  try{
+    return JSON.parse(JSON.stringify(obj));
+  }catch(err){
+    console.warn('[Neema] Unable to clone menu dataset, falling back to reference copy.', err);
+    return obj;
+  }
 }
+
+function ensureMenuShape(menu){
+  const shape = cloneMenu(EMPTY_MENU_DATA);
+  const source = menu && typeof menu === 'object' ? menu : {};
+  Object.keys(shape).forEach(cat=>{
+    const catSource = source[cat] && typeof source[cat] === 'object' ? source[cat] : {};
+    Object.keys(shape[cat]).forEach(group=>{
+      const arr = catSource[group];
+      shape[cat][group] = Array.isArray(arr) ? arr : [];
+    });
+  });
+  return shape;
+}
+
+function loadMenuData(){
+  let stored = null;
+  try{
+    stored = JSON.parse(localStorage.getItem(MENU_STORAGE_KEY) || 'null');
+  }catch(err){
+    console.warn('[Neema] Unable to read stored menu data — ignoring custom dataset.', err);
+    stored = null;
+  }
+  if(stored && typeof stored === 'object'){
+    return ensureMenuShape(stored);
+  }
+  if(SHARED.MENU_DATA){
+    return ensureMenuShape(SHARED.MENU_DATA);
+  }
+  console.warn('[Neema] Shared menu data not found — rendering with empty menu dataset.');
+  return ensureMenuShape(EMPTY_MENU_DATA);
+}
+
+const data = loadMenuData();
 
 /* ===== Auto description helper ===== */
 function autoDesc(it){
