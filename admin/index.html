@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>لوحة التحكم</title>
+<style>
+body{font-family:system-ui;-webkit-font-smoothing:antialiased;margin:0;background:#fafafa}
+.wrap{max-width:960px;margin:auto;padding:16px}
+h1{margin:0 0 12px}
+.card{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:12px;margin:12px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input,button{padding:10px;border-radius:10px;border:1px solid #ddd}
+button{cursor:pointer}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px;border-bottom:1px solid #eee}
+.badge{font-weight:700}
+</style>
+<body>
+<div class="wrap">
+  <h1>لوحة التحكم</h1>
+
+  <div id="login" class="card">
+    <div class="row">
+      <input id="pw" placeholder="كلمة سر الإدارة" type="password" style="flex:1"/>
+      <button id="doLogin">دخول</button>
+    </div>
+    <small>ضع كلمة السر المساوية لمتغير البيئة <code>ADMIN_PASSWORD</code>.</small>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="card">
+      <h3>إضافة/تعديل عنصر</h3>
+      <div class="row">
+        <input id="id" placeholder="id (فارغ للإضافة الجديدة)" style="width:120px">
+        <input id="name_ar" placeholder="الاسم بالعربية" style="flex:1">
+        <input id="name_en" placeholder="الاسم بالإنجليزية" style="flex:1">
+        <input id="price" placeholder="السعر" type="number" step="0.01" style="width:160px">
+        <input id="calories" placeholder="سعرات" type="number" style="width:120px">
+        <input id="img_url" placeholder="رابط الصورة (SVG)" style="flex:1">
+        <button id="save">حفظ</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>العناصر</h3>
+      <table id="itemsTbl">
+        <thead><tr><th>ID</th><th>الاسم</th><th>السعر</th><th>سعرات</th><th>صورة</th><th>أوامر</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>آخر الطلبات</h3>
+      <div id="orders"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = {
+  items: '/api/items',
+  orders: '/api/orders'
+};
+let TOKEN = localStorage.getItem('admin_token') || '';
+
+function headers(){ return TOKEN ? { 'content-type':'application/json', 'authorization': 'Bearer ' + TOKEN } : { 'content-type':'application/json' }; }
+
+async function login(){
+  const pw = document.getElementById('pw').value.trim();
+  if(!pw){ alert('أدخل كلمة السر'); return; }
+  TOKEN = pw;
+  localStorage.setItem('admin_token', TOKEN);
+  boot();
+}
+
+async function listItems(){ return (await fetch(API.items)).json(); }
+async function addItem(it){ return (await fetch(API.items, { method:'POST', headers:headers(), body: JSON.stringify(it) })).json(); }
+async function updateItem(id, it){ return (await fetch(API.items + '?id=' + id, { method:'PUT', headers:headers(), body: JSON.stringify(it) })).json(); }
+async function deleteItem(id){ return (await fetch(API.items + '?id=' + id, { method:'DELETE', headers:headers() })).json(); }
+async function listOrders(){ return (await fetch(API.orders)).json(); }
+
+function fillItems(rows){
+  const tb = document.querySelector('#itemsTbl tbody'); tb.innerHTML='';
+  rows.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.id}</td>
+      <td><div><div class="badge">${r.name_ar}</div><div>${r.name_en}</div></div></td>
+      <td>${r.price}</td>
+      <td>${r.calories||0}</td>
+      <td>${r.img_url?`<img src="${r.img_url}" alt="" style="width:48px;height:48px;object-fit:contain">`:''}</td>
+      <td>
+        <button data-edit="${r.id}">تعديل</button>
+        <button data-del="${r.id}">حذف</button>
+      </td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('[data-edit]').forEach(b=>{
+    b.onclick = ()=>{
+      const id = b.getAttribute('data-edit');
+      const row = rows.find(x=> String(x.id)===String(id));
+      document.getElementById('id').value = row.id;
+      document.getElementById('name_ar').value = row.name_ar;
+      document.getElementById('name_en').value = row.name_en;
+      document.getElementById('price').value = row.price;
+      document.getElementById('calories').value = row.calories||0;
+      document.getElementById('img_url').value = row.img_url||'';
+      window.scrollTo({ top:0, behavior:'smooth' });
+    };
+  });
+  tb.querySelectorAll('[data-del]').forEach(b=>{
+    b.onclick = async ()=>{
+      const id = b.getAttribute('data-del');
+      if(!confirm('حذف العنصر #' + id + '?')) return;
+      await deleteItem(id);
+      boot();
+    };
+  });
+}
+
+function fillOrders(rows){
+  const box = document.getElementById('orders'); box.innerHTML='';
+  rows.forEach(o=>{
+    const div = document.createElement('div');
+    div.style.margin = '8px 0';
+    div.innerHTML = `#${o.id} — طاولة ${o.table_no||'-'} — الإجمالي: ${o.total} — ${new Date(o.created_at).toLocaleString('ar-SA')}
+      <details><summary>السلة</summary><pre>${JSON.stringify(o.cart,null,2)}</pre></details>`;
+    box.appendChild(div);
+  });
+}
+
+async function saveItem(){
+  const id = document.getElementById('id').value.trim();
+  const payload = {
+    name_ar: document.getElementById('name_ar').value.trim(),
+    name_en: document.getElementById('name_en').value.trim(),
+    price: Number(document.getElementById('price').value || 0),
+    calories: Number(document.getElementById('calories').value || 0),
+    img_url: document.getElementById('img_url').value.trim()
+  };
+  if(!payload.name_ar || !payload.name_en){ alert('أكمل الاسم'); return; }
+  if(id) await updateItem(id, payload); else await addItem(payload);
+  document.querySelectorAll('#id,#name_ar,#name_en,#price,#calories,#img_url').forEach(el=> el.value='');
+  boot();
+}
+
+async function boot(){
+  document.getElementById('login').style.display = TOKEN ? 'none' : 'block';
+  document.getElementById('app').style.display = TOKEN ? 'block' : 'none';
+  if(!TOKEN) return;
+  const [items, orders] = await Promise.all([listItems(), listOrders()]);
+  fillItems(items); fillOrders(orders);
+}
+
+document.getElementById('doLogin').onclick = login;
+document.getElementById('save').onclick = saveItem;
+
+boot();
+</script>
+</body>
+</html>

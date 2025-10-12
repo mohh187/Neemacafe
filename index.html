@@ -622,6 +622,59 @@ function loadMenuData(){
 
 const data = loadMenuData();
 
+const ITEMS_API = '/api/items';
+
+async function fetchItems(){
+  try{
+    const res = await fetch(ITEMS_API);
+    if(!res.ok) throw new Error('status');
+    const rows = await res.json();
+    const toItem = r => ({ ar:r.name_ar, en:r.name_en, price:Number(r.price), cal:Number(r.calories||0), img:r.img_url || IMG_DEFAULT });
+    const hotCoffee = rows.filter(r=>/لاتيه|اسبريسو|كابتشينو|موكا|فلات/i.test(r.name_ar)).map(toItem);
+    const hotTea    = rows.filter(r=>/شاي|ماتشا/i.test(r.name_ar)).map(toItem);
+    const coldCoffee= rows.filter(r=>/ايس|بارد/i.test(r.name_ar)).map(toItem);
+    const mojito    = rows.filter(r=>/موهيتو/i.test(r.name_ar)).map(toItem);
+    const otherCold = rows.filter(r=>/عصير|مشروب/i.test(r.name_ar) && !/موهيتو/i.test(r.name_ar)).map(toItem);
+    const dessertC  = rows.filter(r=>/كيك|كعكة/i.test(r.name_ar)).map(toItem);
+    const dessertS  = rows.filter(r=>/حلا|لقيمات|كوكي/i.test(r.name_ar)).map(toItem);
+
+    data.hot.coffee = hotCoffee;
+    data.hot.tea = hotTea;
+    data.cold.coffee = coldCoffee;
+    data.cold.mojito = mojito;
+    data.cold.other = otherCold;
+    data.dessert.cake = dessertC;
+    data.dessert.side = dessertS;
+  }catch(err){
+    console.warn('items api failed', err);
+  }
+}
+
+async function sendOrderToDB(order){
+  try{
+    const res = await fetch('/api/orders', {
+      method:'POST',
+      headers:{ 'content-type':'application/json' },
+      body: JSON.stringify(order)
+    });
+    if(!res.ok) throw new Error('status');
+    return await res.json();
+  }catch(err){
+    console.warn('order db sync failed', err);
+    return null;
+  }
+}
+
+async function afterTelegramHook(total){
+  const tableId = getCurrentTableValue() || '';
+  const order = {
+    table_no: tableId,
+    cart: cart.map(it=>({ name_ar:it.name_ar, name_en:it.name_en, qty:it.qty, price:it.price, options:it.options||[] })),
+    total: total
+  };
+  await sendOrderToDB(order);
+}
+
 /* ===== Auto description helper ===== */
 function autoDesc(it){
   const n = (it.en || it.ar || '').toLowerCase();
@@ -1960,11 +2013,12 @@ function performSendOrder(tableIdOverride){
 
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID_NEW}&text=${text}&reply_markup=${replyMarkup}`;
   fetch(url)
-    .then(res=>{
+    .then(async res=>{
       if(!res.ok) throw new Error('telegram');
       recordOrderLog(orderEntry);
       handleLoyaltyRewards(orderEntry);
       toast(STRINGS[lang].order_sent_saved);
+      await afterTelegramHook(total);
       clearCart();
       resetDiscountCode();
       closeCart();
@@ -1994,7 +2048,7 @@ function toast(msg){
 }
 
 /* ===== Init ===== */
-function init(){
+async function init(){
   localStorage.removeItem('nima.table');
   if(customerProfile && (customerProfile.name || customerProfile.phone)){
     if(!customerProfile.id){
@@ -2004,6 +2058,7 @@ function init(){
     ensureCustomerRegistryEntry(customerProfile.id, customerProfile);
     ensureCustomerLog(customerProfile.id, customerProfile);
   }
+  await fetchItems();
   renderAll(); updateLangBtn(); updateCartBadge();
   if(customerProfile && (customerProfile.name || customerProfile.phone)){
     maybeToastGreeting();

@@ -5,7 +5,7 @@ This repo contains two builds of the interactive Neema Café menu:
 - `index.html` – the production-ready build with the full loyalty and logging experience.
 - `menu` – the compact legacy build that shares the same functionality and strings.
 - `menu-data.js` – the shared catalogue of drinks and desserts that both builds render.
-- `menu-admin.html` – لوحة تحكم باللغة العربية لتحديث بيانات المنيو، مع حفظ محلي وتصدير JSON.
+- `admin/index.html` (متوفر أيضًا كـ `menu-admin.html` للترابط السابق) – لوحة تحكم باللغة العربية لتحديث بيانات المنيو مع مصادقة بسيطة وربط بقاعدة البيانات.
 - `order-status.html` – lightweight view Telegram uses when a waiter accepts or finishes an order.
 
 ## Using the shared menu data in another page
@@ -32,8 +32,20 @@ Including `menu-data.js` on the page ensures both menu builds use the same catal
 
 You now have two options when updating the menu:
 
-1. **لوحة التحكم (`menu-admin.html`)** – صفحة تفاعلية تسمح بإضافة الأصناف، حذفها، تعديل الأسعار، الصور، والوصف مع حفظ تلقائي في `localStorage`. بعد حفظ التعديلات سيقرأ كل من `index.html` و`menu` البيانات المحدّثة مباشرة عند فتحهما من نفس المتصفح. يمكنك أيضًا تصدير ملف JSON أو استيراده لمشاركة التعديلات.
-2. **تعديل الملف يدويًا** – ما زال بالإمكان تحرير `menu-data.js` مباشرة لتغيير الأسعار أو البطاقات. هذا الخيار مفيد عند نشر التغييرات في المستودع أو مشاركة الملف مع بقية الفريق.
+1. **لوحة التحكم (`/admin/`)** – صفحة تفاعلية تتصل بنقطة النهاية `/api/items` لإدارة العناصر (إضافة، تعديل، حذف) بعد إدخال كلمة المرور المطابقة للمتغير البيئي `ADMIN_PASSWORD`. نفس اللوحة تعرض آخر ٢٠٠ طلب تم إرسالها من خلال واجهة `/api/orders`.
+2. **تعديل الملف يدويًا** – ما زال بالإمكان تحرير `menu-data.js` مباشرة لتغيير الأسعار أو البطاقات في حال احتجت إلى بيانات افتراضية عند غياب قاعدة البيانات.
+
+## Serverless API
+
+- `/api/items` – CRUD على عناصر المنيو، يتطلب ترويسة `Authorization: Bearer <ADMIN_PASSWORD>` للعمليات التي تغيّر البيانات.
+- `/api/orders` – قراءة آخر الطلبات، واستقبال الطلبات الجديدة من الواجهة الأمامية. عمليات القراءة مفتوحة، بينما التعديلات المستقبلية ستحتاج التحقق.
+
+يستعمل كلا المسارين قاعدة بيانات PostgreSQL عبر Netlify Neon. استورد المخطط الموجود في `netlify/functions/schema.sql` لتجهيز الجداول المطلوبة (`items` و`orders`).
+
+### Environment variables
+
+- `ADMIN_PASSWORD` – required لكلا لوحة التحكم والعمليات المحمية في واجهات `/api`.
+- `CORS_ORIGIN` – (اختياري) اضبطه لتحجيم النطاقات المسموح لها باستهلاك الواجهات؛ القيمة الافتراضية `*`.
 
 ## Persisted data keys
 
