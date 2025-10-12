@@ -114,6 +114,16 @@ footer{color:var(--muted);text-align:center;margin:18px 0 120px}
 /* Customization section */
 .custom{margin-top:10px;border-top:1px dashed var(--border);padding-top:10px}
 .custom h4{margin:0 0 8px;font-size:14px;color:var(--muted)}
+.variant-group{display:flex;flex-direction:column;gap:8px;margin:8px 0;padding:10px;border:1px solid var(--border);border-radius:12px;background:rgba(139,94,60,.05)}
+body.dark .variant-group{background:rgba(139,94,60,.12)}
+.variant-group h5{margin:0;font-size:13px;color:var(--text)}
+.variant-group .variant-note{margin:0;font-size:12px;color:var(--muted)}
+.variant-options{display:flex;flex-direction:column;gap:6px}
+.variant-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:8px 10px;border-radius:10px;font-size:13px;cursor:pointer;text-align:start;transition:border-color .2s,box-shadow .2s}
+.variant-btn .label{font-weight:600}
+.variant-btn .meta{font-size:12px;color:var(--muted)}
+.variant-btn.selected{border-color:var(--brand);box-shadow:0 0 0 2px rgba(139,94,60,.15)}
+body.dark .variant-btn.selected{box-shadow:0 0 0 2px rgba(212,163,115,.25)}
 .custom .opts{display:flex;flex-wrap:wrap;gap:8px}
 .custom label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:10px;padding:6px 10px;background:var(--card);cursor:pointer;font-size:13px}
 .custom .radios{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
@@ -270,9 +280,16 @@ body.dark .table-modal .sheet .error{color:#e57373}
       <div class="custom">
         <h4 id="customTitle">التخصيص</h4>
 
+        <!-- Variant options -->
+        <div class="variant-group" id="variantGroup" style="display:none">
+          <h5 id="variantHeading">اختر النكهة</h5>
+          <p class="variant-note" id="variantNote"></p>
+          <div class="variant-options" id="variantOptions"></div>
+        </div>
+
         <!-- Sugar options -->
         <div class="radios" id="sugarGroup">
-          <label><input type="radio" name="sugar" value="external" checked> <span id="lblSugarExternal">سكر خارجي</span></label>
+          <label id="sugarExternalOption"><input type="radio" name="sugar" value="external" checked> <span id="lblSugarExternal">سكر خارجي</span></label>
           <label><input type="radio" name="sugar" value="none"> <span id="lblSugarNone">بدون سكر</span></label>
           <label><input type="radio" name="sugar" value="less"> <span id="lblSugarLess">سكر قليل</span></label>
           <label><input type="radio" name="sugar" value="normal"> <span id="lblSugarNormal">سكر عادي</span></label>
@@ -449,6 +466,12 @@ const STRINGS = {
     strength:'القوة', heavy:'ثقيلة', light:'خفيفة', balanced:'موزونة',
     sugar_external:'سكر خارجي', sugar_none:'بدون سكر', sugar_less:'سكر قليل', sugar_normal:'سكر عادي',
     water_cold:'بارد (من الثلاجة)', water_room:'غير مبرد (درجة الغرفة)',
+    kcal_unknown:'غير متوفر',
+    variant_heading:'اختر النكهة',
+    variant_note:'اختر إحدى النكهات لإكمال الطلب (سعر سفن آب ظاهر افتراضياً).',
+    variant_selected:'تم اختيار {variant}.',
+    variant_default_tag:' (افتراضي)',
+    variant_required:'يرجى اختيار النكهة قبل إضافة الطلب.',
     select_table:'اختر رقم الطاولة',
     table_modal_title:'حدد رقم الطاولة',
     table_modal_desc:'يجب اختيار رقم الطاولة قبل متابعة الطلب.',
@@ -505,6 +528,12 @@ const STRINGS = {
     strength:'Strength', heavy:'Strong', light:'Light', balanced:'Balanced',
     sugar_external:'Sugar on the side', sugar_none:'No sugar', sugar_less:'Less sugar', sugar_normal:'Regular sugar',
     water_cold:'Cold (chilled)', water_room:'Room temperature',
+    kcal_unknown:'N/A',
+    variant_heading:'Choose a flavor',
+    variant_note:'Pick a flavor to continue (7up price shows by default).',
+    variant_selected:'Selected: {variant}.',
+    variant_default_tag:' (Default)',
+    variant_required:'Please choose a flavor before adding to the cart.',
     select_table:'Select a table number',
     table_modal_title:'Choose your table',
     table_modal_desc:'Please pick a table number before continuing.',
@@ -589,7 +618,13 @@ function autoDesc(it){
 let cart = JSON.parse(localStorage.getItem('nima.cart') || '[]');
 function saveCart(){ localStorage.setItem('nima.cart', JSON.stringify(cart)); }
 function cartCount(){ return cart.reduce((s,i)=>s+i.qty,0); }
-function cartTotal(){ return cart.reduce((s,i)=>s+i.qty*i.price,0); }
+function cartTotal(){
+  return cart.reduce((s,i)=>{
+    const qty = Number(i && i.qty) || 0;
+    const price = Number(i && i.price) || 0;
+    return s + qty * price;
+  }, 0);
+}
 function updateCartBadge(){ document.getElementById('cartCount').textContent = cartCount(); }
 let pendingTableAction = null;
 let shouldRestoreCart = false;
@@ -612,7 +647,10 @@ const REG = []; // registry for click-safe products (no inline JSON)
 function register(item, cat){ const id = REG.push({item,cat})-1; return id; }
 
 function priceHTML(p){
-  return `${p} <span class="sar" aria-label="${STRINGS[lang].sar_label}"></span><span class="sar-fallback">${lang==='ar'?'ريال':'SAR'}</span>`;
+  const value = Number(p);
+  if(!Number.isFinite(value)) return '—';
+  const formatted = Number.isInteger(value) ? value : value.toFixed(2);
+  return `${formatted} <span class="sar" aria-label="${STRINGS[lang].sar_label}"></span><span class="sar-fallback">${lang==='ar'?'ريال':'SAR'}</span>`;
 }
 
 function escapeHtml(str){
@@ -935,16 +973,20 @@ function makeItemEl(it, cat){
   el.className = 'item';
   const name = (lang==='ar'?it.ar:it.en);
   const id = register(it, cat);
+  const metrics = getItemDisplayMetrics(it);
+  const priceDisplay = priceHTML(metrics.price);
+  const calText = Number.isFinite(metrics.cal) ? `${metrics.cal} ${STRINGS[lang].kcal}` : (STRINGS[lang].kcal_unknown || '—');
+  const descText = it['desc_'+lang] || autoDesc(it);
   el.innerHTML = `
     <div class="thumb"><img src="${it.img||IMG_DEFAULT}" alt="${name}"/></div>
     <div>
       <div class="line">
         <span class="name">${name}</span>
         <span class="dots"></span>
-        <span class="price">${priceHTML(it.price)}</span>
+        <span class="price">${priceDisplay}</span>
       </div>
-      <div class="cals">${it.cal} ${STRINGS[lang].kcal}</div>
-      <div class="sub">${it['desc_'+lang] || autoDesc(it)}</div>
+      <div class="cals">${calText}</div>
+      <div class="sub">${descText}</div>
     </div>`;
   el.addEventListener('click', ()=>{ const rec=REG[id]; openProduct(rec.item, rec.cat); });
   return el;
@@ -1336,6 +1378,7 @@ $('#callBtn').addEventListener('click', ()=>{
 /* ===== Product Modal logic ===== */
 let currentProduct = null;
 let currentCat = 'hot';
+let currentVariantKey = '';
 
 function isJabana(it){
   const a = (it.ar||''); const e=(it.en||'').toLowerCase();
@@ -1344,6 +1387,163 @@ function isJabana(it){
 function isWater(it){
   const a=(it.ar||''); const e=(it.en||'').toLowerCase();
   return a.includes('ماء') || e.includes('water');
+}
+function isMojito(it){
+  const a=(it.ar||'').toLowerCase(); const e=(it.en||'').toLowerCase();
+  return a.includes('موهيتو') || e.includes('mojito');
+}
+function isHibiscusDrink(it){
+  const a=(it.ar||'').toLowerCase(); const e=(it.en||'').toLowerCase();
+  return a.includes('كركديه') || a.includes('كركدي') || e.includes('hibiscus');
+}
+function shouldHideExternalSugar(it){
+  return isMojito(it) || isHibiscusDrink(it);
+}
+function isVariantItem(it){
+  return !!(it && Array.isArray(it.variants) && it.variants.length);
+}
+function normalizeVariantKey(key){
+  if(key === undefined || key === null) return '';
+  return String(key).toLowerCase();
+}
+function variantKeyFromData(variant){
+  if(!variant) return '';
+  if(variant.key !== undefined && variant.key !== null) return normalizeVariantKey(variant.key);
+  const fallback = variant.en || variant.ar || '';
+  return normalizeVariantKey(fallback);
+}
+function getDefaultVariant(it){
+  if(!isVariantItem(it)) return null;
+  const desired = normalizeVariantKey(it.defaultVariantKey);
+  if(desired){
+    const match = it.variants.find(v=> variantKeyFromData(v) === desired);
+    if(match) return match;
+  }
+  return it.variants.find(Boolean) || null;
+}
+function getVariantLabel(variant, langCode){
+  if(!variant) return '';
+  const primary = langCode==='ar' ? (variant.ar || variant.en || '') : (variant.en || variant.ar || '');
+  return primary || '';
+}
+function getVariantPrice(it, variant){
+  const value = variant && Number(variant.price);
+  if(Number.isFinite(value)) return value;
+  const base = Number(it && it.price);
+  return Number.isFinite(base) ? base : NaN;
+}
+function getVariantCalories(it, variant){
+  const value = variant && Number(variant.cal);
+  if(Number.isFinite(value)) return value;
+  const base = Number(it && it.cal);
+  return Number.isFinite(base) ? base : NaN;
+}
+function getItemDisplayMetrics(it){
+  if(!isVariantItem(it)){
+    const price = Number(it && it.price);
+    const cal = Number(it && it.cal);
+    return { price: Number.isFinite(price) ? price : NaN, cal: Number.isFinite(cal) ? cal : NaN };
+  }
+  const def = getDefaultVariant(it);
+  return {
+    price: getVariantPrice(it, def),
+    cal: getVariantCalories(it, def)
+  };
+}
+function getSelectedVariant(it){
+  if(!isVariantItem(it)) return null;
+  const key = normalizeVariantKey(currentVariantKey);
+  if(!key) return null;
+  return it.variants.find(v=> variantKeyFromData(v) === key) || null;
+}
+function updateProductPriceAndCal(it, variant){
+  const price = getVariantPrice(it, variant);
+  const cal = getVariantCalories(it, variant);
+  $('#pPrice').innerHTML = priceHTML(price);
+  const calText = Number.isFinite(cal) ? `${cal} ${STRINGS[lang].kcal}` : (STRINGS[lang].kcal_unknown || '—');
+  $('#pCal').textContent = calText;
+}
+function updateVariantNote(it){
+  const noteEl = document.getElementById('variantNote');
+  if(!noteEl) return;
+  if(!it || !isVariantItem(it)){
+    noteEl.textContent = '';
+    return;
+  }
+  const selected = getSelectedVariant(it);
+  if(selected){
+    const label = getVariantLabel(selected, lang);
+    const template = STRINGS[lang].variant_selected || '';
+    noteEl.textContent = template.replace('{variant}', label);
+  } else {
+    noteEl.textContent = STRINGS[lang].variant_note || '';
+  }
+}
+function renderVariantOptions(it){
+  const group = document.getElementById('variantGroup');
+  const optionsEl = document.getElementById('variantOptions');
+  if(!group || !optionsEl) return;
+  if(!it || !isVariantItem(it)){
+    group.style.display = 'none';
+    optionsEl.innerHTML='';
+    updateVariantNote(null);
+    return;
+  }
+  group.style.display = 'flex';
+  const headingEl = document.getElementById('variantHeading');
+  if(headingEl) headingEl.textContent = STRINGS[lang].variant_heading || '';
+  optionsEl.innerHTML='';
+  const defaultVariant = getDefaultVariant(it);
+  const defaultKey = variantKeyFromData(defaultVariant);
+  (it.variants || []).forEach(variant=>{
+    if(!variant) return;
+    const key = variantKeyFromData(variant);
+    const btn = document.createElement('button');
+    btn.type='button';
+    btn.className='variant-btn';
+    if(currentVariantKey && key === currentVariantKey) btn.classList.add('selected');
+    const labelSpan = document.createElement('span');
+    labelSpan.className='label';
+    const labelText = getVariantLabel(variant, lang);
+    const defaultTag = (defaultKey && key === defaultKey) ? (STRINGS[lang].variant_default_tag || '') : '';
+    labelSpan.textContent = `${labelText}${defaultTag || ''}`;
+    btn.appendChild(labelSpan);
+    const metaSpan = document.createElement('span');
+    metaSpan.className='meta';
+    const price = getVariantPrice(it, variant);
+    const cal = getVariantCalories(it, variant);
+    const bits = [];
+    if(Number.isFinite(price)) bits.push(`${price} ${lang==='ar'?'ريال':'SAR'}`);
+    if(Number.isFinite(cal)) bits.push(`${cal} ${STRINGS[lang].kcal}`);
+    metaSpan.textContent = bits.join(' • ');
+    btn.appendChild(metaSpan);
+    btn.addEventListener('click', ()=> selectVariant(it, key));
+    optionsEl.appendChild(btn);
+  });
+  updateVariantNote(it);
+}
+function selectVariant(it, key){
+  currentVariantKey = normalizeVariantKey(key);
+  const chosen = getSelectedVariant(it);
+  updateProductPriceAndCal(it, chosen || getDefaultVariant(it));
+  renderVariantOptions(it);
+}
+function resetVariantSelection(){
+  currentVariantKey = '';
+}
+function toggleSugarExternalOption(hide){
+  const wrap = document.getElementById('sugarExternalOption');
+  if(!wrap) return;
+  wrap.style.display = hide ? 'none' : 'inline-flex';
+  const input = wrap.querySelector('input[name="sugar"][value="external"]');
+  if(!input) return;
+  if(hide){
+    input.checked = false;
+    const fallback = document.querySelector('input[name="sugar"][value="normal"]');
+    if(fallback) fallback.checked = true;
+  } else {
+    input.checked = true;
+  }
 }
 
 function updateCustomizationLabels(){
@@ -1362,15 +1562,21 @@ function updateCustomizationLabels(){
   document.querySelector('#lblSugarNormal').textContent = STRINGS[lang].sugar_normal;
   document.querySelector('#lblWaterCold').textContent = STRINGS[lang].water_cold;
   document.querySelector('#lblWaterRoom').textContent = STRINGS[lang].water_room;
+  const headingEl = document.getElementById('variantHeading');
+  if(headingEl) headingEl.textContent = STRINGS[lang].variant_heading || '';
+  updateVariantNote(currentProduct);
+  if(currentProduct && isVariantItem(currentProduct)){
+    renderVariantOptions(currentProduct);
+  }
 }
 
 function openProduct(it, cat){
   currentProduct = it;
   currentCat = cat || 'hot';
-  $('#pImg').src = it.img || IMG_DEFAULT;
+  resetVariantSelection();
+  $('#pImg').src = (it && it.img) || IMG_DEFAULT;
   $('#pName').textContent = (lang==='ar'?it.ar:it.en);
-  $('#pPrice').innerHTML = priceHTML(it.price);
-  $('#pCal').textContent = `${it.cal} ${STRINGS[lang].kcal}`;
+  updateProductPriceAndCal(it, getDefaultVariant(it));
   $('#pDesc').textContent = it['desc_'+lang] || autoDesc(it);
   $('#pQty').textContent = '1';
   updateCustomizationLabels();
@@ -1387,20 +1593,26 @@ function openProduct(it, cat){
   const water = isWater(it);
   const jab = isJabana(it);
 
+  toggleSugarExternalOption(shouldHideExternalSugar(it));
   document.getElementById('wrapLessIce').style.display = (currentCat==='cold' && !water) ? 'inline-flex' : 'none';
   document.getElementById('sugarGroup').style.display = (currentCat!=='dessert' && !water) ? 'flex' : 'none';
   document.getElementById('waterTempGroup').style.display = water ? 'flex' : 'none';
   document.getElementById('customJabana').style.display = jab ? 'flex' : 'none';
   document.getElementById('strengthGroup').style.display = jab ? 'flex' : 'none';
 
+  renderVariantOptions(it);
   document.getElementById('productModal').style.display='flex';
 }
 function closeProduct(){ document.getElementById('productModal').style.display='none'; }
 function incQty(){ let q=parseInt($('#pQty').textContent)||1; $('#pQty').textContent = Math.min(q+1,99); }
 function decQty(){ let q=parseInt($('#pQty').textContent)||1; $('#pQty').textContent = Math.max(q-1,1); }
 
-function gatherCustomization(){
+function gatherCustomization(selectedVariant){
   const opts = [];
+  if(selectedVariant){
+    const variantLabel = getVariantLabel(selectedVariant, lang);
+    if(variantLabel) opts.push(variantLabel);
+  }
   // water temp
   if(isWater(currentProduct)){
     const wt = (document.querySelector('input[name="waterTemp"]:checked')||{}).value || 'cold';
@@ -1431,9 +1643,14 @@ function gatherCustomization(){
 
 function addCurrentToCart(){
   const q = parseInt($('#pQty').textContent)||1;
-  const options = gatherCustomization();
+  const variant = getSelectedVariant(currentProduct);
+  if(isVariantItem(currentProduct) && !variant){
+    toast(STRINGS[lang].variant_required || STRINGS[lang].variant_note || '');
+    return;
+  }
+  const options = gatherCustomization(variant);
   ensureTableSelection(()=>{
-    addToCart(currentProduct, q, options);
+    addToCart(currentProduct, q, options, variant);
     closeProduct();
     toast(STRINGS[lang].added);
   });
@@ -1444,12 +1661,39 @@ function openCart(){ renderCart(); document.getElementById('cartSheet').style.di
 function closeCart(){ document.getElementById('cartSheet').style.display='none'; }
 document.getElementById('cartFab').addEventListener('click', openCart);
 
-function addToCart(it, qty=1, options=[]){
-  const key = (it.en||it.ar) + '|' + (options.join(',') || '-');
+function addToCart(it, qty=1, options=[], variant=null){
+  if(!it) return;
+  const variantKey = variant ? variantKeyFromData(variant) : '';
+  const baseName = (it.en||it.ar||'');
+  const keyParts = [baseName, variantKey || '-', options.join(',') || '-'];
+  const key = keyParts.join('|');
+  const nameArBase = it.ar || '';
+  const nameEnBase = it.en || '';
+  const variantLabelAr = variant ? getVariantLabel(variant, 'ar') : '';
+  const variantLabelEn = variant ? getVariantLabel(variant, 'en') : '';
+  const nameAr = variant ? `${nameArBase} (${variantLabelAr || variantLabelEn})` : nameArBase;
+  const nameEn = variant ? `${nameEnBase} (${variantLabelEn || variantLabelAr})` : nameEnBase;
+  const price = getVariantPrice(it, variant);
+  const calories = getVariantCalories(it, variant);
+  const img = (variant && variant.img) ? variant.img : (it.img || IMG_DEFAULT);
   const idx = cart.findIndex(x=>x.key===key);
-  if(idx>-1){ cart[idx].qty += qty; }
+  if(idx>-1){
+    cart[idx].qty += qty;
+  }
   else{
-    cart.push({ key, name_ar:it.ar, name_en:it.en, price:it.price, cal:it.cal, img:it.img||IMG_DEFAULT, qty, options });
+    cart.push({
+      key,
+      name_ar: nameAr,
+      name_en: nameEn,
+      base_ar: nameArBase,
+      base_en: nameEnBase,
+      variant_key: variantKey,
+      price: Number.isFinite(price) ? price : 0,
+      cal: Number.isFinite(calories) ? calories : null,
+      img,
+      qty,
+      options
+    });
   }
   saveCart(); updateCartBadge();
 }
@@ -1472,13 +1716,18 @@ function renderCart(){
     $('#emptyText').style.display='none';
     cart.forEach(it=>{
       const name = (lang==='ar'?it.name_ar:it.name_en);
-      const optsText = (it.options && it.options.length) ? ' • ' + it.options.join('؛ ') : '';
+      const joiner = lang==='ar' ? '؛ ' : ' / ';
+      const optsText = (it.options && it.options.length) ? ' • ' + it.options.join(joiner) : '';
+      const calRaw = it.cal;
+      const calNumber = Number(calRaw);
+      const hasCal = calRaw !== null && calRaw !== undefined && Number.isFinite(calNumber);
+      const calText = hasCal ? `${calNumber} ${STRINGS[lang].kcal}` : (STRINGS[lang].kcal_unknown || '—');
       wrap.insertAdjacentHTML('beforeend', `
         <div class="cart-item">
           <div class="thumb"><img src="${it.img}" alt="${name}"></div>
           <div>
             <div class="title">${name}</div>
-            <div class="meta">${it.cal} ${STRINGS[lang].kcal}${optsText}</div>
+            <div class="meta">${calText}${optsText}</div>
             <div class="price" style="margin-top:4px">
               ${priceHTML(it.price)}
             </div>

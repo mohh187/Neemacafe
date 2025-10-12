@@ -10,11 +10,11 @@
         {ar:'امريكانو (وسط)', en:'Americano (Medium)', price:8, cal:10, img:IMG_DEFAULT},
         {ar:'اسبريسو', en:'Espresso', price:6, cal:5, img:IMG_DEFAULT},
         {ar:'قهوة تركي', en:'Turkish Coffee', price:8, cal:15, img:IMG_DEFAULT},
-        {ar:'جبنة (قهوة سودانية)', en:'Jabana (Sudanese Coffee)', price:6, cal:10, img:IMG_DEFAULT},
+        {ar:'جبنة (قهوة سودانية)', en:'Jabana (Sudanese Coffee)', price:6, cal:10, img:'https://i.postimg.cc/Wzg42WLQ/image.png'},
         {ar:'جبنة في جبنة (وسط)', en:'Jabana in Jabana (Medium)', price:16, cal:20, img:IMG_DEFAULT},
         {ar:'سبانش', en:'Spanish Latte (Hot)', price:12, cal:180, img:IMG_DEFAULT},
-        {ar:'وايت موكا', en:'White Mocha (Hot)', price:18, cal:280, img:IMG_DEFAULT},
-        {ar:'لاتيه', en:'Latte (Hot)', price:12, cal:190, img:IMG_DEFAULT},
+        {ar:'وايت موكا', en:'White Mocha (Hot)', price:18, cal:280, img:'https://i.postimg.cc/DZtZ3VDc/image.png'},
+        {ar:'لاتيه', en:'Latte (Hot)', price:12, cal:190, img:'https://i.postimg.cc/tTgRxR08/image.png'},
         {ar:'كابتشينو', en:'Cappuccino', price:12, cal:120, img:IMG_DEFAULT},
         {ar:'كورتادو', en:'Cortado', price:7, cal:90, img:IMG_DEFAULT},
         {ar:'فلات وايت', en:'Flat White', price:12, cal:150, img:IMG_DEFAULT},
@@ -26,7 +26,7 @@
         {ar:'شاي مقنن', en:'Strong Tea', price:6, cal:2, img:IMG_DEFAULT},
         {ar:'شاي حليب', en:'Milk Tea', price:6, cal:140, img:IMG_DEFAULT},
         {ar:'هوت شوكلت', en:'Hot Chocolate', price:13, cal:300, img:IMG_DEFAULT},
-        {ar:'ماتشا', en:'Matcha (Hot)', price:16, cal:180, img:IMG_DEFAULT}
+        {ar:'ماتشا', en:'Matcha (Hot)', price:16, cal:180, img:'https://i.postimg.cc/SRCKyTF5/image.png'}
       ]
     },
     cold: {
@@ -37,21 +37,72 @@
         {ar:'سبانش', en:'Spanish Latte (Iced)', price:17, cal:180, img:IMG_DEFAULT},
         {ar:'لاتيه', en:'Iced Latte', price:12, cal:190, img:IMG_DEFAULT},
         {ar:'سبانش لاتيه', en:'Spanish Latte', price:14, cal:220, img:IMG_DEFAULT},
-        {ar:'وايت موكا', en:'White Mocha (Iced)', price:18, cal:300, img:IMG_DEFAULT},
-        {ar:'نيمة شيكن', en:'Neema Chicken (Cold Drink)', price:19, cal:220, img:IMG_DEFAULT},
+        {ar:'وايت موكا', en:'White Mocha (Iced)', price:18, cal:300, img:'https://i.postimg.cc/DZtZ3VDc/image.png'},
+        {ar:'نيمة شيكن', en:'Neema Chicken (Cold Drink)', price:19, cal:220, img:'https://i.postimg.cc/QtBtzN69/image.png'},
         {ar:'بستاشيو لاتيه', en:'Pistachio Latte (Iced)', price:18, cal:280, img:IMG_DEFAULT}
       ],
       mojito: [
         {ar:'موهيتو', en:'Mojito', price:17, cal:120, img:IMG_DEFAULT},
-        {ar:'موهيتو مكس', en:'Mojito Mix', price:18, cal:140, img:IMG_DEFAULT},
-        {ar:'موهيتو بلو بيري/كود رد', en:'Blueberry Mojito / Code Red', price:17, cal:170, img:'https://i.postimg.cc/BQwV7rxQ/8.png'},
-        {ar:'موهيتو بلو بيري/سفن آب', en:'Blueberry Mojito / 7up', price:15, cal:150, img:'https://i.postimg.cc/BQwV7rxQ/8.png'},
-        {ar:'موهيتو فراولة/كود رد', en:'Strawberry Mojito / Code Red', price:17, cal:170, img:IMG_DEFAULT},
-        {ar:'موهيتو فراولة/سفن آب', en:'Strawberry Mojito / 7up', price:15, cal:150, img:IMG_DEFAULT},
-        {ar:'موهيتو بطيخ/كود رد', en:'Watermelon Mojito / Code Red', price:17, cal:160, img:IMG_DEFAULT},
-        {ar:'موهيتو بطيخ/سفن آب', en:'Watermelon Mojito / 7up', price:15, cal:140, img:IMG_DEFAULT},
-        {ar:'موهيتو باشن فروت/كود رد', en:'Passion Fruit Mojito / Code Red', price:17, cal:170, img:IMG_DEFAULT},
-        {ar:'موهيتو باشن فروت/سفن آب', en:'Passion Fruit Mojito / 7up', price:15, cal:150, img:IMG_DEFAULT}
+        {
+          ar:'موهيتو مكس',
+          en:'Mojito Mix',
+          price:15,
+          cal:140,
+          defaultVariantKey:'7up',
+          img:'https://i.postimg.cc/3NmwKS5s/image.png',
+          variants:[
+            {key:'7up', ar:'سفن آب', en:'7up', price:15, cal:140, img:'https://i.postimg.cc/XJTJ6Mh5/image.png'},
+            {key:'code-red', ar:'كود رد', en:'Code Red', price:17, cal:140, img:'https://i.postimg.cc/3NmwKS5s/image.png'}
+          ]
+        },
+        {
+          ar:'موهيتو بلو بيري',
+          en:'Blueberry Mojito',
+          price:15,
+          cal:150,
+          defaultVariantKey:'7up',
+          img:'https://i.postimg.cc/BQwV7rxQ/8.png',
+          variants:[
+            {key:'7up', ar:'سفن آب', en:'7up', price:15, cal:150},
+            {key:'code-red', ar:'كود رد', en:'Code Red', price:17, cal:170}
+          ]
+        },
+        {
+          ar:'موهيتو فراولة',
+          en:'Strawberry Mojito',
+          price:15,
+          cal:150,
+          defaultVariantKey:'7up',
+          img:'https://i.postimg.cc/PxLx7f6K/image.png',
+          variants:[
+            {key:'7up', ar:'سفن آب', en:'7up', price:15, cal:150},
+            {key:'code-red', ar:'كود رد', en:'Code Red', price:17, cal:170}
+          ]
+        },
+        {
+          ar:'موهيتو بطيخ',
+          en:'Watermelon Mojito',
+          price:15,
+          cal:140,
+          defaultVariantKey:'7up',
+          img:IMG_DEFAULT,
+          variants:[
+            {key:'7up', ar:'سفن آب', en:'7up', price:15, cal:140},
+            {key:'code-red', ar:'كود رد', en:'Code Red', price:17, cal:160}
+          ]
+        },
+        {
+          ar:'موهيتو باشن فروت',
+          en:'Passion Fruit Mojito',
+          price:15,
+          cal:150,
+          defaultVariantKey:'7up',
+          img:'https://i.postimg.cc/cHVHGqjn/image.png',
+          variants:[
+            {key:'7up', ar:'سفن آب', en:'7up', price:15, cal:150},
+            {key:'code-red', ar:'كود رد', en:'Code Red', price:17, cal:170}
+          ]
+        }
       ],
       other:[
         {ar:'كركديه', en:'Hibiscus', price:8, cal:50, img:'https://i.postimg.cc/Fz9MmhB2/11.png'},

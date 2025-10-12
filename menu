@@ -73,6 +73,20 @@
     body.dark .table-modal .sheet{background:var(--card);color:var(--text)}
     body.dark .table-modal .sheet .error{color:#e57373}
 
+    /* Option modal */
+    .option-modal .sheet{position:relative;background:var(--card);color:var(--text);padding:20px;border-radius:18px;max-width:360px;width:100%;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px}
+    .option-modal .sheet h3{margin:0}
+    .option-modal .sheet p{margin:0;color:var(--muted);font-size:14px;line-height:1.6}
+    .option-modal .options{display:flex;flex-direction:column;gap:8px}
+    .option-modal .option-choice{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;font-size:14px}
+    .option-modal .option-choice .option-main{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+    .option-modal .option-choice .thumb{width:42px;height:42px;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:var(--card);flex-shrink:0}
+    .option-modal .option-choice .thumb img{width:100%;height:100%;object-fit:cover}
+    .option-modal .option-choice .label{font-weight:600;display:block}
+    .option-modal .option-choice .price{font-weight:700;color:var(--brand)}
+    .option-modal .actions{display:flex;gap:8px;margin-top:4px;justify-content:flex-end}
+    body.dark .option-modal .sheet{background:var(--card);color:var(--text)}
+
     /* Order log modal */
     .log-modal{align-items:center}
     .log-modal .sheet{position:relative;background:var(--card);color:var(--text);padding:20px;border-radius:18px;max-width:420px;width:100%;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;max-height:80vh}
@@ -208,6 +222,18 @@
     </div>
   </div>
 
+  <div class="modal option-modal" id="optionModal" aria-hidden="true">
+    <div class="backdrop"></div>
+    <div class="sheet">
+      <h3 id="optionModalTitle">اختر النوع</h3>
+      <p id="optionModalDesc">يرجى اختيار نوع المشروب لإضافته للسلة.</p>
+      <div class="options" id="optionModalOptions"></div>
+      <div class="actions">
+        <button class="btn" id="optionModalCancel" type="button">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal log-modal" id="orderLogModal" aria-hidden="true">
     <div class="backdrop"></div>
     <div class="sheet">
@@ -298,7 +324,11 @@
         loyalty_button:'تمام',
         loyalty_reward_label:'هدية الولاء',
         loyalty_discount_label:'خصم الولاء',
-        order_log_loyalty_reward:'هدية الولاء'
+        order_log_loyalty_reward:'هدية الولاء',
+        option_modal_title:'اختر النوع',
+        option_modal_desc:'اختر نوع {item} المفضل لإضافته للسلة.',
+        option_modal_desc_generic:'اختر نوع المشروب المفضل لإضافته للسلة.',
+        option_modal_cancel:'إلغاء'
       },
       en: {
         title:'Neema Menu', tagline:'Mobile Menu • Bilingual • Dark/Light', search:'Search item… (e.g., Latte, Mojito)',
@@ -333,7 +363,11 @@
         loyalty_button:'Got it',
         loyalty_reward_label:'Loyalty treat',
         loyalty_discount_label:'Loyalty discount',
-        order_log_loyalty_reward:'Loyalty treat'
+        order_log_loyalty_reward:'Loyalty treat',
+        option_modal_title:'Choose a flavor',
+        option_modal_desc:'Pick your preferred {item} option to add to the cart.',
+        option_modal_desc_generic:'Pick the drink style you want to add to the cart.',
+        option_modal_cancel:'Cancel'
       }
     };
 
@@ -375,6 +409,75 @@
         '"':'&quot;',
         "'":'&#39;'
       }[c]));
+    }
+
+    function isVariantItem(item){
+      return !!(item && Array.isArray(item.variants) && item.variants.length);
+    }
+
+    function getDefaultVariant(item){
+      if(!isVariantItem(item)) return null;
+      const desiredKey = (item.defaultVariantKey || '').toString().toLowerCase();
+      if(desiredKey){
+        const match = item.variants.find(variant=>{
+          if(!variant) return false;
+          const variantKey = (variant.key || '').toString().toLowerCase();
+          return variantKey === desiredKey;
+        });
+        if(match) return match;
+      }
+      return item.variants.find(Boolean) || null;
+    }
+
+    function getItemKey(item){
+      if(!item || typeof item !== 'object') return '';
+      if(item.key) return String(item.key);
+      const ar = (item.ar || '').trim().toLowerCase();
+      const en = (item.en || '').trim().toLowerCase();
+      return `${ar}::${en}`;
+    }
+
+    function getItemPriceLabel(item){
+      const currency = lang==='ar'?'ريال':'SAR';
+      if(isVariantItem(item)){
+        const defaultVariant = getDefaultVariant(item);
+        if(defaultVariant){
+          const defaultPrice = Number(defaultVariant.price);
+          if(Number.isFinite(defaultPrice)) return `${defaultPrice} ${currency}`;
+        }
+        const prices = item.variants.map(v=> Number(v && v.price)).filter(v=> Number.isFinite(v));
+        if(prices.length){
+          const min = Math.min(...prices);
+          const max = Math.max(...prices);
+          if(min === max) return `${min} ${currency}`;
+          return lang==='ar' ? `${min} - ${max} ${currency}` : `${currency} ${min}-${max}`;
+        }
+        return '—';
+      }
+      const price = Number(item && item.price);
+      if(Number.isFinite(price)) return `${price} ${currency}`;
+      return '—';
+    }
+
+    function formatVariantPrice(variant){
+      if(!variant) return '';
+      const value = Number(variant.price);
+      if(!Number.isFinite(value)) return '';
+      return lang==='ar' ? `${value} ريال` : `${value} SAR`;
+    }
+
+    function itemMatchesQuery(item, query){
+      if(!query) return true;
+      const base = `${(item && item.ar) || ''} ${(item && item.en) || ''}`.toLowerCase();
+      if(base.includes(query)) return true;
+      if(isVariantItem(item)){
+        return item.variants.some(variant=>{
+          if(!variant) return false;
+          const text = `${variant.ar || ''} ${variant.en || ''}`.toLowerCase();
+          return text.includes(query);
+        });
+      }
+      return false;
     }
 
     function loadCustomerProfile(){
@@ -501,6 +604,13 @@
     const orderLogBtn = document.getElementById('orderLogBtn');
     const orderLogCloseBtn = document.getElementById('orderLogCloseBtn');
     const orderLogClearBtn = document.getElementById('orderLogClearBtn');
+    const optionModalEl = document.getElementById('optionModal');
+    const optionModalBackdrop = document.querySelector('#optionModal .backdrop');
+    const optionModalTitle = document.getElementById('optionModalTitle');
+    const optionModalDesc = document.getElementById('optionModalDesc');
+    const optionModalOptions = document.getElementById('optionModalOptions');
+    const optionModalCancel = document.getElementById('optionModalCancel');
+    let pendingOptionItem = null;
 
     function mount(id, arr){
       const root=document.getElementById(id);
@@ -512,25 +622,158 @@
         el.innerHTML = `
           <div class="thumb"><img src="${it.img}" alt="${name}" /></div>
           <div>
-            <div class="line"><span class="name">${name}</span><span class="dots"></span><span class="price">${it.price} ريال</span></div>
-            <div class="sub">${lang==='ar'?'اضغط زر إضافة للسلة':'Use Add to Cart button'}</div>
+            <div class="line"><span class="name">${name}</span><span class="dots"></span><span class="price">${getItemPriceLabel(it)}</span></div>
+            <div class="sub">${isVariantItem(it) ? (lang==='ar'?'سيُطلب منك اختيار النوع بعد الضغط على الإضافة.':'You can pick the style after tapping add.') : (lang==='ar'?'اضغط زر إضافة للسلة':'Use Add to Cart button')}</div>
           </div>`;
         const btn = document.createElement('button');
         btn.className='addBtn';
         btn.textContent = lang==='ar'?'أضف للسلة':'Add to Cart';
         btn.addEventListener('click', ev=>{
           ev.stopPropagation();
-          ensureTableSelection(()=> addToCart(it));
+          ensureTableSelection(()=> handleItemAdd(it));
         });
         el.lastElementChild.appendChild(btn);
         root.appendChild(el);
       });
     }
 
-    function addToCart(item){
-      const existing = cart.find(i=>i.ar===item.ar);
+    function populateOptionModal(item){
+      if(!optionModalEl) return;
+      pendingOptionItem = item || null;
+      if(!item){
+        optionModalEl.style.display='none';
+        optionModalEl.setAttribute('aria-hidden','true');
+        if(optionModalOptions) optionModalOptions.innerHTML='';
+        if(optionModalTitle) optionModalTitle.textContent = STRINGS[lang].option_modal_title || '';
+        if(optionModalDesc){
+          const template = STRINGS[lang].option_modal_desc_generic || '';
+          optionModalDesc.textContent = template;
+        }
+        if(optionModalCancel) optionModalCancel.textContent = STRINGS[lang].option_modal_cancel;
+        return;
+      }
+      const displayName = lang==='ar' ? (item.ar || item.en || '') : (item.en || item.ar || '');
+      if(optionModalTitle) optionModalTitle.textContent = STRINGS[lang].option_modal_title || '';
+      if(optionModalDesc){
+        const template = STRINGS[lang].option_modal_desc || '';
+        optionModalDesc.innerHTML = template.replace('{item}', `<strong>${escapeHtml(displayName)}</strong>`);
+      }
+      if(optionModalCancel) optionModalCancel.textContent = STRINGS[lang].option_modal_cancel;
+      if(optionModalOptions){
+        optionModalOptions.innerHTML='';
+        const defaultVariant = getDefaultVariant(item);
+        const defaultKey = defaultVariant && (defaultVariant.key || '').toString().toLowerCase();
+        (item.variants || []).forEach(variant=>{
+          if(!variant) return;
+          const btn=document.createElement('button');
+          btn.type='button';
+          btn.className='btn option-choice';
+          const optionMain=document.createElement('span');
+          optionMain.className='option-main';
+          const variantLabel = lang==='ar' ? (variant.ar || variant.en || '') : (variant.en || variant.ar || '');
+          const variantKey = (variant.key || '').toString().toLowerCase();
+          if(variant.img){
+            const thumb=document.createElement('span');
+            thumb.className='thumb';
+            const image=document.createElement('img');
+            image.src = variant.img;
+            image.alt = variantLabel;
+            thumb.appendChild(image);
+            optionMain.appendChild(thumb);
+          }
+          const label=document.createElement('span');
+          label.className='label';
+          const defaultTag = defaultKey && variantKey === defaultKey
+            ? (lang==='ar' ? ' (افتراضي)' : ' (Default)')
+            : '';
+          label.textContent = `${variantLabel}${defaultTag}`;
+          optionMain.appendChild(label);
+          btn.appendChild(optionMain);
+          const priceText = formatVariantPrice(variant);
+          if(priceText){
+            const priceEl=document.createElement('span');
+            priceEl.className='price';
+            priceEl.textContent = priceText;
+            btn.appendChild(priceEl);
+          }
+          btn.addEventListener('click', ()=>{ closeOptionModal(); addToCart(item, variant); });
+          optionModalOptions.appendChild(btn);
+        });
+      }
+      optionModalEl.style.display='flex';
+      optionModalEl.setAttribute('aria-hidden','false');
+    }
+
+    function openOptionModal(item){
+      if(!isVariantItem(item)) return;
+      if(!optionModalEl){
+        const fallbackVariant = getDefaultVariant(item);
+        addToCart(item, fallbackVariant);
+        return;
+      }
+      populateOptionModal(item);
+    }
+
+    function closeOptionModal(){
+      if(optionModalEl){
+        optionModalEl.style.display='none';
+        optionModalEl.setAttribute('aria-hidden','true');
+      }
+      pendingOptionItem = null;
+      if(optionModalOptions) optionModalOptions.innerHTML='';
+      if(optionModalTitle) optionModalTitle.textContent = STRINGS[lang].option_modal_title || '';
+      if(optionModalDesc){
+        const template = STRINGS[lang].option_modal_desc_generic || '';
+        optionModalDesc.textContent = template;
+      }
+      if(optionModalCancel) optionModalCancel.textContent = STRINGS[lang].option_modal_cancel;
+    }
+
+    function updateOptionModalTexts(){
+      if(optionModalCancel) optionModalCancel.textContent = STRINGS[lang].option_modal_cancel;
+      if(optionModalEl && optionModalEl.style.display==='flex' && pendingOptionItem){
+        populateOptionModal(pendingOptionItem);
+      } else {
+        if(optionModalTitle) optionModalTitle.textContent = STRINGS[lang].option_modal_title || '';
+        if(optionModalDesc){
+          const template = STRINGS[lang].option_modal_desc_generic || '';
+          optionModalDesc.textContent = template;
+        }
+      }
+    }
+
+    function handleItemAdd(item){
+      if(isVariantItem(item)) openOptionModal(item);
+      else addToCart(item);
+    }
+
+    function addToCart(item, variant=null){
+      if(!item) return;
+      if(isVariantItem(item) && !variant){
+        openOptionModal(item);
+        toast(lang==='ar' ? 'اختر النوع قبل الإضافة للسلة.' : 'Please choose a flavor before adding to the cart.');
+        return;
+      }
+      const baseKey = getItemKey(item);
+      const variantLabelAr = variant ? (variant.ar || variant.en || '') : '';
+      const variantLabelEn = variant ? (variant.en || variant.ar || '') : '';
+      const key = variant ? `${baseKey}::${variant.key || variantLabelAr || variantLabelEn}` : baseKey;
+      const price = variant && Number.isFinite(Number(variant.price)) ? Number(variant.price) : Number(item.price) || 0;
+      const labelAr = variant ? `${item.ar} (${variantLabelAr})` : item.ar;
+      const labelEn = variant ? `${item.en} (${variantLabelEn})` : item.en;
+      const options = variant ? [{ ar:variantLabelAr, en:variantLabelEn }] : [];
+      const existing = cart.find(i=>i.key===key);
       if(existing) existing.qty++;
-      else cart.push({...item,qty:1});
+      else cart.push({
+        key,
+        ar: labelAr,
+        en: labelEn,
+        baseAr: item.ar,
+        baseEn: item.en,
+        price,
+        qty:1,
+        options
+      });
       renderCart();
     }
 
@@ -547,13 +790,13 @@
         span.textContent = `${name} (${alt}) x${i.qty} = ${formatPrice(i.price*i.qty)}`;
         const btn=document.createElement('button');
         btn.textContent='❌';
-        btn.addEventListener('click',()=> removeFromCart(i.ar));
+        btn.addEventListener('click',()=> removeFromCart(i.key));
         row.appendChild(span);
         row.appendChild(btn);
         container.appendChild(row);
       });
       const subtotal = cart.reduce((sum,i)=>sum + i.price*i.qty,0);
-      const loyaltyCalc = calculateLoyaltyRewards(cart.map(i=>({ name_ar:i.ar, name_en:i.en, qty:i.qty, price:i.price })));
+      const loyaltyCalc = calculateLoyaltyRewards(cart.map(i=>({ name_ar:i.baseAr || i.ar, name_en:i.baseEn || i.en, qty:i.qty, price:i.price })));
       const loyaltyDiscount = loyaltyCalc.discount;
       const loyaltyRewards = loyaltyCalc.rewards;
       const total = Math.max(subtotal - loyaltyDiscount, 0);
@@ -749,7 +992,22 @@
           ul.className='items';
           entry.items.forEach(it=>{
             const name = lang==='ar' ? (it.name_ar || it.name_en || '') : (it.name_en || it.name_ar || '');
-            const opts = it.options && it.options.length ? ` — ${it.options.join(lang==='ar'?'، ':' / ')}` : '';
+            let optionCandidates = [];
+            if(lang==='ar'){
+              if(Array.isArray(it.options_ar) && it.options_ar.length) optionCandidates = it.options_ar;
+              else if(Array.isArray(it.options)) optionCandidates = it.options;
+            } else {
+              if(Array.isArray(it.options_en) && it.options_en.length) optionCandidates = it.options_en;
+              else if(Array.isArray(it.options)) optionCandidates = it.options;
+            }
+            const normalizedOptions = Array.isArray(optionCandidates)
+              ? optionCandidates.map(opt=>{
+                  if(typeof opt === 'string') return opt;
+                  if(opt && typeof opt === 'object') return lang==='ar' ? (opt.ar || opt.en || '') : (opt.en || opt.ar || '');
+                  return '';
+                }).filter(Boolean)
+              : [];
+            const opts = normalizedOptions.length ? ` — ${normalizedOptions.join(lang==='ar'?'، ':' / ')}` : '';
             const qty = it.qty || 1;
             ul.insertAdjacentHTML('beforeend', `<li>${name} ×${qty}${opts}</li>`);
           });
@@ -777,8 +1035,8 @@
       }
     }
 
-    function removeFromCart(name){
-      cart=cart.filter(i=>i.ar!==name);
+    function removeFromCart(key){
+      cart=cart.filter(i=>i.key!==key);
       renderCart();
     }
 
@@ -903,6 +1161,8 @@
     }
 
     if(tableModalBackdrop) tableModalBackdrop.addEventListener('click', closeTableModal);
+    if(optionModalBackdrop) optionModalBackdrop.addEventListener('click', closeOptionModal);
+    if(optionModalCancel) optionModalCancel.addEventListener('click', e=>{ e.preventDefault(); closeOptionModal(); });
     if(tableCancelBtn) tableCancelBtn.addEventListener('click', e=>{ e.preventDefault(); closeTableModal(); });
     if(tablePromptSelect) tablePromptSelect.addEventListener('change', ()=>{ if(tablePromptError) tablePromptError.style.display='none'; });
     if(tableConfirmBtn) tableConfirmBtn.addEventListener('click', e=>{
@@ -1152,6 +1412,7 @@
       if(sendOrderBtn) sendOrderBtn.textContent = lang==='ar'?'إرسال الطلب':'Send Order';
       fillTables();
       updateTableModalTexts();
+      updateOptionModalTexts();
       renderCart();
       updateGreeting();
       renderOrderLog(currentLogViewId || getActiveCustomerId());
@@ -1166,8 +1427,8 @@
       });
       const subtotal = cart.reduce((sum,i)=>sum + i.price*i.qty,0);
       const loyaltyCalc = calculateLoyaltyRewards(cart.map(i=>({
-        name_ar:i.ar,
-        name_en:i.en,
+        name_ar:i.baseAr || i.ar,
+        name_en:i.baseEn || i.en,
         qty:i.qty,
         price:i.price
       })));
@@ -1225,11 +1486,13 @@
         },
         loyaltyRewards,
         items: cart.map(i=>({
-          name_ar: i.ar,
-          name_en: i.en,
+          name_ar: i.baseAr || i.ar,
+          name_en: i.baseEn || i.en,
           qty: i.qty,
           price: i.price,
-          options: []
+          options: (i.options || []).map(opt=> opt && opt.ar ? opt.ar : (opt && opt.en) || '').filter(Boolean),
+          options_ar: (i.options || []).map(opt=> opt && opt.ar ? opt.ar : '').filter(Boolean),
+          options_en: (i.options || []).map(opt=> opt && opt.en ? opt.en : '').filter(Boolean)
         }))
       };
 
@@ -1294,7 +1557,7 @@
     if(search){
       search.addEventListener('input', ()=>{
         const q = search.value.trim().toLowerCase();
-        const f = arr => arr.filter(x=> (x.ar + x.en).toLowerCase().includes(q));
+        const f = arr => arr.filter(x=> itemMatchesQuery(x, q));
         if(q){
           mount('hot-coffee', f(data.hot.coffee));
           mount('hot-tea', f(data.hot.tea));
