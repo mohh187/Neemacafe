@@ -26,7 +26,7 @@ body.dark header{background:rgba(20,20,20,.82)}
 
 .header-side{display:flex;flex-direction:column;gap:10px;align-items:flex-end;flex:1 1 auto;min-width:260px}
 .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-.btn{border:1px solid var(--border);background:var(--card);color:var(--text);padding:8px 10px;border-radius:10px;font-size:14px;cursor:pointer}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:8px 10px;border-radius:10px;font-size:14px;cursor:pointer;text-decoration:none;font-weight:600}
 .btn.small{padding:6px 8px;font-size:12px}
 .btn.primary{background:var(--brand);border-color:transparent;color:#fff}
 .btn.ghost{background:transparent}
@@ -216,6 +216,7 @@ body.dark .table-modal .sheet .error{color:#e57373}
             <button class="btn ghost small" id="profileBtn">👤 تحديث البيانات</button>
           </div>
           <div class="actions">
+            <a class="btn primary" href="dashboard.html" target="_blank" rel="noopener">لوحة التحكم</a>
             <button class="btn ghost" id="orderLogBtn">📜 <span id="orderLogBtnLabel">سجل الطلبات</span></button>
             <button class="btn" id="langBtn">E</button>
             <button class="btn" id="modeBtn">🌙</button>
