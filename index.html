@@ -33,6 +33,8 @@ body.dark header{background:rgba(20,20,20,.82)}
 .greeting{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;text-align:right;width:100%}
 .greeting span{font-size:13px;color:var(--muted)}
 .greeting .welcome-name{font-weight:700;color:var(--brand)}
+.auth-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(139,94,60,.12);color:var(--brand);padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
+body.dark .auth-badge{background:rgba(212,163,115,.16);color:var(--brand-2)}
 
 @media(max-width:680px){
   .top{flex-direction:column;align-items:stretch;gap:14px}
@@ -197,6 +199,19 @@ body.dark .table-modal .sheet .error{color:#e57373}
 .log-entry .loyalty-note{margin-top:8px;font-size:12px;color:var(--brand);font-weight:600}
 .log-modal .sheet .actions{margin-top:6px;display:flex;gap:8px}
 
+/* -------- Auth Modal -------- */
+.auth-modal{align-items:center}
+.auth-modal .sheet{max-width:420px;border-radius:18px;max-height:80vh;padding:20px;display:flex;flex-direction:column;gap:14px}
+.auth-modal form{display:flex;flex-direction:column;gap:12px}
+.auth-modal label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+.auth-modal input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px}
+.auth-modal .actions{display:flex;gap:8px;margin-top:10px}
+.auth-modal .switch{font-size:13px;color:var(--brand);text-align:center;cursor:pointer}
+.auth-modal .switch button{background:none;border:none;color:inherit;font:inherit;cursor:pointer;padding:0;text-decoration:underline}
+.auth-modal .error{color:#c0392b;font-size:13px;display:none}
+body.dark .auth-modal .error{color:#ff6b6b}
+.auth-modal .auth-note{font-size:12px;color:var(--muted);margin-top:-6px}
+
   </style>
 </head>
 <body>
@@ -213,10 +228,14 @@ body.dark .table-modal .sheet .error{color:#e57373}
         <div class="header-side">
           <div class="greeting" id="greetingBar">
             <span id="greetingText">مرحبا ضيفنا العزيز</span>
+            <span class="auth-badge" id="adminBadge" style="display:none">مدير</span>
             <button class="btn ghost small" id="profileBtn">👤 تحديث البيانات</button>
           </div>
           <div class="actions">
             <button class="btn ghost" id="orderLogBtn">📜 <span id="orderLogBtnLabel">سجل الطلبات</span></button>
+            <button class="btn ghost" id="signupBtn"><span data-i18n="auth_signup_button">إنشاء حساب</span></button>
+            <button class="btn primary" id="loginBtn"><span data-i18n="auth_login_button">تسجيل الدخول</span></button>
+            <button class="btn ghost" id="logoutBtn" style="display:none"><span data-i18n="auth_logout_button">تسجيل الخروج</span></button>
             <button class="btn" id="langBtn">E</button>
             <button class="btn" id="modeBtn">🌙</button>
           </div>
@@ -415,6 +434,66 @@ body.dark .table-modal .sheet .error{color:#e57373}
     </div>
   </div>
 
+  <!-- Login Modal -->
+  <div class="modal auth-modal" id="loginModal" aria-hidden="true">
+    <div class="backdrop"></div>
+    <div class="sheet">
+      <h3 id="loginTitle">تسجيل الدخول</h3>
+      <p class="auth-note" id="loginSubtitle">ادخل بريدك وكلمة المرور للمتابعة.</p>
+      <p class="auth-note" id="loginAdminNote">حساب المدير الافتراضي: admin@neema.sa / admin123</p>
+      <form id="loginForm">
+        <label for="loginEmail" id="loginEmailLabel"><span id="loginEmailText">البريد الإلكتروني</span>
+          <input id="loginEmail" type="email" placeholder="name@example.com" autocomplete="email" required>
+        </label>
+        <label for="loginPassword" id="loginPasswordLabel"><span id="loginPasswordText">كلمة المرور</span>
+          <input id="loginPassword" type="password" placeholder="••••••••" autocomplete="current-password" required>
+        </label>
+        <div class="error" id="loginError">تعذّر تسجيل الدخول، تأكد من البريد وكلمة المرور.</div>
+        <div class="actions">
+          <button type="button" class="btn" id="loginCancelBtn">إلغاء</button>
+          <button type="submit" class="btn primary" id="loginSubmitBtn">تسجيل الدخول</button>
+        </div>
+        <div class="switch" id="loginSwitch">
+          <button type="button" id="goToSignupBtn">مستخدم جديد؟ إنشاء حساب</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Signup Modal -->
+  <div class="modal auth-modal" id="signupModal" aria-hidden="true">
+    <div class="backdrop"></div>
+    <div class="sheet">
+      <h3 id="signupTitle">إنشاء حساب جديد</h3>
+      <p class="auth-note" id="signupSubtitle">انضم إلى منصة نيمة لمتابعة طلباتك.</p>
+      <form id="signupForm">
+        <label for="signupName" id="signupNameLabel"><span id="signupNameText">الاسم الكامل</span>
+          <input id="signupName" type="text" placeholder="اسمك الكامل" autocomplete="name" required>
+        </label>
+        <label for="signupEmail" id="signupEmailLabel"><span id="signupEmailText">البريد الإلكتروني</span>
+          <input id="signupEmail" type="email" placeholder="name@example.com" autocomplete="email" required>
+        </label>
+        <label for="signupPhone" id="signupPhoneLabel"><span id="signupPhoneText">رقم التواصل (اختياري)</span>
+          <input id="signupPhone" type="tel" placeholder="05xxxxxxxx" autocomplete="tel">
+        </label>
+        <label for="signupPassword" id="signupPasswordLabel"><span id="signupPasswordText">كلمة المرور</span>
+          <input id="signupPassword" type="password" placeholder="••••••••" autocomplete="new-password" required>
+        </label>
+        <label for="signupConfirm" id="signupConfirmLabel"><span id="signupConfirmText">تأكيد كلمة المرور</span>
+          <input id="signupConfirm" type="password" placeholder="••••••••" autocomplete="new-password" required>
+        </label>
+        <div class="error" id="signupError">يرجى تعبئة الحقول المطلوبة.</div>
+        <div class="actions">
+          <button type="button" class="btn" id="signupCancelBtn">إلغاء</button>
+          <button type="submit" class="btn primary" id="signupSubmitBtn">إنشاء الحساب</button>
+        </div>
+        <div class="switch" id="signupSwitch">
+          <button type="button" id="goToLoginBtn">لديك حساب؟ تسجيل الدخول</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Loyalty Modal -->
   <div class="modal loyalty-modal" id="loyaltyModal" aria-hidden="true">
     <div class="backdrop"></div>
@@ -504,7 +583,36 @@ const STRINGS = {
     loyalty_button:'تمام',
     loyalty_reward_label:'هدية الولاء',
     loyalty_discount_label:'خصم الولاء',
-    order_log_loyalty_reward:'هدية الولاء'
+    order_log_loyalty_reward:'هدية الولاء',
+    auth_login_button:'تسجيل الدخول',
+    auth_signup_button:'إنشاء حساب',
+    auth_logout_button:'تسجيل الخروج',
+    auth_admin_badge:'مدير',
+    auth_login_title:'تسجيل الدخول',
+    auth_login_subtitle:'ادخل بريدك وكلمة المرور للمتابعة.',
+    auth_admin_note:'حساب المدير الافتراضي: admin@neema.sa / admin123',
+    auth_email_label:'البريد الإلكتروني',
+    auth_password_label:'كلمة المرور',
+    auth_email_placeholder:'name@example.com',
+    auth_password_placeholder:'••••••••',
+    auth_login_submit:'تسجيل الدخول',
+    auth_login_switch:'مستخدم جديد؟ إنشاء حساب',
+    auth_signup_title:'إنشاء حساب جديد',
+    auth_signup_subtitle:'انضم إلى منصة نيمة لمتابعة طلباتك.',
+    auth_name_label:'الاسم الكامل',
+    auth_phone_label:'رقم التواصل (اختياري)',
+    auth_name_placeholder:'اسمك الكامل',
+    auth_phone_placeholder:'05xxxxxxxx',
+    auth_password_confirm_label:'تأكيد كلمة المرور',
+    auth_signup_submit:'إنشاء الحساب',
+    auth_signup_switch:'لديك حساب؟ تسجيل الدخول',
+    auth_required_fields:'يرجى تعبئة الحقول المطلوبة.',
+    auth_password_mismatch:'كلمة المرور وتأكيدها غير متطابقين.',
+    auth_email_exists:'البريد الإلكتروني مسجل بالفعل.',
+    auth_login_error:'تعذّر تسجيل الدخول، تأكد من البريد وكلمة المرور.',
+    auth_login_success:'تم تسجيل الدخول بنجاح 🤎',
+    auth_signup_success:'مرحباً بك! تم إنشاء حسابك 🤎',
+    auth_logout_success:'تم تسجيل الخروج بنجاح.'
   },
   en: {
     title:'Neema Menu', tagline:'A taste that grows from the roots', search:'Search item… (e.g., Latte, Mojito)',
@@ -566,7 +674,36 @@ const STRINGS = {
     loyalty_button:'Got it',
     loyalty_reward_label:'Loyalty treat',
     loyalty_discount_label:'Loyalty discount',
-    order_log_loyalty_reward:'Loyalty treat'
+    order_log_loyalty_reward:'Loyalty treat',
+    auth_login_button:'Sign in',
+    auth_signup_button:'Create account',
+    auth_logout_button:'Sign out',
+    auth_admin_badge:'Admin',
+    auth_login_title:'Sign in',
+    auth_login_subtitle:'Use your email and password to continue.',
+    auth_admin_note:'Default admin account: admin@neema.sa / admin123',
+    auth_email_label:'Email',
+    auth_password_label:'Password',
+    auth_email_placeholder:'name@example.com',
+    auth_password_placeholder:'••••••••',
+    auth_login_submit:'Sign in',
+    auth_login_switch:'New here? Create an account',
+    auth_signup_title:'Create a new account',
+    auth_signup_subtitle:'Join the Neema platform to follow your orders.',
+    auth_name_label:'Full name',
+    auth_phone_label:'Phone (optional)',
+    auth_name_placeholder:'Your full name',
+    auth_phone_placeholder:'+9665...',
+    auth_password_confirm_label:'Confirm password',
+    auth_signup_submit:'Create account',
+    auth_signup_switch:'Already have an account? Sign in',
+    auth_required_fields:'Please fill in the required fields.',
+    auth_password_mismatch:'Password and confirmation do not match.',
+    auth_email_exists:'Email is already registered.',
+    auth_login_error:'Unable to sign in. Check your email and password.',
+    auth_login_success:'Signed in successfully 🤎',
+    auth_signup_success:'Welcome! Your account is ready 🤎',
+    auth_logout_success:'Signed out successfully.'
   }
 };
 
@@ -634,10 +771,22 @@ const CUSTOMER_PROFILE_KEY = 'nima.customerProfile';
 const CUSTOMER_REGISTRY_KEY = 'nima.customerRegistry';
 const LOYALTY_KEY = 'nima.loyaltyTracker';
 const SESSION_GREETING_KEY = 'nima.greetedSession';
+const AUTH_USERS_KEY = 'nima.auth.users';
+const AUTH_SESSION_KEY = 'nima.auth.session';
+const DEFAULT_ADMIN = {
+  id:'admin-default',
+  name:'Neema Admin',
+  email:'admin@neema.sa',
+  phone:'+966000000000',
+  password:'admin123',
+  role:'admin'
+};
 let customerProfile = loadCustomerProfile();
 let customerRegistry = loadCustomerRegistry();
 let orderLog = loadOrderLog();
 let loyaltyState = loadLoyaltyState();
+let authUsers = [];
+let authSession = null;
 let currentLogViewId = '';
 let currentDiscountCode = '';
 
@@ -688,6 +837,156 @@ function loadCustomerRegistry(){
 function saveCustomerRegistry(){
   try{ localStorage.setItem(CUSTOMER_REGISTRY_KEY, JSON.stringify(customerRegistry)); }
   catch(e){ console.warn('Unable to persist customer registry', e); }
+}
+
+/* ===== Auth Helpers ===== */
+function generateUserId(){
+  return 'user-' + Math.random().toString(36).slice(2,8) + Date.now().toString(36);
+}
+
+function hashPassword(pw){
+  try{
+    return btoa(unescape(encodeURIComponent(String(pw || ''))));
+  }catch(e){
+    return '';
+  }
+}
+
+function createUserRecord(info){
+  if(!info || typeof info !== 'object') info = {};
+  return {
+    id: info.id || generateUserId(),
+    name: (info.name || '').trim(),
+    email: (info.email || '').trim().toLowerCase(),
+    phone: (info.phone || '').trim(),
+    password: hashPassword(info.password || ''),
+    role: info.role || 'customer',
+    createdAt: info.createdAt || new Date().toISOString()
+  };
+}
+
+function loadAuthUsers(){
+  let stored = [];
+  try{
+    const raw = JSON.parse(localStorage.getItem(AUTH_USERS_KEY) || 'null');
+    if(Array.isArray(raw)) stored = raw;
+  }catch(e){ stored = []; }
+  if(!Array.isArray(stored)) stored = [];
+  let changed = false;
+  const adminEmail = (DEFAULT_ADMIN.email || '').toLowerCase();
+  const existing = stored.find(u => (u && typeof u === 'object' && (u.email || '').toLowerCase() === adminEmail));
+  if(existing){
+    if(existing.role !== 'admin'){
+      existing.role = 'admin';
+      changed = true;
+    }
+    if(!existing.password){
+      existing.password = hashPassword(DEFAULT_ADMIN.password);
+      changed = true;
+    }
+  } else {
+    stored.push(createUserRecord(DEFAULT_ADMIN));
+    changed = true;
+  }
+  if(changed){
+    try{ localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(stored)); }
+    catch(e){ console.warn('Unable to persist auth users', e); }
+  }
+  return stored;
+}
+
+function saveAuthUsers(){
+  try{ localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(authUsers)); }
+  catch(e){ console.warn('Unable to persist auth users', e); }
+}
+
+function loadAuthSession(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(AUTH_SESSION_KEY) || 'null');
+    if(raw && typeof raw === 'object' && raw.email){
+      return { id: raw.id || '', email: String(raw.email).toLowerCase() };
+    }
+  }catch(e){}
+  return null;
+}
+
+function saveAuthSession(){
+  if(authSession && authSession.email){
+    try{ localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(authSession)); }
+    catch(e){ console.warn('Unable to persist auth session', e); }
+  } else {
+    try{ localStorage.removeItem(AUTH_SESSION_KEY); }
+    catch(e){}
+  }
+}
+
+function getActiveUser(){
+  if(!authSession || !authSession.email) return null;
+  const email = String(authSession.email).toLowerCase();
+  return authUsers.find(u => u && (u.email || '').toLowerCase() === email) || null;
+}
+
+function syncProfileWithUser(user){
+  if(!user) return;
+  const profile = {
+    id: user.id || generateCustomerId(user.name || '', user.phone || ''),
+    name: user.name || '',
+    phone: user.phone || ''
+  };
+  saveCustomerProfileData(profile);
+  ensureCustomerRegistryEntry(profile.id, profile);
+  const bucket = ensureCustomerLog(profile.id, profile);
+  if(profile.id !== 'guest' && orderLog && orderLog.customers && orderLog.customers.guest && Array.isArray(orderLog.customers.guest.orders) && orderLog.customers.guest.orders.length){
+    const guestOrders = orderLog.customers.guest.orders.slice();
+    if(guestOrders.length){
+      bucket.orders = guestOrders.concat(bucket.orders || []);
+      orderLog.customers.guest.orders = [];
+      saveOrderLog();
+    }
+  }
+  currentLogViewId = profile.id;
+}
+
+function setActiveUser(user, options={}){
+  if(user){
+    authSession = { id: user.id || '', email: (user.email || '').toLowerCase() };
+    saveAuthSession();
+    syncProfileWithUser(user);
+    updateAuthUI();
+    updateGreeting();
+    const toastMsg = options.toastMessage || (!options.silent ? STRINGS[lang].auth_login_success : '');
+    if(toastMsg){ toast(toastMsg); }
+    if(!options.silent){ maybeToastGreeting(true); }
+  } else {
+    authSession = null;
+    saveAuthSession();
+    if(options.resetProfile !== false){
+      customerProfile = {};
+      try{ localStorage.removeItem(CUSTOMER_PROFILE_KEY); }
+      catch(e){}
+      currentLogViewId = '';
+    }
+    updateAuthUI();
+    updateGreeting();
+    if(options.toastMessage){ toast(options.toastMessage); }
+  }
+}
+
+function initializeAuth(){
+  authUsers = loadAuthUsers();
+  authSession = loadAuthSession();
+  const active = getActiveUser();
+  if(active){
+    if(authSession){
+      authSession.id = active.id || authSession.id || '';
+      saveAuthSession();
+    }
+    syncProfileWithUser(active);
+  } else if(authSession){
+    authSession = null;
+    saveAuthSession();
+  }
+  updateAuthUI();
 }
 
 function ensureCustomerRegistryEntry(id, profile={}){
@@ -1040,6 +1339,63 @@ function renderAll(){
   document.getElementById('profilePhone').placeholder = STRINGS[lang].profile_phone_placeholder;
   document.getElementById('loyaltyTitle').textContent = STRINGS[lang].loyalty_title;
   document.getElementById('loyaltyCloseBtn').textContent = STRINGS[lang].loyalty_button;
+  document.querySelectorAll('[data-i18n="auth_login_button"]').forEach(e=> e.textContent = STRINGS[lang].auth_login_button);
+  document.querySelectorAll('[data-i18n="auth_signup_button"]').forEach(e=> e.textContent = STRINGS[lang].auth_signup_button);
+  document.querySelectorAll('[data-i18n="auth_logout_button"]').forEach(e=> e.textContent = STRINGS[lang].auth_logout_button);
+  const loginTitle = document.getElementById('loginTitle');
+  if(loginTitle) loginTitle.textContent = STRINGS[lang].auth_login_title;
+  const loginSubtitle = document.getElementById('loginSubtitle');
+  if(loginSubtitle) loginSubtitle.textContent = STRINGS[lang].auth_login_subtitle;
+  const loginAdminNote = document.getElementById('loginAdminNote');
+  if(loginAdminNote) loginAdminNote.textContent = STRINGS[lang].auth_admin_note;
+  const loginEmailText = document.getElementById('loginEmailText');
+  if(loginEmailText) loginEmailText.textContent = STRINGS[lang].auth_email_label;
+  const loginPasswordText = document.getElementById('loginPasswordText');
+  if(loginPasswordText) loginPasswordText.textContent = STRINGS[lang].auth_password_label;
+  const loginEmail = document.getElementById('loginEmail');
+  if(loginEmail) loginEmail.placeholder = STRINGS[lang].auth_email_placeholder;
+  const loginPassword = document.getElementById('loginPassword');
+  if(loginPassword) loginPassword.placeholder = STRINGS[lang].auth_password_placeholder;
+  const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+  if(loginSubmitBtn) loginSubmitBtn.textContent = STRINGS[lang].auth_login_submit;
+  const loginCancelBtn = document.getElementById('loginCancelBtn');
+  if(loginCancelBtn) loginCancelBtn.textContent = STRINGS[lang].cancel;
+  const loginError = document.getElementById('loginError');
+  if(loginError) loginError.textContent = STRINGS[lang].auth_login_error;
+  const loginSwitch = document.getElementById('goToSignupBtn');
+  if(loginSwitch) loginSwitch.textContent = STRINGS[lang].auth_login_switch;
+  const signupTitle = document.getElementById('signupTitle');
+  if(signupTitle) signupTitle.textContent = STRINGS[lang].auth_signup_title;
+  const signupSubtitle = document.getElementById('signupSubtitle');
+  if(signupSubtitle) signupSubtitle.textContent = STRINGS[lang].auth_signup_subtitle;
+  const signupNameText = document.getElementById('signupNameText');
+  if(signupNameText) signupNameText.textContent = STRINGS[lang].auth_name_label;
+  const signupEmailText = document.getElementById('signupEmailText');
+  if(signupEmailText) signupEmailText.textContent = STRINGS[lang].auth_email_label;
+  const signupPhoneText = document.getElementById('signupPhoneText');
+  if(signupPhoneText) signupPhoneText.textContent = STRINGS[lang].auth_phone_label;
+  const signupPasswordText = document.getElementById('signupPasswordText');
+  if(signupPasswordText) signupPasswordText.textContent = STRINGS[lang].auth_password_label;
+  const signupConfirmText = document.getElementById('signupConfirmText');
+  if(signupConfirmText) signupConfirmText.textContent = STRINGS[lang].auth_password_confirm_label;
+  const signupName = document.getElementById('signupName');
+  if(signupName) signupName.placeholder = STRINGS[lang].auth_name_placeholder;
+  const signupEmail = document.getElementById('signupEmail');
+  if(signupEmail) signupEmail.placeholder = STRINGS[lang].auth_email_placeholder;
+  const signupPhone = document.getElementById('signupPhone');
+  if(signupPhone) signupPhone.placeholder = STRINGS[lang].auth_phone_placeholder;
+  const signupPassword = document.getElementById('signupPassword');
+  if(signupPassword) signupPassword.placeholder = STRINGS[lang].auth_password_placeholder;
+  const signupConfirm = document.getElementById('signupConfirm');
+  if(signupConfirm) signupConfirm.placeholder = STRINGS[lang].auth_password_placeholder;
+  const signupCancelBtn = document.getElementById('signupCancelBtn');
+  if(signupCancelBtn) signupCancelBtn.textContent = STRINGS[lang].cancel;
+  const signupSubmitBtn = document.getElementById('signupSubmitBtn');
+  if(signupSubmitBtn) signupSubmitBtn.textContent = STRINGS[lang].auth_signup_submit;
+  const signupError = document.getElementById('signupError');
+  if(signupError) signupError.textContent = STRINGS[lang].auth_required_fields;
+  const signupSwitch = document.getElementById('goToLoginBtn');
+  if(signupSwitch) signupSwitch.textContent = STRINGS[lang].auth_signup_switch;
   const discountLabel = document.getElementById('discountLabel');
   if(discountLabel) discountLabel.textContent = STRINGS[lang].discount_label;
   const discountInput = document.getElementById('discountInput');
@@ -1066,6 +1422,7 @@ function renderAll(){
   updateCartBadge();
   updateCustomizationLabels();
   updateGreeting();
+  updateAuthUI();
   renderOrderLog(currentLogViewId || getActiveCustomerId());
   renderCart();
 }
@@ -1074,8 +1431,10 @@ function updateGreeting(){
   const textEl = document.getElementById('greetingText');
   const btn = document.getElementById('profileBtn');
   if(btn) btn.textContent = STRINGS[lang].profile_button;
+  const badge = document.getElementById('adminBadge');
+  const activeUser = getActiveUser();
   if(!textEl) return;
-  const name = customerProfile && customerProfile.name ? customerProfile.name.trim() : '';
+  const name = activeUser && activeUser.name ? activeUser.name.trim() : (customerProfile && customerProfile.name ? customerProfile.name.trim() : '');
   if(name){
     const safe = escapeHtml(name);
     const template = STRINGS[lang].greeting_named || STRINGS[lang].greeting_guest;
@@ -1083,6 +1442,24 @@ function updateGreeting(){
   } else {
     textEl.textContent = STRINGS[lang].greeting_guest;
   }
+  if(badge){
+    if(activeUser && activeUser.role === 'admin'){
+      badge.textContent = STRINGS[lang].auth_admin_badge;
+      badge.style.display = 'inline-flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+}
+
+function updateAuthUI(){
+  const user = getActiveUser();
+  const loginBtnEl = document.getElementById('loginBtn');
+  const signupBtnEl = document.getElementById('signupBtn');
+  const logoutBtnEl = document.getElementById('logoutBtn');
+  if(loginBtnEl) loginBtnEl.style.display = user ? 'none' : 'inline-flex';
+  if(signupBtnEl) signupBtnEl.style.display = user ? 'none' : 'inline-flex';
+  if(logoutBtnEl) logoutBtnEl.style.display = user ? 'inline-flex' : 'none';
 }
 
 function maybeToastGreeting(force=false){
@@ -1129,6 +1506,148 @@ langBtn.onclick = ()=>{
   localStorage.setItem('nima.lang', lang);
   renderAll(); updateLangBtn();
 };
+
+/* ===== Auth UI ===== */
+const loginModalEl = document.getElementById('loginModal');
+const signupModalEl = document.getElementById('signupModal');
+const loginBackdrop = document.querySelector('#loginModal .backdrop');
+const signupBackdrop = document.querySelector('#signupModal .backdrop');
+const loginForm = document.getElementById('loginForm');
+const signupForm = document.getElementById('signupForm');
+const loginErrorEl = document.getElementById('loginError');
+const signupErrorEl = document.getElementById('signupError');
+const loginBtnTrigger = document.getElementById('loginBtn');
+const signupBtnTrigger = document.getElementById('signupBtn');
+const logoutBtnTrigger = document.getElementById('logoutBtn');
+const loginCancelBtn = document.getElementById('loginCancelBtn');
+const signupCancelBtn = document.getElementById('signupCancelBtn');
+const goToSignupBtn = document.getElementById('goToSignupBtn');
+const goToLoginBtn = document.getElementById('goToLoginBtn');
+const loginEmailInput = document.getElementById('loginEmail');
+const loginPasswordInput = document.getElementById('loginPassword');
+const signupNameInput = document.getElementById('signupName');
+const signupEmailInput = document.getElementById('signupEmail');
+const signupPhoneInput = document.getElementById('signupPhone');
+const signupPasswordInput = document.getElementById('signupPassword');
+const signupConfirmInput = document.getElementById('signupConfirm');
+
+function openLoginModal(){
+  if(!loginModalEl) return;
+  if(loginForm){ loginForm.reset(); }
+  if(loginErrorEl){
+    loginErrorEl.style.display = 'none';
+    loginErrorEl.textContent = STRINGS[lang].auth_login_error;
+  }
+  loginModalEl.style.display = 'flex';
+  loginModalEl.setAttribute('aria-hidden','false');
+  setTimeout(()=>{ if(loginEmailInput) loginEmailInput.focus(); }, 30);
+}
+
+function closeLoginModal(){
+  if(!loginModalEl) return;
+  loginModalEl.style.display = 'none';
+  loginModalEl.setAttribute('aria-hidden','true');
+}
+
+function openSignupModal(){
+  if(!signupModalEl) return;
+  if(signupForm){ signupForm.reset(); }
+  if(signupErrorEl){
+    signupErrorEl.style.display = 'none';
+    signupErrorEl.textContent = STRINGS[lang].auth_required_fields;
+  }
+  signupModalEl.style.display = 'flex';
+  signupModalEl.setAttribute('aria-hidden','false');
+  setTimeout(()=>{ if(signupNameInput) signupNameInput.focus(); }, 30);
+}
+
+function closeSignupModal(){
+  if(!signupModalEl) return;
+  signupModalEl.style.display = 'none';
+  signupModalEl.setAttribute('aria-hidden','true');
+}
+
+function showLoginError(msg){
+  if(!loginErrorEl) return;
+  loginErrorEl.textContent = msg || STRINGS[lang].auth_login_error;
+  loginErrorEl.style.display = 'block';
+}
+
+function showSignupError(msg){
+  if(!signupErrorEl) return;
+  signupErrorEl.textContent = msg || STRINGS[lang].auth_required_fields;
+  signupErrorEl.style.display = 'block';
+}
+
+function hideLoginError(){ if(loginErrorEl) loginErrorEl.style.display = 'none'; }
+function hideSignupError(){ if(signupErrorEl) signupErrorEl.style.display = 'none'; }
+
+function handleLoginSubmit(e){
+  e.preventDefault();
+  const email = (loginEmailInput && loginEmailInput.value || '').trim().toLowerCase();
+  const password = loginPasswordInput && loginPasswordInput.value ? loginPasswordInput.value : '';
+  if(!email || !password){
+    showLoginError(STRINGS[lang].auth_required_fields);
+    return;
+  }
+  const user = authUsers.find(u => u && (u.email || '').toLowerCase() === email);
+  if(!user || hashPassword(password) !== user.password){
+    showLoginError(STRINGS[lang].auth_login_error);
+    return;
+  }
+  closeLoginModal();
+  setActiveUser(user, { toastMessage: STRINGS[lang].auth_login_success });
+  renderOrderLog(user.id || getActiveCustomerId());
+}
+
+function handleSignupSubmit(e){
+  e.preventDefault();
+  const name = (signupNameInput && signupNameInput.value || '').trim();
+  const email = (signupEmailInput && signupEmailInput.value || '').trim().toLowerCase();
+  const phoneRaw = (signupPhoneInput && signupPhoneInput.value || '').trim();
+  const phone = normalizePhone(phoneRaw);
+  const password = signupPasswordInput && signupPasswordInput.value ? signupPasswordInput.value : '';
+  const confirm = signupConfirmInput && signupConfirmInput.value ? signupConfirmInput.value : '';
+  if(!name || !email || !password || !confirm){
+    showSignupError(STRINGS[lang].auth_required_fields);
+    return;
+  }
+  if(password !== confirm){
+    showSignupError(STRINGS[lang].auth_password_mismatch);
+    return;
+  }
+  if(authUsers.find(u => u && (u.email || '').toLowerCase() === email)){
+    showSignupError(STRINGS[lang].auth_email_exists);
+    return;
+  }
+  const user = createUserRecord({ name, email, phone, password, role:'customer' });
+  authUsers.push(user);
+  saveAuthUsers();
+  closeSignupModal();
+  setActiveUser(user, { toastMessage: STRINGS[lang].auth_signup_success });
+  renderOrderLog(user.id || getActiveCustomerId());
+}
+
+if(loginBackdrop){ loginBackdrop.addEventListener('click', closeLoginModal); }
+if(signupBackdrop){ signupBackdrop.addEventListener('click', closeSignupModal); }
+if(loginCancelBtn){ loginCancelBtn.addEventListener('click', (e)=>{ e.preventDefault(); closeLoginModal(); }); }
+if(signupCancelBtn){ signupCancelBtn.addEventListener('click', (e)=>{ e.preventDefault(); closeSignupModal(); }); }
+if(loginBtnTrigger){ loginBtnTrigger.addEventListener('click', ()=>{ openLoginModal(); }); }
+if(signupBtnTrigger){ signupBtnTrigger.addEventListener('click', ()=>{ openSignupModal(); }); }
+if(goToSignupBtn){ goToSignupBtn.addEventListener('click', ()=>{ closeLoginModal(); openSignupModal(); }); }
+if(goToLoginBtn){ goToLoginBtn.addEventListener('click', ()=>{ closeSignupModal(); openLoginModal(); }); }
+if(loginForm){ loginForm.addEventListener('submit', handleLoginSubmit); }
+if(signupForm){ signupForm.addEventListener('submit', handleSignupSubmit); }
+if(loginForm){ loginForm.addEventListener('input', hideLoginError); }
+if(signupForm){ signupForm.addEventListener('input', hideSignupError); }
+if(logoutBtnTrigger){
+  logoutBtnTrigger.addEventListener('click', ()=>{
+    closeLoginModal();
+    closeSignupModal();
+    setActiveUser(null, { toastMessage: STRINGS[lang].auth_logout_success });
+    renderOrderLog(getActiveCustomerId());
+  });
+}
 
 /* ===== Tables ===== */
 const tableSelect = $('#table');
@@ -1957,7 +2476,9 @@ function toast(msg){
 
 /* ===== Init ===== */
 function init(){
+  initializeAuth();
   localStorage.removeItem('nima.table');
+  const activeUser = getActiveUser();
   if(customerProfile && (customerProfile.name || customerProfile.phone)){
     if(!customerProfile.id){
       customerProfile.id = generateCustomerId(customerProfile.name || '', customerProfile.phone || '');
@@ -1967,7 +2488,9 @@ function init(){
     ensureCustomerLog(customerProfile.id, customerProfile);
   }
   renderAll(); updateLangBtn(); updateCartBadge();
-  if(customerProfile && (customerProfile.name || customerProfile.phone)){
+  if(activeUser){
+    maybeToastGreeting();
+  } else if(customerProfile && (customerProfile.name || customerProfile.phone)){
     maybeToastGreeting();
   } else {
     setTimeout(()=> openProfileModal(false), 900);
