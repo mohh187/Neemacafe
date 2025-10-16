@@ -6,6 +6,29 @@ This repo contains two builds of the interactive Neema Café menu:
 - `menu` – the compact legacy build that shares the same functionality and strings.
 - `menu-data.js` – the shared catalogue of drinks and desserts that both builds render.
 - `order-status.html` – lightweight view Telegram uses when a waiter accepts or finishes an order.
+- `dashboard.html` – لوحة تحكم داخلية لإدارة المنيو والحسابات في نسخة الـ SaaS.
+
+## SaaS operations dashboard
+
+`dashboard.html` provides a separate, Arabic-first control panel for cloud operators. The default administrator account is:
+
+- بريد إلكتروني: `admin@neema.sa`
+- كلمة المرور: `Neema@123`
+
+After signing in you can:
+
+- إنشاء، تعديل، أو حذف الأقسام والفئات الفرعية قبل نشرها في المنيو العام.
+- إضافة أصناف جديدة مع الأسعار والسعرات والوسوم والحالة (متاح/غير متاح/موسمي).
+- إدارة حسابات الفريق (مسؤول، مدير فرع، موظف خدمة، عرض فقط) والتحكم في حالة كل حساب أو إعادة ضبط كلمة المرور.
+- تصدير نسخة JSON احتياطية للمنيو أو استيراد ملف جديد لتحديث البيانات مجمعًا.
+- مراجعة تقارير سريعة حول العناصر التي تحتاج متابعة، مثل الأصناف بلا صور أو غير المتاحة حاليًا.
+
+### مفاتيح التخزين المحلي الخاصة باللوحة
+
+- `neema-dashboard-menu-v1` – نسخة المنيو التي يجري العمل عليها داخل اللوحة.
+- `neema-dashboard-users-v1` – قائمة حسابات الفريق المخزنة محليًا.
+- `neema-dashboard-session-v1` – جلسة تسجيل دخول المسؤول الحالي.
+- `neema-dashboard-activity-v1` – آخر الأنشطة التي تمت داخل اللوحة (بحد أقصى 50 حركة).
 
 ## Using the shared menu data in another page
 

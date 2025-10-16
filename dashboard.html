@@ -1,0 +1,1990 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>لوحة التحكم | Neema Cafe SaaS</title>
+  <style>
+    :root {
+      --bg: #f6f5f3;
+      --card: #ffffff;
+      --text: #1f1f1f;
+      --muted: #6b6b6b;
+      --brand: #8b5e3c;
+      --brand-dark: #70492d;
+      --accent: #d4a373;
+      --border: #e4ded7;
+      --radius: 18px;
+      --shadow: 0 18px 40px rgba(112, 73, 45, 0.12);
+      --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.08);
+      --success: #2f9d61;
+      --danger: #c0392b;
+      --warning: #d48626;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Tajawal", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font-family: inherit;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* ---------- Auth Screen ---------- */
+    .auth-screen {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 32px 16px;
+      background: radial-gradient(circle at top right, rgba(212, 163, 115, 0.18), transparent 60%),
+        radial-gradient(circle at bottom left, rgba(112, 73, 45, 0.14), transparent 60%), var(--bg);
+    }
+
+    .auth-card {
+      background: var(--card);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      max-width: 420px;
+      width: 100%;
+      padding: 32px 28px 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .auth-card header {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: center;
+    }
+
+    .auth-card header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .auth-card header p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .auth-card form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    input[type="email"],
+    input[type="password"],
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 15px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(139, 94, 60, 0.15);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 96px;
+    }
+
+    .btn {
+      border-radius: 14px;
+      border: 1px solid transparent;
+      padding: 12px 14px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+      color: #fff;
+      box-shadow: 0 12px 24px rgba(112, 73, 45, 0.24);
+    }
+
+    .btn.secondary {
+      background: rgba(139, 94, 60, 0.12);
+      color: var(--brand-dark);
+      border-color: rgba(139, 94, 60, 0.24);
+    }
+
+    .btn.text {
+      background: transparent;
+      color: var(--brand);
+      border-color: transparent;
+    }
+
+    .btn.danger {
+      background: rgba(192, 57, 43, 0.12);
+      color: var(--danger);
+      border-color: rgba(192, 57, 43, 0.24);
+    }
+
+    .btn.small {
+      padding: 6px 10px;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+
+    .btn.icon {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border-radius: 50%;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(139, 94, 60, 0.12);
+      color: var(--brand-dark);
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .pill-success {
+      background: rgba(47, 157, 97, 0.14);
+      color: var(--success);
+    }
+
+    .pill-danger {
+      background: rgba(192, 57, 43, 0.12);
+      color: var(--danger);
+    }
+
+    .form-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* ---------- Dashboard Layout ---------- */
+    .app {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: #fff;
+      border-left: 1px solid var(--border);
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      box-shadow: 10px 0 40px rgba(0, 0, 0, 0.06);
+    }
+
+    .sidebar .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar .brand img {
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+    }
+
+    .sidebar .brand h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-list button {
+      width: 100%;
+      justify-content: flex-start;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .nav-list button.active {
+      background: rgba(139, 94, 60, 0.12);
+      color: var(--brand-dark);
+    }
+
+    .sidebar footer {
+      margin-top: auto;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    .content {
+      padding: 32px clamp(18px, 4vw, 46px);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .content-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .content-header .headline h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .content-header .headline p {
+      margin: 6px 0 0;
+      color: var(--muted);
+    }
+
+    .content-header .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .view {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .view.active {
+      display: flex;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid rgba(112, 73, 45, 0.06);
+      box-shadow: var(--shadow-soft);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .card-header h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .stat {
+      padding: 18px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(139, 94, 60, 0.1), rgba(212, 163, 115, 0.12));
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .stat strong {
+      font-size: 22px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    table thead {
+      background: rgba(139, 94, 60, 0.06);
+    }
+
+    table th,
+    table td {
+      text-align: right;
+      padding: 12px 10px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      vertical-align: top;
+    }
+
+    table tbody tr:hover {
+      background: rgba(139, 94, 60, 0.04);
+    }
+
+    .table-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .inline-form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .inline-form.full textarea {
+      grid-column: 1 / -1;
+    }
+
+    .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    .switch input {
+      width: 18px;
+      height: 18px;
+    }
+
+    .builder-layout {
+      display: grid;
+      grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .category-list,
+    .group-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .category-list li,
+    .group-list li {
+      border: 1px solid rgba(139, 94, 60, 0.14);
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.9);
+      transition: border-color 0.2s ease, transform 0.15s ease;
+    }
+
+    .category-list li.active,
+    .group-list li.active {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 2px rgba(139, 94, 60, 0.18);
+    }
+
+    .category-list li:hover,
+    .group-list li:hover {
+      transform: translateY(-2px);
+    }
+
+    .entity-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .entity-info small {
+      color: var(--muted);
+    }
+
+    .editor-panel {
+      border: 1px dashed rgba(139, 94, 60, 0.3);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: rgba(139, 94, 60, 0.04);
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      padding: 4px 10px;
+      background: rgba(139, 94, 60, 0.1);
+      border-radius: 999px;
+      font-size: 12px;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 24px 12px;
+      border: 1px dashed rgba(0, 0, 0, 0.06);
+      border-radius: 16px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(120%);
+      background: var(--brand);
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 999px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 960px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        flex-direction: row;
+        gap: 16px;
+        overflow-x: auto;
+        padding: 16px;
+      }
+
+      .sidebar .brand {
+        display: none;
+      }
+
+      .nav-list {
+        flex-direction: row;
+        gap: 8px;
+      }
+
+      .nav-list button {
+        white-space: nowrap;
+      }
+
+      .builder-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .content-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .inline-form {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="loginView" class="auth-screen">
+    <div class="auth-card">
+      <header>
+        <h1>تسجيل دخول لوحة التحكم</h1>
+        <p>قم بتسجيل الدخول باستخدام حساب المسؤول لإدارة المنيو والحسابات في منصة Neema Cafe السحابية.</p>
+      </header>
+      <form id="loginForm">
+        <label>
+          البريد الإلكتروني
+          <input type="email" name="email" required placeholder="admin@neema.sa" autocomplete="username" />
+        </label>
+        <label>
+          كلمة المرور
+          <input type="password" name="password" required placeholder="••••••••" autocomplete="current-password" />
+        </label>
+        <div class="form-footer">
+          <button type="submit" class="btn primary">دخول</button>
+        </div>
+      </form>
+      <section>
+        <h3 style="margin:0;font-size:16px;">بيانات الاعتماد الافتراضية</h3>
+        <p style="margin:6px 0 0;color:var(--muted);font-size:14px;">حساب المسؤول الأولي: <strong>admin@neema.sa</strong> / <strong>Neema@123</strong></p>
+        <p style="margin:6px 0 0;color:var(--muted);font-size:13px;">يمكنك تغيير كلمة المرور بعد تسجيل الدخول من قسم الإعدادات.</p>
+      </section>
+    </div>
+  </div>
+
+  <div id="dashboard" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="https://i.postimg.cc/Y0GT5M1f/image.png" alt="Neema Cafe" />
+        <div>
+          <h2>لوحة تحكم نيمة</h2>
+          <small style="color:var(--muted);">إدارة المنيو والسحابة</small>
+        </div>
+      </div>
+      <nav class="nav-list">
+        <button class="active" data-view="overview">نظرة عامة</button>
+        <button data-view="menu">مصمم المنيو</button>
+        <button data-view="users">إدارة المستخدمين</button>
+        <button data-view="insights">تحليلات المنيو</button>
+        <button data-view="settings">الإعدادات</button>
+      </nav>
+      <footer>
+        <div>مسجل الدخول: <strong id="currentUserName">—</strong></div>
+        <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button id="logoutBtn" class="btn text small">تسجيل الخروج</button>
+        </div>
+        <div style="margin-top:12px;">© Neema Cafe Cloud</div>
+      </footer>
+    </aside>
+
+    <main class="content">
+      <header class="content-header">
+        <div class="headline">
+          <h1 id="viewTitle">نظرة عامة على العمليات</h1>
+          <p id="viewSubtitle">تابع أداء المنيو، إدارة الأصناف، وتحكم في صلاحيات الفرق.</p>
+        </div>
+        <div class="actions">
+          <button id="quickAddItem" class="btn secondary">إضافة صنف سريع</button>
+          <button id="quickDownload" class="btn text">تصدير نسخة احتياطية</button>
+        </div>
+      </header>
+
+      <section id="overviewView" class="view active">
+        <div class="stats-grid" id="overviewStats"></div>
+        <div class="card">
+          <div class="card-header">
+            <h3>المهام العاجلة</h3>
+            <span class="badge" id="urgentCount">0 بنود</span>
+          </div>
+          <div id="urgentTasks" class="list"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>آخر التحديثات</h3>
+            <span class="badge" id="activityCount">0 حركة</span>
+          </div>
+          <ul id="activityLog" style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;"></ul>
+        </div>
+      </section>
+
+      <section id="menuView" class="view">
+        <div class="builder-layout">
+          <div class="card">
+            <div class="card-header">
+              <h3>الأقسام الرئيسية</h3>
+              <button id="addCategoryBtn" class="btn secondary small">إضافة قسم</button>
+            </div>
+            <ul id="categoryList" class="category-list"></ul>
+            <form id="categoryForm" class="editor-panel hidden">
+              <input type="hidden" name="id" />
+              <label>اسم القسم (عربي)
+                <input type="text" name="nameAr" required />
+              </label>
+              <label>اسم القسم (إنجليزي)
+                <input type="text" name="nameEn" required />
+              </label>
+              <label>المعرف (Slug)
+                <input type="text" name="slug" required pattern="[a-z0-9-]+" />
+              </label>
+              <div class="form-footer">
+                <button type="button" data-action="cancel" class="btn text">إلغاء</button>
+                <button type="submit" class="btn primary">حفظ القسم</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card" style="gap:20px;">
+            <div>
+              <div class="card-header">
+                <h3>الفئات الفرعية</h3>
+                <button id="addGroupBtn" class="btn secondary small">إضافة فئة</button>
+              </div>
+              <ul id="groupList" class="group-list"></ul>
+              <form id="groupForm" class="editor-panel hidden">
+                <input type="hidden" name="id" />
+                <label>اسم الفئة (عربي)
+                  <input type="text" name="nameAr" required />
+                </label>
+                <label>اسم الفئة (إنجليزي)
+                  <input type="text" name="nameEn" required />
+                </label>
+                <label>المعرف الداخلي
+                  <input type="text" name="slug" required pattern="[a-z0-9-]+" />
+                </label>
+                <div class="form-footer">
+                  <button type="button" data-action="cancel" class="btn text">إلغاء</button>
+                  <button type="submit" class="btn primary">حفظ الفئة</button>
+                </div>
+              </form>
+            </div>
+            <div>
+              <div class="card-header">
+                <h3>الأصناف التفصيلية</h3>
+                <button id="addItemBtn" class="btn secondary small">إضافة صنف</button>
+              </div>
+              <div id="itemsTableWrapper"></div>
+              <form id="itemForm" class="editor-panel hidden">
+                <input type="hidden" name="id" />
+                <div class="inline-form full">
+                  <label>اسم الصنف (عربي)
+                    <input type="text" name="nameAr" required />
+                  </label>
+                  <label>اسم الصنف (إنجليزي)
+                    <input type="text" name="nameEn" required />
+                  </label>
+                  <label>السعر (ريال)
+                    <input type="number" name="price" min="0" step="0.5" required />
+                  </label>
+                  <label>السعرات الحرارية
+                    <input type="number" name="calories" min="0" step="1" />
+                  </label>
+                  <label>رابط الصورة
+                    <input type="text" name="image" placeholder="https://" />
+                  </label>
+                  <label>وسوم التصنيف (مفصولة بفواصل)
+                    <input type="text" name="tags" placeholder="قهوة، مميز" />
+                  </label>
+                  <label class="switch">
+                    <input type="checkbox" name="available" checked />
+                    متاح للطلب
+                  </label>
+                  <label class="switch">
+                    <input type="checkbox" name="featured" />
+                    صنف مميز في الواجهة
+                  </label>
+                  <label class="switch">
+                    <input type="checkbox" name="spicy" />
+                    يحتوي على نكهة حارة
+                  </label>
+                  <label class="switch">
+                    <input type="checkbox" name="seasonal" />
+                    صنف موسمي
+                  </label>
+                  <label style="grid-column:1 / -1;">وصف مختصر
+                    <textarea name="description" placeholder="ملاحظات تظهر للعميل في واجهة المنيو"></textarea>
+                  </label>
+                </div>
+                <div class="form-footer">
+                  <button type="button" data-action="cancel" class="btn text">إلغاء</button>
+                  <button type="submit" class="btn primary">حفظ الصنف</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="usersView" class="view">
+        <div class="card">
+          <div class="card-header">
+            <h3>حسابات الفرق</h3>
+            <button id="addUserBtn" class="btn secondary small">إنشاء حساب</button>
+          </div>
+          <div class="table-wrapper" style="overflow:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>الاسم</th>
+                  <th>البريد الإلكتروني</th>
+                  <th>الدور</th>
+                  <th>الحالة</th>
+                  <th>آخر تحديث</th>
+                  <th>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="userTable"></tbody>
+            </table>
+          </div>
+          <form id="userForm" class="editor-panel hidden">
+            <input type="hidden" name="id" />
+            <div class="inline-form">
+              <label>اسم الموظف
+                <input type="text" name="name" required />
+              </label>
+              <label>البريد الإلكتروني
+                <input type="email" name="email" required />
+              </label>
+              <label>الدور الوظيفي
+                <select name="role" required>
+                  <option value="admin">مسؤول النظام</option>
+                  <option value="manager">مدير فرع</option>
+                  <option value="staff">موظف خدمة</option>
+                  <option value="viewer">عرض فقط</option>
+                </select>
+              </label>
+              <label>كلمة المرور
+                <input type="text" name="password" required />
+              </label>
+              <label>الحالة
+                <select name="status" required>
+                  <option value="active">نشط</option>
+                  <option value="suspended">موقوف مؤقتًا</option>
+                  <option value="invited">بانتظار التفعيل</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-footer">
+              <button type="button" data-action="cancel" class="btn text">إلغاء</button>
+              <button type="submit" class="btn primary">حفظ الحساب</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section id="insightsView" class="view">
+        <div class="stats-grid" id="insightHighlights"></div>
+        <div class="card">
+          <div class="card-header">
+            <h3>التوصيات التشغيلية</h3>
+          </div>
+          <ul id="recommendations" style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;"></ul>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>الأصناف التي تحتاج متابعة</h3>
+            <span class="badge" id="flaggedCount">0 صنف</span>
+          </div>
+          <div id="flaggedItems"></div>
+        </div>
+      </section>
+
+      <section id="settingsView" class="view">
+        <div class="card">
+          <div class="card-header">
+            <h3>إعدادات البيانات والنسخ الاحتياطي</h3>
+          </div>
+          <div class="inline-form full">
+            <label style="grid-column:1 / -1;">تصدير بيانات المنيو
+              <textarea id="exportTextarea" readonly style="min-height:120px;" placeholder="سيظهر هنا ملف JSON بعد الضغط على زر التصدير"></textarea>
+            </label>
+            <div class="form-footer" style="justify-content:flex-start;">
+              <button id="exportJson" class="btn secondary" type="button">توليد ملف JSON</button>
+              <button id="copyExport" class="btn text" type="button">نسخ إلى الحافظة</button>
+            </div>
+            <label style="grid-column:1 / -1;">استيراد بيانات من JSON
+              <textarea id="importTextarea" placeholder="ألصق محتوى JSON للمنيو هنا"></textarea>
+            </label>
+            <div class="form-footer" style="justify-content:flex-start;">
+              <button id="importJson" class="btn primary" type="button">استيراد وتحديث</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>أمان الحساب</h3>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <p style="margin:0;color:var(--muted);">يمكنك تحديث كلمة مرور المسؤول أو تفعيل المصادقة الثنائية لاحقًا عبر التكامل مع مزود هوية.</p>
+            <form id="passwordForm" class="inline-form" style="max-width:520px;">
+              <label>كلمة المرور الحالية
+                <input type="password" name="current" required />
+              </label>
+              <label>كلمة المرور الجديدة
+                <input type="password" name="next" required />
+              </label>
+              <label>تأكيد كلمة المرور الجديدة
+                <input type="password" name="confirm" required />
+              </label>
+              <div class="form-footer" style="grid-column:1 / -1;">
+                <button type="submit" class="btn primary">تحديث كلمة المرور</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="menu-data.js"></script>
+  <script type="module">
+    const MENU_KEY = 'neema-dashboard-menu-v1';
+    const USER_KEY = 'neema-dashboard-users-v1';
+    const SESSION_KEY = 'neema-dashboard-session-v1';
+    const ACTIVITY_KEY = 'neema-dashboard-activity-v1';
+
+    const DEFAULT_LABELS = {
+      categories: {
+        hot: { ar: 'مشروبات ساخنة', en: 'Hot Beverages' },
+        cold: { ar: 'مشروبات باردة', en: 'Cold Beverages' },
+        dessert: { ar: 'حلويات ومخبوزات', en: 'Desserts' }
+      },
+      groups: {
+        hot: {
+          coffee: { ar: 'قهوة ساخنة', en: 'Hot Coffee' },
+          tea: { ar: 'شاي ومشروبات خاصة', en: 'Tea & Specialties' }
+        },
+        cold: {
+          coffee: { ar: 'قهوة باردة', en: 'Iced Coffee' },
+          mojito: { ar: 'موهيتو ومنعشات', en: 'Mojitos & Refreshers' },
+          other: { ar: 'مشروبات أخرى', en: 'Other Drinks' }
+        },
+        dessert: {
+          cake: { ar: 'كعكات وحلويات', en: 'Cakes & Desserts' },
+          side: { ar: 'مخبوزات جانبية', en: 'Side Treats' }
+        }
+      }
+    };
+
+    const DEFAULT_ADMIN = {
+      id: 'admin-account',
+      name: 'مدير النظام',
+      email: 'admin@neema.sa',
+      role: 'admin',
+      status: 'active',
+      password: 'Neema@123',
+      updatedAt: new Date().toISOString()
+    };
+
+    const state = {
+      menu: loadMenuState(),
+      users: loadUserState(),
+      session: loadSession(),
+      activity: loadActivity(),
+      view: 'overview',
+      selectedCategoryId: null,
+      selectedGroupId: null
+    };
+
+    ensureAdminExists();
+
+    const loginView = document.getElementById('loginView');
+    const dashboard = document.getElementById('dashboard');
+    const loginForm = document.getElementById('loginForm');
+    const currentUserName = document.getElementById('currentUserName');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const navButtons = document.querySelectorAll('.nav-list button');
+    const viewTitle = document.getElementById('viewTitle');
+    const viewSubtitle = document.getElementById('viewSubtitle');
+    const quickAddItem = document.getElementById('quickAddItem');
+    const quickDownload = document.getElementById('quickDownload');
+
+    const overviewStats = document.getElementById('overviewStats');
+    const urgentCount = document.getElementById('urgentCount');
+    const urgentTasks = document.getElementById('urgentTasks');
+    const activityCount = document.getElementById('activityCount');
+    const activityLog = document.getElementById('activityLog');
+
+    const categoryList = document.getElementById('categoryList');
+    const categoryForm = document.getElementById('categoryForm');
+    const addCategoryBtn = document.getElementById('addCategoryBtn');
+
+    const groupList = document.getElementById('groupList');
+    const groupForm = document.getElementById('groupForm');
+    const addGroupBtn = document.getElementById('addGroupBtn');
+
+    const itemsTableWrapper = document.getElementById('itemsTableWrapper');
+    const itemForm = document.getElementById('itemForm');
+    const addItemBtn = document.getElementById('addItemBtn');
+
+    const userTable = document.getElementById('userTable');
+    const userForm = document.getElementById('userForm');
+    const addUserBtn = document.getElementById('addUserBtn');
+
+    const insightHighlights = document.getElementById('insightHighlights');
+    const recommendations = document.getElementById('recommendations');
+    const flaggedItems = document.getElementById('flaggedItems');
+    const flaggedCount = document.getElementById('flaggedCount');
+
+    const exportTextarea = document.getElementById('exportTextarea');
+    const exportJsonBtn = document.getElementById('exportJson');
+    const copyExportBtn = document.getElementById('copyExport');
+    const importTextarea = document.getElementById('importTextarea');
+    const importJsonBtn = document.getElementById('importJson');
+    const passwordForm = document.getElementById('passwordForm');
+
+    const toast = document.getElementById('toast');
+
+    if (state.session) {
+      enterDashboard();
+    }
+
+    loginForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const formData = new FormData(loginForm);
+      const email = String(formData.get('email')).trim().toLowerCase();
+      const password = String(formData.get('password')).trim();
+
+      const user = state.users.find((u) => u.email.toLowerCase() === email);
+      if (!user) {
+        return showToast('الحساب غير موجود، تحقق من البريد الإلكتروني.');
+      }
+
+      if (user.password !== password) {
+        return showToast('كلمة المرور غير صحيحة.');
+      }
+
+      if (user.status !== 'active') {
+        return showToast('هذا الحساب غير مفعل حاليًا، يرجى التواصل مع المسؤول.');
+      }
+
+      if (user.role !== 'admin') {
+        return showToast('صلاحيات لوحة التحكم متاحة للمسؤولين فقط.');
+      }
+
+      state.session = { userId: user.id, role: user.role, time: Date.now() };
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(state.session));
+      addActivity(`تسجيل دخول ${user.name}`);
+      enterDashboard();
+      loginForm.reset();
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      sessionStorage.removeItem(SESSION_KEY);
+      state.session = null;
+      dashboard.classList.add('hidden');
+      loginView.classList.remove('hidden');
+      showToast('تم تسجيل الخروج بنجاح.');
+    });
+
+    navButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (!btn.classList.contains('active')) {
+          navButtons.forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.view = btn.dataset.view;
+          updateView();
+        }
+      });
+    });
+
+    addCategoryBtn.addEventListener('click', () => {
+      toggleEditor(categoryForm, null);
+    });
+
+    addGroupBtn.addEventListener('click', () => {
+      if (!state.selectedCategoryId) {
+        showToast('اختر قسمًا رئيسيًا أولاً.');
+        return;
+      }
+      toggleEditor(groupForm, null);
+    });
+
+    addItemBtn.addEventListener('click', () => {
+      if (!state.selectedCategoryId || !state.selectedGroupId) {
+        showToast('اختر فئة فرعية لإضافة صنف.');
+        return;
+      }
+      toggleEditor(itemForm, null);
+    });
+
+    quickAddItem.addEventListener('click', () => {
+      state.view = 'menu';
+      updateView();
+      toggleEditor(itemForm, null);
+    });
+
+    quickDownload.addEventListener('click', () => {
+      exportJson();
+      showToast('تم تجهيز ملف JSON للمنيو.');
+    });
+
+    categoryForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const data = formToObject(categoryForm);
+      const isEdit = Boolean(data.id);
+
+      if (isEdit) {
+        const category = state.menu.categories.find((cat) => cat.id === data.id);
+        if (!category) return;
+        category.nameAr = data.nameAr;
+        category.nameEn = data.nameEn;
+        category.slug = data.slug;
+        addActivity(`تعديل القسم ${data.nameAr}`);
+      } else {
+        const newCategory = {
+          id: generateId('cat'),
+          nameAr: data.nameAr,
+          nameEn: data.nameEn,
+          slug: data.slug,
+          groups: []
+        };
+        state.menu.categories.push(newCategory);
+        state.selectedCategoryId = newCategory.id;
+        addActivity(`إضافة قسم جديد ${data.nameAr}`);
+      }
+
+      saveMenuState();
+      toggleEditor(categoryForm, null, true);
+      renderMenuBuilder();
+      showToast('تم حفظ بيانات القسم.');
+    });
+
+    categoryForm.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+      toggleEditor(categoryForm, null, true);
+    });
+
+    groupForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const data = formToObject(groupForm);
+      const currentCategory = getSelectedCategory();
+      if (!currentCategory) return;
+
+      const isEdit = Boolean(data.id);
+      if (isEdit) {
+        const group = currentCategory.groups.find((grp) => grp.id === data.id);
+        if (!group) return;
+        group.nameAr = data.nameAr;
+        group.nameEn = data.nameEn;
+        group.slug = data.slug;
+        addActivity(`تعديل الفئة ${data.nameAr}`);
+      } else {
+        const newGroup = {
+          id: generateId('grp'),
+          nameAr: data.nameAr,
+          nameEn: data.nameEn,
+          slug: data.slug,
+          items: []
+        };
+        currentCategory.groups.push(newGroup);
+        state.selectedGroupId = newGroup.id;
+        addActivity(`إضافة فئة ${data.nameAr}`);
+      }
+
+      saveMenuState();
+      toggleEditor(groupForm, null, true);
+      renderMenuBuilder();
+      showToast('تم حفظ الفئة بنجاح.');
+    });
+
+    groupForm.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+      toggleEditor(groupForm, null, true);
+    });
+
+    itemForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const data = formToObject(itemForm);
+      const category = getSelectedCategory();
+      const group = getSelectedGroup();
+      if (!category || !group) return;
+
+      const payload = {
+        id: data.id || generateId('item'),
+        nameAr: data.nameAr,
+        nameEn: data.nameEn,
+        price: Number(data.price) || 0,
+        calories: data.calories ? Number(data.calories) : null,
+        image: data.image?.trim() || '',
+        tags: data.tags ? data.tags.split(',').map((tag) => tag.trim()).filter(Boolean) : [],
+        available: Boolean(data.available),
+        featured: Boolean(data.featured),
+        spicy: Boolean(data.spicy),
+        seasonal: Boolean(data.seasonal),
+        description: data.description?.trim() || ''
+      };
+
+      const existingIndex = group.items.findIndex((itm) => itm.id === payload.id);
+      if (existingIndex >= 0) {
+        group.items[existingIndex] = payload;
+        addActivity(`تعديل الصنف ${payload.nameAr}`);
+      } else {
+        group.items.push(payload);
+        addActivity(`إضافة الصنف ${payload.nameAr}`);
+      }
+
+      saveMenuState();
+      toggleEditor(itemForm, null, true);
+      renderMenuBuilder();
+      showToast('تم حفظ الصنف.');
+    });
+
+    itemForm.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+      toggleEditor(itemForm, null, true);
+    });
+
+    userForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const data = formToObject(userForm);
+      const isEdit = Boolean(data.id);
+
+      if (isEdit) {
+        const user = state.users.find((u) => u.id === data.id);
+        if (!user) return;
+        user.name = data.name;
+        user.email = data.email;
+        user.role = data.role;
+        user.status = data.status;
+        user.password = data.password;
+        user.updatedAt = new Date().toISOString();
+        addActivity(`تحديث حساب ${user.name}`);
+      } else {
+        const newUser = {
+          id: generateId('user'),
+          name: data.name,
+          email: data.email,
+          role: data.role,
+          status: data.status,
+          password: data.password,
+          updatedAt: new Date().toISOString()
+        };
+        state.users.push(newUser);
+        addActivity(`إضافة حساب جديد ${newUser.name}`);
+      }
+
+      saveUserState();
+      toggleEditor(userForm, null, true);
+      renderUsers();
+      showToast('تم حفظ بيانات الحساب.');
+    });
+
+    userForm.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+      toggleEditor(userForm, null, true);
+    });
+
+    exportJsonBtn.addEventListener('click', () => {
+      const data = JSON.stringify(state.menu, null, 2);
+      exportTextarea.value = data;
+      showToast('تم توليد ملف JSON للمنيو.');
+    });
+
+    copyExportBtn.addEventListener('click', async () => {
+      if (!exportTextarea.value) {
+        showToast('قم بتوليد ملف JSON أولاً.');
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(exportTextarea.value);
+        showToast('تم نسخ البيانات إلى الحافظة.');
+      } catch (error) {
+        showToast('تعذر النسخ التلقائي، انسخ يدويًا.');
+      }
+    });
+
+    importJsonBtn.addEventListener('click', () => {
+      if (!importTextarea.value.trim()) {
+        showToast('ألصق بيانات JSON قبل الاستيراد.');
+        return;
+      }
+      try {
+        const parsed = JSON.parse(importTextarea.value);
+        if (!Array.isArray(parsed.categories)) {
+          throw new Error('البيانات غير متوافقة');
+        }
+        state.menu = parsed;
+        saveMenuState();
+        renderMenuBuilder();
+        updateView();
+        showToast('تم استيراد البيانات بنجاح.');
+      } catch (error) {
+        showToast('تعذر قراءة ملف JSON.');
+      }
+    });
+
+    passwordForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const data = formToObject(passwordForm);
+      const sessionUser = getSessionUser();
+      if (!sessionUser) return;
+
+      if (sessionUser.password !== data.current) {
+        showToast('كلمة المرور الحالية غير صحيحة.');
+        return;
+      }
+
+      if (data.next !== data.confirm) {
+        showToast('تأكد من مطابقة كلمة المرور الجديدة.');
+        return;
+      }
+
+      sessionUser.password = data.next;
+      sessionUser.updatedAt = new Date().toISOString();
+      saveUserState();
+      addActivity('تحديث كلمة مرور المسؤول');
+      passwordForm.reset();
+      showToast('تم تحديث كلمة المرور.');
+    });
+
+    categoryList.addEventListener('click', (event) => {
+      const item = event.target.closest('li');
+      if (!item) return;
+      const id = item.dataset.id;
+      const action = event.target.dataset.action;
+
+      if (action === 'edit') {
+        const category = state.menu.categories.find((cat) => cat.id === id);
+        if (!category) return;
+        populateForm(categoryForm, category);
+        toggleEditor(categoryForm, category.id);
+        event.stopPropagation();
+        return;
+      }
+
+      if (action === 'delete') {
+        if (!confirm('سيتم حذف القسم والفئات المرتبطة به. هل أنت متأكد؟')) return;
+        state.menu.categories = state.menu.categories.filter((cat) => cat.id !== id);
+        if (state.selectedCategoryId === id) {
+          state.selectedCategoryId = state.menu.categories[0]?.id || null;
+          state.selectedGroupId = null;
+        }
+        saveMenuState();
+        renderMenuBuilder();
+        showToast('تم حذف القسم.');
+        event.stopPropagation();
+        return;
+      }
+
+      state.selectedCategoryId = id;
+      const category = getSelectedCategory();
+      state.selectedGroupId = category?.groups[0]?.id || null;
+      renderMenuBuilder();
+    });
+
+    groupList.addEventListener('click', (event) => {
+      const item = event.target.closest('li');
+      if (!item) return;
+      const id = item.dataset.id;
+      const action = event.target.dataset.action;
+      const category = getSelectedCategory();
+      if (!category) return;
+
+      if (action === 'edit') {
+        const group = category.groups.find((grp) => grp.id === id);
+        if (!group) return;
+        populateForm(groupForm, group);
+        toggleEditor(groupForm, group.id);
+        event.stopPropagation();
+        return;
+      }
+
+      if (action === 'delete') {
+        if (!confirm('هل تريد حذف هذه الفئة وجميع الأصناف المرتبطة بها؟')) return;
+        category.groups = category.groups.filter((grp) => grp.id !== id);
+        if (state.selectedGroupId === id) {
+          state.selectedGroupId = category.groups[0]?.id || null;
+        }
+        saveMenuState();
+        renderMenuBuilder();
+        showToast('تم حذف الفئة.');
+        event.stopPropagation();
+        return;
+      }
+
+      state.selectedGroupId = id;
+      renderMenuBuilder();
+    });
+
+    itemsTableWrapper.addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      const itemId = button.dataset.id;
+      const action = button.dataset.action;
+      const group = getSelectedGroup();
+      if (!group) return;
+      const item = group.items.find((it) => it.id === itemId);
+      if (!item) return;
+
+      if (action === 'edit') {
+        populateForm(itemForm, {
+          ...item,
+          tags: item.tags?.join(', ') || ''
+        });
+        toggleEditor(itemForm, item.id);
+        return;
+      }
+
+      if (action === 'delete') {
+        if (!confirm('هل أنت متأكد من حذف الصنف؟')) return;
+        group.items = group.items.filter((it) => it.id !== itemId);
+        saveMenuState();
+        renderMenuBuilder();
+        showToast('تم حذف الصنف.');
+        return;
+      }
+
+      if (action === 'toggle') {
+        item.available = !item.available;
+        addActivity(`تغيير توفر ${item.nameAr} إلى ${item.available ? 'متاح' : 'غير متاح'}`);
+        saveMenuState();
+        renderMenuBuilder();
+        return;
+      }
+    });
+
+    userTable.addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      const id = button.dataset.id;
+      const action = button.dataset.action;
+      const user = state.users.find((u) => u.id === id);
+      if (!user) return;
+
+      if (action === 'edit') {
+        populateForm(userForm, user);
+        toggleEditor(userForm, user.id);
+        return;
+      }
+
+      if (action === 'toggle') {
+        if (user.id === DEFAULT_ADMIN.id) {
+          showToast('لا يمكن إيقاف حساب المسؤول الرئيسي.');
+          return;
+        }
+        user.status = user.status === 'active' ? 'suspended' : 'active';
+        user.updatedAt = new Date().toISOString();
+        saveUserState();
+        renderUsers();
+        addActivity(`تحديث حالة ${user.name}`);
+        return;
+      }
+
+      if (action === 'reset') {
+        const newPassword = generatePassword();
+        user.password = newPassword;
+        user.updatedAt = new Date().toISOString();
+        saveUserState();
+        renderUsers();
+        showToast(`تم تعيين كلمة مرور مؤقتة: ${newPassword}`);
+        addActivity(`إعادة ضبط كلمة مرور ${user.name}`);
+        return;
+      }
+    });
+
+    addUserBtn.addEventListener('click', () => {
+      toggleEditor(userForm, null);
+    });
+
+    updateView();
+
+    function enterDashboard() {
+      loginView.classList.add('hidden');
+      dashboard.classList.remove('hidden');
+      const user = getSessionUser();
+      currentUserName.textContent = user ? user.name : '—';
+      renderMenuBuilder();
+      renderUsers();
+      renderOverview();
+      renderInsights();
+    }
+
+    function updateView() {
+      document.querySelectorAll('.view').forEach((section) => {
+        section.classList.toggle('active', section.id === `${state.view}View`);
+      });
+
+      const titles = {
+        overview: {
+          title: 'نظرة عامة على العمليات',
+          subtitle: 'تابع أداء المنيو، إدارة الأصناف، وتحكم في صلاحيات الفرق.'
+        },
+        menu: {
+          title: 'مصمم المنيو الذكي',
+          subtitle: 'أضف الأقسام، نظم الفئات، وحدّث تفاصيل الأصناف مع التحكم الكامل بالظهور.'
+        },
+        users: {
+          title: 'إدارة حسابات المنصة',
+          subtitle: 'تحكم في صلاحيات الموظفين، التفعيل، وإعادة ضبط كلمات المرور.'
+        },
+        insights: {
+          title: 'تحليلات المنيو',
+          subtitle: 'تعرف على الأصناف المميزة، العناصر غير المتاحة، والفرص التطويرية.'
+        },
+        settings: {
+          title: 'إعدادات المنصة',
+          subtitle: 'إدارة النسخ الاحتياطية، الاستيراد، وأمان الحساب.'
+        }
+      };
+
+      viewTitle.textContent = titles[state.view].title;
+      viewSubtitle.textContent = titles[state.view].subtitle;
+
+      if (state.view === 'menu') {
+        renderMenuBuilder();
+      } else if (state.view === 'users') {
+        renderUsers();
+      } else if (state.view === 'overview') {
+        renderOverview();
+      } else if (state.view === 'insights') {
+        renderInsights();
+      }
+    }
+
+    function renderMenuBuilder() {
+      const categories = state.menu.categories;
+      if (!state.selectedCategoryId && categories.length) {
+        state.selectedCategoryId = categories[0].id;
+      }
+
+      const categoryMarkup = categories.map((category) => {
+        const itemCount = category.groups.reduce((acc, grp) => acc + grp.items.length, 0);
+        return `
+          <li data-id="${category.id}" class="${category.id === state.selectedCategoryId ? 'active' : ''}">
+            <div class="entity-info">
+              <strong>${category.nameAr}</strong>
+              <small>${category.nameEn}</small>
+            </div>
+            <div class="table-actions">
+              <span class="badge">${itemCount} صنف</span>
+              <button class="btn icon" data-action="edit" title="تعديل" type="button">✏️</button>
+              <button class="btn icon" data-action="delete" title="حذف" type="button">🗑️</button>
+            </div>
+          </li>
+        `;
+      }).join('');
+
+      categoryList.innerHTML = categoryMarkup || '<div class="empty-state">لا توجد أقسام بعد، أضف قسمك الأول.</div>';
+
+      const category = getSelectedCategory();
+      if (!category) {
+        groupList.innerHTML = '<div class="empty-state">حدد قسمًا لعرض الفئات.</div>';
+        itemsTableWrapper.innerHTML = '<div class="empty-state">اختر فئة فرعية لعرض الأصناف.</div>';
+        return;
+      }
+
+      if (!state.selectedGroupId && category.groups.length) {
+        state.selectedGroupId = category.groups[0].id;
+      }
+
+      const groupMarkup = category.groups.map((group) => {
+        return `
+          <li data-id="${group.id}" class="${group.id === state.selectedGroupId ? 'active' : ''}">
+            <div class="entity-info">
+              <strong>${group.nameAr}</strong>
+              <small>${group.nameEn}</small>
+            </div>
+            <div class="table-actions">
+              <span class="badge">${group.items.length} عنصر</span>
+              <button class="btn icon" data-action="edit" title="تعديل" type="button">✏️</button>
+              <button class="btn icon" data-action="delete" title="حذف" type="button">🗑️</button>
+            </div>
+          </li>
+        `;
+      }).join('');
+
+      groupList.innerHTML = groupMarkup || '<div class="empty-state">لا توجد فئات فرعية داخل هذا القسم.</div>';
+
+      const group = getSelectedGroup();
+      if (!group) {
+        itemsTableWrapper.innerHTML = '<div class="empty-state">حدد فئة فرعية لعرض الأصناف.</div>';
+        return;
+      }
+
+      const rows = group.items.map((item) => `
+        <tr>
+          <td>
+            <strong>${item.nameAr}</strong><br />
+            <small style="color:var(--muted);">${item.nameEn}</small>
+          </td>
+          <td>${formatPrice(item.price)}</td>
+          <td>${item.calories ?? '—'}</td>
+          <td>${item.tags?.map((tag) => `<span class="chip">${tag}</span>`).join('') || '—'}</td>
+          <td>${item.available ? '<span class="badge pill-success">متاح</span>' : '<span class="badge pill-danger">غير متاح</span>'}</td>
+          <td>
+            <div class="table-actions">
+              <button class="btn small" data-action="toggle" data-id="${item.id}" type="button">${item.available ? 'إيقاف' : 'تفعيل'}</button>
+              <button class="btn small" data-action="edit" data-id="${item.id}" type="button">تعديل</button>
+              <button class="btn small danger" data-action="delete" data-id="${item.id}" type="button">حذف</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+
+      itemsTableWrapper.innerHTML = group.items.length
+        ? `<div class="table-wrapper" style="overflow:auto;"><table><thead><tr><th>الصنف</th><th>السعر</th><th>السعرات</th><th>وسوم</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>${rows}</tbody></table></div>`
+        : '<div class="empty-state">لا توجد أصناف في هذه الفئة حتى الآن.</div>';
+    }
+
+    function renderUsers() {
+      const rows = state.users.map((user) => `
+        <tr>
+          <td><strong>${user.name}</strong></td>
+          <td>${user.email}</td>
+          <td>${translateRole(user.role)}</td>
+          <td>${translateStatus(user.status)}</td>
+          <td>${formatDate(user.updatedAt)}</td>
+          <td>
+            <div class="table-actions">
+              <button class="btn small" data-action="edit" data-id="${user.id}" type="button">تعديل</button>
+              <button class="btn small" data-action="toggle" data-id="${user.id}" type="button">${user.status === 'active' ? 'إيقاف' : 'تفعيل'}</button>
+              <button class="btn small" data-action="reset" data-id="${user.id}" type="button">إعادة ضبط كلمة السر</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+
+      userTable.innerHTML = rows || '<tr><td colspan="6" style="text-align:center;color:var(--muted);">لا توجد حسابات إضافية بعد.</td></tr>';
+    }
+
+    function renderOverview() {
+      const stats = calculateStats();
+      overviewStats.innerHTML = `
+        <div class="stat">
+          <span>إجمالي الأقسام</span>
+          <strong>${stats.categoryCount}</strong>
+        </div>
+        <div class="stat">
+          <span>إجمالي الفئات الفرعية</span>
+          <strong>${stats.groupCount}</strong>
+        </div>
+        <div class="stat">
+          <span>عدد الأصناف</span>
+          <strong>${stats.itemCount}</strong>
+        </div>
+        <div class="stat">
+          <span>أصناف غير متاحة</span>
+          <strong>${stats.unavailableItems}</strong>
+        </div>
+      `;
+
+      urgentCount.textContent = `${stats.urgentTasks.length} بنود`;
+      urgentTasks.innerHTML = stats.urgentTasks.length
+        ? `<ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;">
+            ${stats.urgentTasks.map((task) => `<li style="padding:12px 14px;border-radius:14px;background:rgba(192,57,43,0.08);">${task}</li>`).join('')}
+          </ul>`
+        : '<div class="empty-state">لا توجد مهام عاجلة، أحسنت!</div>';
+
+      const recentActivity = [...state.activity].slice(-6).reverse();
+      activityCount.textContent = `${recentActivity.length} حركة`;
+      activityLog.innerHTML = recentActivity.length
+        ? recentActivity.map((entry) => `<li style="padding:12px 14px;border-radius:14px;background:rgba(139,94,60,0.06);display:flex;justify-content:space-between;gap:12px;">
+              <span>${entry.message}</span>
+              <small style="color:var(--muted);">${formatDate(entry.time)}</small>
+            </li>`).join('')
+        : '<li class="empty-state" style="border:none;">لم يتم تسجيل أي نشاط بعد.</li>';
+    }
+
+    function renderInsights() {
+      const stats = calculateStats();
+      insightHighlights.innerHTML = `
+        <div class="stat">
+          <span>أصناف بارزة</span>
+          <strong>${stats.featuredCount}</strong>
+        </div>
+        <div class="stat">
+          <span>أصناف موسمية</span>
+          <strong>${stats.seasonalCount}</strong>
+        </div>
+        <div class="stat">
+          <span>أصناف بلا صور</span>
+          <strong>${stats.missingImage}</strong>
+        </div>
+        <div class="stat">
+          <span>متوسط السعر</span>
+          <strong>${stats.avgPrice}</strong>
+        </div>
+      `;
+
+      recommendations.innerHTML = stats.recommendations.length
+        ? stats.recommendations.map((rec) => `<li style="padding:14px 16px;border-radius:16px;background:rgba(139,94,60,0.08);">${rec}</li>`).join('')
+        : '<li class="empty-state" style="border:none;">لا توجد توصيات حالية.</li>';
+
+      flaggedCount.textContent = `${stats.flaggedItems.length} صنف`;
+      flaggedItems.innerHTML = stats.flaggedItems.length
+        ? `<ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;">
+            ${stats.flaggedItems.map((item) => `<li style="padding:12px 14px;border-radius:14px;border:1px solid rgba(139,94,60,0.2);background:#fff;">
+                <div style="display:flex;justify-content:space-between;gap:10px;">
+                  <div>
+                    <strong>${item.nameAr}</strong>
+                    <div style="color:var(--muted);font-size:13px;">${item.reason}</div>
+                  </div>
+                  <span class="badge">${item.category}</span>
+                </div>
+              </li>`).join('')}
+          </ul>`
+        : '<div class="empty-state">لا توجد عناصر تحتاج متابعة فورية.</div>';
+    }
+
+    function toggleEditor(form, id, hide = false) {
+      if (hide) {
+        form.classList.add('hidden');
+        form.reset();
+        form.querySelector('[name="id"]').value = '';
+        return;
+      }
+
+      form.classList.remove('hidden');
+      if (id) {
+        form.querySelector('[name="id"]').value = id;
+      } else {
+        form.reset();
+        form.querySelector('[name="id"]').value = '';
+        if (form === itemForm) {
+          form.querySelector('[name="available"]').checked = true;
+          form.querySelector('[name="featured"]').checked = false;
+          form.querySelector('[name="spicy"]').checked = false;
+          form.querySelector('[name="seasonal"]').checked = false;
+        }
+      }
+    }
+
+    function populateForm(form, data) {
+      Object.entries(data).forEach(([key, value]) => {
+        const field = form.querySelector(`[name="${key}"]`);
+        if (!field) return;
+        if (field.type === 'checkbox') {
+          field.checked = Boolean(value);
+        } else {
+          field.value = value ?? '';
+        }
+      });
+    }
+
+    function formToObject(form) {
+      const data = new FormData(form);
+      const obj = {};
+      data.forEach((value, key) => {
+        if (obj[key]) {
+          if (!Array.isArray(obj[key])) {
+            obj[key] = [obj[key]];
+          }
+          obj[key].push(value);
+        } else {
+          obj[key] = value;
+        }
+      });
+      form.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+        obj[checkbox.name] = checkbox.checked;
+      });
+      return obj;
+    }
+
+    function loadMenuState() {
+      try {
+        const stored = localStorage.getItem(MENU_KEY);
+        if (stored) {
+          return JSON.parse(stored);
+        }
+      } catch (error) {
+        console.error('Failed to parse menu state', error);
+      }
+
+      const shared = window.NEEMA_SHARED?.MENU_DATA ?? {};
+      return normalizeSharedMenu(shared);
+    }
+
+    function saveMenuState() {
+      localStorage.setItem(MENU_KEY, JSON.stringify(state.menu));
+    }
+
+    function loadUserState() {
+      try {
+        const stored = localStorage.getItem(USER_KEY);
+        if (stored) {
+          return JSON.parse(stored);
+        }
+      } catch (error) {
+        console.error('Failed to parse users', error);
+      }
+      return [DEFAULT_ADMIN];
+    }
+
+    function saveUserState() {
+      localStorage.setItem(USER_KEY, JSON.stringify(state.users));
+    }
+
+    function loadSession() {
+      try {
+        const stored = sessionStorage.getItem(SESSION_KEY);
+        if (stored) {
+          return JSON.parse(stored);
+        }
+      } catch (error) {
+        console.error('Failed to parse session', error);
+      }
+      return null;
+    }
+
+    function loadActivity() {
+      try {
+        const stored = localStorage.getItem(ACTIVITY_KEY);
+        if (stored) {
+          return JSON.parse(stored);
+        }
+      } catch (error) {
+        console.error('Failed to parse activity log', error);
+      }
+      return [];
+    }
+
+    function addActivity(message) {
+      const entry = { message, time: new Date().toISOString() };
+      state.activity.push(entry);
+      state.activity = state.activity.slice(-50);
+      localStorage.setItem(ACTIVITY_KEY, JSON.stringify(state.activity));
+    }
+
+    function ensureAdminExists() {
+      if (!state.users.some((user) => user.id === DEFAULT_ADMIN.id)) {
+        state.users.unshift(DEFAULT_ADMIN);
+        saveUserState();
+      }
+    }
+
+    function getSelectedCategory() {
+      return state.menu.categories.find((cat) => cat.id === state.selectedCategoryId) || null;
+    }
+
+    function getSelectedGroup() {
+      const category = getSelectedCategory();
+      if (!category) return null;
+      return category.groups.find((grp) => grp.id === state.selectedGroupId) || null;
+    }
+
+    function getSessionUser() {
+      if (!state.session) return null;
+      return state.users.find((user) => user.id === state.session.userId) || null;
+    }
+
+    function normalizeSharedMenu(shared) {
+      const categories = Object.entries(shared).map(([slug, groups]) => {
+        const label = DEFAULT_LABELS.categories[slug] || { ar: slug, en: slug };
+        return {
+          id: generateId('cat'),
+          nameAr: label.ar,
+          nameEn: label.en,
+          slug,
+          groups: Object.entries(groups || {}).map(([groupSlug, items]) => {
+            const groupLabel = DEFAULT_LABELS.groups[slug]?.[groupSlug] || { ar: groupSlug, en: groupSlug };
+            return {
+              id: generateId('grp'),
+              nameAr: groupLabel.ar,
+              nameEn: groupLabel.en,
+              slug: groupSlug,
+              items: (items || []).map((item) => ({
+                id: generateId('item'),
+                nameAr: item.ar,
+                nameEn: item.en,
+                price: item.price || 0,
+                calories: item.cal ?? null,
+                image: item.img || '',
+                tags: item.variants ? ['متعدد الخيارات'] : [],
+                available: true,
+                featured: false,
+                spicy: false,
+                seasonal: false,
+                description: item.desc || ''
+              }))
+            };
+          })
+        };
+      });
+      return { categories };
+    }
+
+    function calculateStats() {
+      const categories = state.menu.categories;
+      let groupCount = 0;
+      let itemCount = 0;
+      let unavailableItems = 0;
+      let featuredCount = 0;
+      let seasonalCount = 0;
+      let missingImage = 0;
+      let priceTotal = 0;
+      let priceItems = 0;
+
+      const urgentTasks = [];
+      const recommendationsList = [];
+      const flaggedItemsList = [];
+
+      categories.forEach((category) => {
+        if (!category.groups.length) {
+          urgentTasks.push(`القسم «${category.nameAr}» بدون فئات فرعية.`);
+        }
+        category.groups.forEach((group) => {
+          groupCount += 1;
+          if (!group.items.length) {
+            urgentTasks.push(`الفئة «${group.nameAr}» لا تحتوي على أصناف.`);
+          }
+          group.items.forEach((item) => {
+            itemCount += 1;
+            priceTotal += item.price || 0;
+            priceItems += item.price ? 1 : 0;
+            if (!item.available) {
+              unavailableItems += 1;
+              flaggedItemsList.push({ nameAr: item.nameAr, category: group.nameAr, reason: 'غير متاح للطلب' });
+            }
+            if (item.featured) featuredCount += 1;
+            if (item.seasonal) seasonalCount += 1;
+            if (!item.image) {
+              missingImage += 1;
+              flaggedItemsList.push({ nameAr: item.nameAr, category: group.nameAr, reason: 'لا يوجد صورة' });
+            }
+            if (!item.description) {
+              recommendationsList.push(`أضف وصفًا للصنف «${item.nameAr}» لتحسين تجربة العميل.`);
+            }
+            if ((item.tags || []).includes('متعدد الخيارات') && !item.description) {
+              flaggedItemsList.push({ nameAr: item.nameAr, category: group.nameAr, reason: 'يحتوي على خيارات دون شرح' });
+            }
+          });
+        });
+      });
+
+      if (missingImage > 0) {
+        recommendationsList.push('قم بتحديث صور الأصناف الناقصة لتحسين العرض البصري.');
+      }
+
+      const avgPrice = priceItems ? `${(priceTotal / priceItems).toFixed(1)} ر.س` : '—';
+
+      return {
+        categoryCount: categories.length,
+        groupCount,
+        itemCount,
+        unavailableItems,
+        featuredCount,
+        seasonalCount,
+        missingImage,
+        avgPrice,
+        urgentTasks: [...new Set(urgentTasks)],
+        recommendations: [...new Set(recommendationsList)].slice(0, 6),
+        flaggedItems: flaggedItemsList.slice(0, 10)
+      };
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    function generateId(prefix) {
+      if (window.crypto?.randomUUID) {
+        return `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
+      }
+      return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+    }
+
+    function formatPrice(price) {
+      return price ? `${price.toFixed(2)} ر.س` : '—';
+    }
+
+    function formatDate(date) {
+      if (!date) return '—';
+      const d = new Date(date);
+      return d.toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    function translateRole(role) {
+      switch (role) {
+        case 'admin':
+          return 'مسؤول';
+        case 'manager':
+          return 'مدير';
+        case 'staff':
+          return 'موظف خدمة';
+        case 'viewer':
+          return 'عرض فقط';
+        default:
+          return role;
+      }
+    }
+
+    function translateStatus(status) {
+      switch (status) {
+        case 'active':
+          return '<span class="badge pill-success">نشط</span>';
+        case 'suspended':
+          return '<span class="badge pill-danger">موقوف</span>';
+        case 'invited':
+          return '<span class="badge">بانتظار التفعيل</span>';
+        default:
+          return status;
+      }
+    }
+
+    function generatePassword() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+      let password = '';
+      for (let i = 0; i < 10; i++) {
+        password += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return password;
+    }
+
+    function exportJson() {
+      const data = JSON.stringify(state.menu, null, 2);
+      exportTextarea.value = data;
+    }
+  </script>
+</body>
+</html>
