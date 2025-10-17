@@ -455,6 +455,8 @@
     const $ = s=>document.querySelector(s);
     let cart = [];
 
+    let pendingOrderSyncPayload = null;
+
     async function sendOrderToDB(order){
       try{
         const res = await fetch('/api/orders', {
@@ -470,12 +472,20 @@
       }
     }
 
-    async function afterTelegramHook(order){
-      if(!order || typeof order !== 'object') return null;
-      const device = Object.assign({}, order.device || {});
+    async function afterTelegramHook(total){
+      let payload = null;
+      if(pendingOrderSyncPayload && typeof pendingOrderSyncPayload === 'object'){
+        pendingOrderSyncPayload.total = typeof total === 'number' ? total : pendingOrderSyncPayload.total;
+        payload = pendingOrderSyncPayload;
+      } else if(total && typeof total === 'object'){
+        payload = total;
+      }
+      if(!payload) return null;
+      const device = Object.assign({}, payload.device || {});
       if(!device.user_agent && typeof navigator !== 'undefined'){ device.user_agent = navigator.userAgent || ''; }
-      order.device = device;
-      return await sendOrderToDB(order);
+      payload.device = device;
+      pendingOrderSyncPayload = null;
+      return await sendOrderToDB(payload);
     }
     let selectedTable = '';
     const ORDER_LOG_KEY = 'nima.orderLog';
@@ -1634,11 +1644,18 @@
         const name = i.ar || i.en || '';
         return `• ${name} ×${i.qty} — ${i.price * i.qty} ريال`;
       });
-      const subtotal = cart.reduce((sum,i)=>sum + i.price*i.qty,0);
-      const loyaltyCalc = calculateLoyaltyRewards(cart);
-      const loyaltyDiscount = loyaltyCalc.discount;
-      const loyaltyRewards = loyaltyCalc.rewards;
-      const total = Math.max(subtotal - loyaltyDiscount, 0);
+        const subtotal = cart.reduce((sum,i)=>sum + i.price*i.qty,0);
+        const loyaltyCalc = calculateLoyaltyRewards(cart);
+        const loyaltyDiscount = loyaltyCalc.discount;
+        const loyaltyRewards = loyaltyCalc.rewards;
+        const loyaltySummary = {
+          baseCount: loyaltyCalc.baseDrinkCount,
+          projectedCount: loyaltyCalc.projectedDrinkCount,
+          drinkUnits: loyaltyCalc.eligibleDrinks,
+          freebiesEarned: loyaltyCalc.freebiesEarned,
+          discount: loyaltyDiscount
+        };
+        const total = Math.max(subtotal - loyaltyDiscount, 0);
       const headerLine = `🧾 طلب جديد — طاولة ${table}`;
       const orderId = `N${stamp.now.getTime().toString(36).toUpperCase()}`;
       const orderIdLine = `🆔 ${STRINGS.ar.order_id_label}: ${orderId}`;
@@ -1690,6 +1707,7 @@
         },
         loyaltyRewards,
         loyalty: loyaltySummary,
+        drink_units: loyaltyCalc.eligibleDrinks,
         items: cart.map(i=>({
           name_ar: i.baseAr || i.ar,
           name_en: i.baseEn || i.en,
@@ -1700,6 +1718,20 @@
           options_en: (i.options || []).map(opt=> opt && opt.en ? opt.en : '').filter(Boolean),
           category: i.category || i.baseCategory || ''
         }))
+      };
+
+      pendingOrderSyncPayload = {
+        table_no: table,
+        subtotal,
+        total,
+        discount_code: discountCode,
+        loyalty_discount: loyaltyDiscount,
+        loyalty_rewards: loyaltyRewards,
+        loyalty: loyaltySummary,
+        drink_units: loyaltyCalc.eligibleDrinks,
+        cart: orderEntry.items,
+        customer: orderEntry.customer,
+        device: collectDeviceInfo()
       };
 
       const statusBase = new URL('order-status.html', window.location.href);
@@ -1719,29 +1751,24 @@
 
       const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${text}&reply_markup=${replyMarkup}`;
       fetch(url)
-        .then(async res=>{
-          if(!res.ok) throw new Error('telegram');
-          recordOrderLog(orderEntry);
-          handleLoyaltyRewards(orderEntry);
+        .then(async (res) => {
+          if (!res.ok) throw new Error('telegram'); // only network/Telegram decides failure
+
+          // Telegram delivered — everything below is best-effort
+          try { await recordOrderLog(orderEntry); } catch (e) { console.warn('recordOrderLog failed', e); }
+          try { handleLoyaltyRewards(orderEntry); } catch (e) { console.warn('loyalty update failed', e); }
+
           toast(STRINGS[lang].order_sent_saved);
-          await afterTelegramHook({
-            table_no: table,
-            subtotal,
-            total,
-            discount_code: discountCode,
-            loyalty_discount: loyaltyDiscount,
-            loyalty_rewards: loyaltyRewards,
-            loyalty: loyaltySummary,
-            drink_units: loyaltyCalc.eligibleDrinks,
-            cart: orderEntry.items,
-            customer: orderEntry.customer,
-            device: collectDeviceInfo()
-          });
+
+          try { await afterTelegramHook(total); } catch (e) { console.warn('afterTelegramHook failed', e); }
+
+          // Always clear cart on delivery success
           cart=[];
           renderCart();
           resetDiscountCode();
         })
-        .catch(()=>{
+        .catch(() => {
+          // Only shows when Telegram itself failed
           toast(STRINGS[lang].order_send_failed);
         });
     }
