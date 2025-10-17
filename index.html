@@ -572,6 +572,8 @@ const STRINGS = {
 };
 
 const SHARED = window.NEEMA_SHARED || {};
+const API_BASE = '/api';
+const MENU_ENDPOINT = `${API_BASE}/menu`;
 const IMG_DEFAULT = SHARED.IMG_DEFAULT || 'https://i.postimg.cc/Y0GT5M1f/image.png';
 
 const EMPTY_MENU_DATA = {
@@ -580,10 +582,11 @@ const EMPTY_MENU_DATA = {
   dessert: { cake: [], side: [] }
 };
 
-const data = SHARED.MENU_DATA || EMPTY_MENU_DATA;
-if(!SHARED.MENU_DATA){
-  console.warn('[Neema] Shared menu data not found — rendering with empty menu dataset.');
+function cloneEmptyMenu(){
+  return JSON.parse(JSON.stringify(EMPTY_MENU_DATA));
 }
+
+let menuData = SHARED.MENU_DATA ? SHARED.MENU_DATA : cloneEmptyMenu();
 
 /* ===== Auto description helper ===== */
 function autoDesc(it){
@@ -613,6 +616,75 @@ function autoDesc(it){
   const pick = Object.keys(D).find(k => n.includes(k));
   return pick ? (lang==='ar' ? D[pick].ar : D[pick].en) :
     (lang==='ar' ? 'طعم متوازن ونكهة محضّرة بعناية.' : 'Balanced taste, crafted with care.');
+}
+
+async function hydrateMenuData(){
+  const remote = await fetchMenuDataFromApi();
+  if (remote) {
+    menuData = remote;
+    return;
+  }
+  if (SHARED.MENU_DATA) {
+    menuData = SHARED.MENU_DATA;
+    return;
+  }
+  console.warn('[Neema] لم يتم العثور على بيانات المنيو من الواجهة البرمجية، سيتم استخدام قائمة فارغة.');
+  menuData = cloneEmptyMenu();
+}
+
+async function fetchMenuDataFromApi(){
+  try{
+    const res = await fetch(MENU_ENDPOINT, { cache:'no-store' });
+    if(!res.ok){
+      return null;
+    }
+    const payload = await res.json();
+    if(!payload || typeof payload !== 'object' || !Array.isArray(payload.categories)){
+      return null;
+    }
+    return transformMenuPayload(payload);
+  }catch(error){
+    console.warn('[Neema] تعذر تحميل بيانات المنيو من الواجهة البرمجية.', error);
+    return null;
+  }
+}
+
+function transformMenuPayload(payload){
+  const normalized = cloneEmptyMenu();
+  (payload.categories || []).forEach((category)=>{
+    const catKey = (category?.slug || '').trim();
+    if(!catKey || !Object.prototype.hasOwnProperty.call(normalized, catKey)) return;
+    const groups = Array.isArray(category.groups) ? category.groups : [];
+    groups.forEach((group)=>{
+      const groupKey = (group?.slug || '').trim();
+      if(!groupKey || !Object.prototype.hasOwnProperty.call(normalized[catKey], groupKey)) return;
+      const items = Array.isArray(group.items) ? group.items : [];
+      normalized[catKey][groupKey] = items
+        .filter((item)=> item && item.available !== false)
+        .map((item)=> normalizeDashboardItem(item));
+    });
+  });
+  return normalized;
+}
+
+function normalizeDashboardItem(item){
+  const calories = item.calories;
+  const calNumber = calories === null || calories === undefined ? null : Number(calories);
+  return {
+    ar: item.nameAr || '',
+    en: item.nameEn || '',
+    price: Number.isFinite(Number(item.price)) ? Number(item.price) : 0,
+    cal: Number.isFinite(calNumber) ? calNumber : null,
+    img: item.image || IMG_DEFAULT,
+    desc_ar: item.description || '',
+    desc_en: item.descriptionEn || item.description || ''
+  };
+}
+
+function getGroupItems(category, group){
+  const cat = menuData?.[category] || {};
+  const items = cat?.[group];
+  return Array.isArray(items) ? items : [];
 }
 
 /* ===== State ===== */
@@ -1054,13 +1126,13 @@ function renderAll(){
   document.documentElement.dir = (lang==='ar'?'rtl':'ltr');
 
   // items
-  mount('hot-coffee', data.hot.coffee, 'hot');
-  mount('hot-tea', data.hot.tea, 'hot');
-  mount('cold-coffee', data.cold.coffee, 'cold');
-  mount('cold-mojito', data.cold.mojito, 'cold');
-  mount('cold-other', data.cold.other, 'cold');
-  mount('dessert-cake', data.dessert.cake, 'dessert');
-  mount('dessert-side', data.dessert.side, 'dessert');
+  mount('hot-coffee', getGroupItems('hot','coffee'), 'hot');
+  mount('hot-tea', getGroupItems('hot','tea'), 'hot');
+  mount('cold-coffee', getGroupItems('cold','coffee'), 'cold');
+  mount('cold-mojito', getGroupItems('cold','mojito'), 'cold');
+  mount('cold-other', getGroupItems('cold','other'), 'cold');
+  mount('dessert-cake', getGroupItems('dessert','cake'), 'dessert');
+  mount('dessert-side', getGroupItems('dessert','side'), 'dessert');
 
   fillTables();
   fillTablesCart();
@@ -1101,13 +1173,13 @@ const search = $('#search');
 search.addEventListener('input', ()=>{
   const q = search.value.trim().toLowerCase();
   const f = (arr)=>arr.filter(x=> ((x.ar||'')+(x.en||'')).toLowerCase().includes(q));
-  mount('hot-coffee', f(data.hot.coffee), 'hot');
-  mount('hot-tea', f(data.hot.tea), 'hot');
-  mount('cold-coffee', f(data.cold.coffee), 'cold');
-  mount('cold-mojito', f(data.cold.mojito), 'cold');
-  mount('cold-other', f(data.cold.other), 'cold');
-  mount('dessert-cake', f(data.dessert.cake), 'dessert');
-  mount('dessert-side', f(data.dessert.side), 'dessert');
+  mount('hot-coffee', f(getGroupItems('hot','coffee')), 'hot');
+  mount('hot-tea', f(getGroupItems('hot','tea')), 'hot');
+  mount('cold-coffee', f(getGroupItems('cold','coffee')), 'cold');
+  mount('cold-mojito', f(getGroupItems('cold','mojito')), 'cold');
+  mount('cold-other', f(getGroupItems('cold','other')), 'cold');
+  mount('dessert-cake', f(getGroupItems('dessert','cake')), 'dessert');
+  mount('dessert-side', f(getGroupItems('dessert','side')), 'dessert');
 });
 
 /* ===== Mode toggle ===== */
@@ -1957,8 +2029,9 @@ function toast(msg){
 }
 
 /* ===== Init ===== */
-function init(){
+async function init(){
   localStorage.removeItem('nima.table');
+  await hydrateMenuData();
   if(customerProfile && (customerProfile.name || customerProfile.phone)){
     if(!customerProfile.id){
       customerProfile.id = generateCustomerId(customerProfile.name || '', customerProfile.phone || '');
@@ -1974,7 +2047,9 @@ function init(){
     setTimeout(()=> openProfileModal(false), 900);
   }
 }
-init();
+init().catch((error)=>{
+  console.error('[Neema] تعذر تهيئة الواجهة:', error);
+});
   </script>
 </body>
 </html>
