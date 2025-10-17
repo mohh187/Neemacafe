@@ -19,3 +19,6 @@ export async function dbHealth() {
     return false;
   }
 }
+import { neon } from '@netlify/neon';
+
+export const sql = neon();

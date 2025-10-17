@@ -88,6 +88,8 @@ th,td{padding:8px;border-bottom:1px solid #eee}
             <tr>
               <th>العميل</th><th>الهاتف</th><th>الطلبات</th><th>إجمالي الصرف</th><th>آخر طلب</th>
               <th>إجمالي المشروبات</th><th>هدايا الولاء</th><th>الجهاز</th><th>آخر IP</th><th>آخر تاريخ</th>
+              <th>العميل</th><th>الهاتف</th><th>الطلبات</th><th>إجمالي الصرف</th>
+              <th>إجمالي المشروبات</th><th>هدايا الولاء</th><th>آخر جهاز</th><th>آخر IP</th><th>آخر طلب</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -206,6 +208,12 @@ const CUSTOMER_EXPORT_COLUMNS = [
   { label:'last_device', getter:c=>(c.device_type || c.last_device || '') },
   { label:'last_user_agent', getter:c=>c.last_user_agent || '' },
   { label:'last_ip', getter:c=>(c.ip_address || c.last_ip || '') },
+  { label:'total_drinks', getter:c=>c.total_drinks || 0 },
+  { label:'total_rewards', getter:c=>c.total_rewards || 0 },
+  { label:'last_order_at', getter:c=>c.last_order_at || '' },
+  { label:'last_device', getter:c=>c.last_device || '' },
+  { label:'last_user_agent', getter:c=>c.last_user_agent || '' },
+  { label:'last_ip', getter:c=>c.last_ip || '' },
   { label:'created_at', getter:c=>c.created_at || '' },
   { label:'updated_at', getter:c=>c.updated_at || '' }
 ];
@@ -311,6 +319,10 @@ function fillCustomers(rows){
       <td>${customer.total_rewards || 0}</td>
       <td>${escapeHtml(customer.device_type || customer.last_device || '-')}</td>
       <td>${escapeHtml(customer.ip_address || customer.last_ip || '-')}</td>
+      <td>${customer.total_drinks || 0}</td>
+      <td>${customer.total_rewards || 0}</td>
+      <td>${escapeHtml(customer.last_device || '-')}</td>
+      <td>${escapeHtml(customer.last_ip || '-')}</td>
       <td>${escapeHtml(formatDate(customer.last_order_at))}</td>`;
     tb.appendChild(tr);
   });

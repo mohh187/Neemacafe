@@ -2171,6 +2171,7 @@ function performSendOrder(tableIdOverride){
     customer: orderEntry.customer,
     device: collectDeviceInfo(),
     skip_customer_upsert: true
+    device: collectDeviceInfo()
   };
 
   const statusBase = new URL('order-status.html', window.location.href);

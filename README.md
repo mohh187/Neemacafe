@@ -55,6 +55,8 @@ You now have two options when updating the menu:
 
 أضيفت كذلك أعمدة `last_order_value` و`device_type` و`ip_address` إلى جدول العملاء لتوافق نقاط الخدمة الجديدة مع المتطلبات المذكورة.
 
+يستعمل كلا المسارين قاعدة بيانات PostgreSQL عبر Netlify Neon. استورد المخطط الموجود في `netlify/functions/schema.sql` لتجهيز الجداول المطلوبة (`items` و`orders`)، وتمت إضافة جدول `customers` وأعمدة إضافية داخل `orders` للاحتفاظ بملخصات الولاء، خصومات الولاء، بيانات الجهاز، وعناوين الـ IP.
+
 ### Environment variables
 
 - `ADMIN_PASSWORD` – required لكلا لوحة التحكم والعمليات المحمية في واجهات `/api`.
