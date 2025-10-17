@@ -50,14 +50,14 @@ You now have two options when updating the menu:
 - `/api/record-customer` – نقطة خدمة خفيفة مخصّصة لتحديث بيانات العملاء (آخر قيمة طلب، نوع الجهاز، IP) عند تأكيد الطلب في الواجهة الأمامية دون الحاجة لصلاحيات الإدارة.
 - `/api/record-order` – نقطة بديلة لتسجيل الطلبات الأساسية (الهاتف، المبلغ، الطاولة، العناصر) في حال أردت دمج المنيو مع أنظمة خارجية.
 
-يستعمل كلا المسارين قاعدة بيانات PostgreSQL عبر الحزمة الرسمية لـ Netlify `@netlify/neon`. استورد المخطط الموجود في `netlify/functions/schema.sql` لتجهيز الجداول المطلوبة (`items` و`orders`)، وتمت إضافة جدول `customers` وأعمدة إضافية داخل `orders` للاحتفاظ بملخصات الولاء، خصومات الولاء، بيانات الجهاز، وعناوين الـ IP.
+يستعمل كلا المسارين قاعدة بيانات PostgreSQL عبر الحزمة الخفيفة `@neondatabase/serverless`. استورد المخطط الموجود في `netlify/functions/schema.sql` لتجهيز الجداول المطلوبة (`items` و`orders`)، وتمت إضافة جدول `customers` وأعمدة إضافية داخل `orders` للاحتفاظ بملخصات الولاء، خصومات الولاء، بيانات الجهاز، وعناوين الـ IP.
 
 أضيفت كذلك أعمدة `last_order_value` و`device_type` و`ip_address` إلى جدول العملاء لتوافق نقاط الخدمة الجديدة مع المتطلبات المذكورة.
 
 ### Environment variables
 
 - `ADMIN_PASSWORD` – required لكلا لوحة التحكم والعمليات المحمية في واجهات `/api`.
-- `DATABASE_URL` – سلسلة الاتصال بـ PostgreSQL (يمكن أن تكون `NETLIFY_DATABASE_URL` إذا كنت تستخدم تكامل Netlify Neon).
+- `DATABASE_URL` – سلسلة الاتصال بـ PostgreSQL (يمكن أن تكون `NETLIFY_DATABASE_URL` إذا كنت تستخدم تكامل Netlify Neon أو تمرر الاتصال عبر Netlify).
 - `CORS_ORIGIN` – (اختياري) اضبطه لتحجيم النطاقات المسموح لها باستهلاك الواجهات؛ القيمة الافتراضية `*`.
 
 ## Persisted data keys
