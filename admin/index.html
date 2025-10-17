@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>لوحة التحكم</title>
+<style>
+body{font-family:system-ui;-webkit-font-smoothing:antialiased;margin:0;background:#fafafa}
+.wrap{max-width:960px;margin:auto;padding:16px}
+h1{margin:0 0 12px}
+.card{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:12px;margin:12px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input,button{padding:10px;border-radius:10px;border:1px solid #ddd}
+button{cursor:pointer}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px;border-bottom:1px solid #eee}
+.badge{font-weight:700}
+.table-wrap{overflow:auto}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.toolbar button{flex:1 1 160px}
+.note{color:#777;font-size:12px}
+</style>
+<body>
+<div class="wrap">
+  <h1>لوحة التحكم</h1>
+
+  <div id="login" class="card">
+    <div class="row">
+      <input id="pw" placeholder="كلمة سر الإدارة" type="password" style="flex:1"/>
+      <button id="doLogin">دخول</button>
+    </div>
+    <small>ضع كلمة السر المساوية لمتغير البيئة <code>ADMIN_PASSWORD</code>.</small>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="card">
+      <h3>إضافة/تعديل عنصر</h3>
+      <div class="row">
+        <input id="id" placeholder="id (فارغ للإضافة الجديدة)" style="width:120px">
+        <input id="name_ar" placeholder="الاسم بالعربية" style="flex:1">
+        <input id="name_en" placeholder="الاسم بالإنجليزية" style="flex:1">
+        <input id="price" placeholder="السعر" type="number" step="0.01" style="width:160px">
+        <input id="calories" placeholder="سعرات" type="number" style="width:120px">
+        <input id="img_url" placeholder="رابط الصورة (SVG)" style="flex:1">
+        <button id="save">حفظ</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>إدارة البيانات</h3>
+      <div class="toolbar">
+        <button id="refreshBtn">تحديث البيانات</button>
+        <button id="exportOrdersBtn">تصدير الطلبات (CSV)</button>
+        <button id="exportCustomersBtn">تصدير العملاء (CSV)</button>
+      </div>
+      <div class="note">تتضمن الطلبات المخزنة معلومات الجهاز وعنوان الـ IP لكل عميل.</div>
+    </div>
+
+    <div class="card">
+      <h3>العناصر</h3>
+      <div class="table-wrap">
+        <table id="itemsTbl">
+          <thead><tr><th>ID</th><th>الاسم</th><th>السعر</th><th>سعرات</th><th>صورة</th><th>أوامر</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>آخر الطلبات</h3>
+      <div class="table-wrap">
+        <table id="ordersTbl">
+          <thead>
+            <tr>
+              <th>ID</th><th>التاريخ</th><th>العميل</th><th>الهاتف</th><th>طاولة</th>
+              <th>الإجمالي</th><th>خصم الولاء</th><th>عدد المشروبات</th><th>الجهاز</th><th>IP</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>العملاء</h3>
+      <div class="table-wrap">
+        <table id="customersTbl">
+          <thead>
+            <tr>
+              <th>العميل</th><th>الهاتف</th><th>الطلبات</th><th>إجمالي الصرف</th>
+              <th>إجمالي المشروبات</th><th>هدايا الولاء</th><th>آخر جهاز</th><th>آخر IP</th><th>آخر طلب</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = {
+  items: '/api/items',
+  orders: '/api/orders',
+  customers: '/api/customers'
+};
+let TOKEN = localStorage.getItem('admin_token') || '';
+let cachedOrders = [];
+let cachedCustomers = [];
+
+function authHeaders(includeJson = true){
+  const h = {};
+  if(includeJson) h['content-type'] = 'application/json';
+  if(TOKEN) h['authorization'] = 'Bearer ' + TOKEN;
+  return h;
+}
+
+async function login(){
+  const pw = document.getElementById('pw').value.trim();
+  if(!pw){ alert('أدخل كلمة السر'); return; }
+  TOKEN = pw;
+  localStorage.setItem('admin_token', TOKEN);
+  boot();
+}
+
+async function listItems(){ return (await fetch(API.items)).json(); }
+async function addItem(it){ return (await fetch(API.items, { method:'POST', headers:authHeaders(), body: JSON.stringify(it) })).json(); }
+async function updateItem(id, it){ return (await fetch(API.items + '?id=' + id, { method:'PUT', headers:authHeaders(), body: JSON.stringify(it) })).json(); }
+async function deleteItem(id){ return (await fetch(API.items + '?id=' + id, { method:'DELETE', headers:authHeaders(false) })).json(); }
+async function listOrders(){ return (await fetch(API.orders, { headers:authHeaders(false) })).json(); }
+async function listCustomers(){ return (await fetch(API.customers, { headers:authHeaders(false) })).json(); }
+
+function escapeHtml(str){
+  return String(str === undefined || str === null ? '' : str).replace(/[&<>"']/g, c => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[c]));
+}
+
+function formatCurrency(value){
+  const num = Number(value);
+  if(!Number.isFinite(num)) return '-';
+  return num.toLocaleString('ar-SA', { minimumFractionDigits:0, maximumFractionDigits:2 });
+}
+
+function formatDate(value){
+  if(!value) return '-';
+  const d = new Date(value);
+  if(Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleString('ar-SA');
+}
+
+function csvEscape(value){
+  if(value === undefined || value === null) return '""';
+  const str = String(value).replace(/"/g, '""');
+  return `"${str}"`;
+}
+
+function downloadCsv(filename, rows){
+  const blob = new Blob([rows], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+const ORDER_EXPORT_COLUMNS = [
+  { label:'id', getter:o=>o.id },
+  { label:'created_at', getter:o=>o.created_at || '' },
+  { label:'table_no', getter:o=>o.table_no || '' },
+  { label:'customer_key', getter:o=>o.customer_key || '' },
+  { label:'customer_name', getter:o=>o.customer_name || '' },
+  { label:'customer_phone', getter:o=>o.customer_phone || '' },
+  { label:'subtotal', getter:o=>o.subtotal ?? '' },
+  { label:'total', getter:o=>o.total ?? '' },
+  { label:'discount_code', getter:o=>o.discount_code || '' },
+  { label:'loyalty_discount', getter:o=>o.loyalty_discount ?? 0 },
+  { label:'loyalty_freebies', getter:o=>(o.loyalty_summary && o.loyalty_summary.freebiesEarned) || 0 },
+  { label:'drink_units', getter:o=>o.drink_units ?? (o.loyalty_summary && o.loyalty_summary.drinkUnits) || 0 },
+  { label:'cart', getter:o=>JSON.stringify(o.cart || []) },
+  { label:'loyalty_rewards', getter:o=>JSON.stringify(o.loyalty_rewards || []) },
+  { label:'loyalty_summary', getter:o=>JSON.stringify(o.loyalty_summary || {}) },
+  { label:'device_type', getter:o=>(o.device_info && o.device_info.type) || '' },
+  { label:'device_platform', getter:o=>(o.device_info && o.device_info.platform) || '' },
+  { label:'device_language', getter:o=>(o.device_info && o.device_info.language) || '' },
+  { label:'ip_address', getter:o=>o.ip_address || '' },
+  { label:'user_agent', getter:o=>o.user_agent || '' }
+];
+
+const CUSTOMER_EXPORT_COLUMNS = [
+  { label:'customer_key', getter:c=>c.customer_key || '' },
+  { label:'name', getter:c=>c.name || '' },
+  { label:'phone', getter:c=>c.phone || '' },
+  { label:'total_orders', getter:c=>c.total_orders || 0 },
+  { label:'total_spent', getter:c=>c.total_spent || 0 },
+  { label:'total_drinks', getter:c=>c.total_drinks || 0 },
+  { label:'total_rewards', getter:c=>c.total_rewards || 0 },
+  { label:'last_order_at', getter:c=>c.last_order_at || '' },
+  { label:'last_device', getter:c=>c.last_device || '' },
+  { label:'last_user_agent', getter:c=>c.last_user_agent || '' },
+  { label:'last_ip', getter:c=>c.last_ip || '' },
+  { label:'created_at', getter:c=>c.created_at || '' },
+  { label:'updated_at', getter:c=>c.updated_at || '' }
+];
+
+function fillItems(rows){
+  const tb = document.querySelector('#itemsTbl tbody'); tb.innerHTML='';
+  rows.forEach(r=>{
+    const tr = document.createElement('tr');
+    const nameAr = escapeHtml(r.name_ar || '');
+    const nameEn = escapeHtml(r.name_en || '');
+    const price = Number(r.price || 0).toLocaleString('ar-SA');
+    const calories = Number(r.calories || 0);
+    const imgCell = r.img_url ? `<img src="${escapeHtml(r.img_url)}" alt="" style="width:48px;height:48px;object-fit:contain">` : '';
+    tr.innerHTML = `
+      <td>${r.id}</td>
+      <td><div><div class="badge">${nameAr}</div><div>${nameEn}</div></div></td>
+      <td>${price}</td>
+      <td>${calories}</td>
+      <td>${imgCell}</td>
+      <td>
+        <button data-edit="${r.id}">تعديل</button>
+        <button data-del="${r.id}">حذف</button>
+      </td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('[data-edit]').forEach(b=>{
+    b.onclick = ()=>{
+      const id = b.getAttribute('data-edit');
+      const row = rows.find(x=> String(x.id)===String(id));
+      document.getElementById('id').value = row.id;
+      document.getElementById('name_ar').value = row.name_ar;
+      document.getElementById('name_en').value = row.name_en;
+      document.getElementById('price').value = row.price;
+      document.getElementById('calories').value = row.calories||0;
+      document.getElementById('img_url').value = row.img_url||'';
+      window.scrollTo({ top:0, behavior:'smooth' });
+    };
+  });
+  tb.querySelectorAll('[data-del]').forEach(b=>{
+    b.onclick = async ()=>{
+      const id = b.getAttribute('data-del');
+      if(!confirm('حذف العنصر #' + id + '?')) return;
+      await deleteItem(id);
+      await loadData();
+    };
+  });
+}
+
+function fillOrders(rows){
+  cachedOrders = Array.isArray(rows) ? rows : [];
+  const tb = document.querySelector('#ordersTbl tbody');
+  tb.innerHTML = '';
+  if(!cachedOrders.length){
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td colspan="10" style="text-align:center;color:#777">لا توجد طلبات بعد.</td>';
+    tb.appendChild(tr);
+    return;
+  }
+  cachedOrders.forEach(order=>{
+    const deviceInfo = (order && typeof order.device_info === 'object' && order.device_info) ? order.device_info : {};
+    const deviceParts = [];
+    if(deviceInfo.type) deviceParts.push(deviceInfo.type);
+    if(deviceInfo.platform) deviceParts.push(deviceInfo.platform);
+    if(deviceInfo.language) deviceParts.push(deviceInfo.language);
+    const deviceLabel = deviceParts.length ? deviceParts.join(' • ') : '-';
+    const loyaltySummary = (order && order.loyalty_summary && typeof order.loyalty_summary === 'object') ? order.loyalty_summary : {};
+    const drinks = Number(order.drink_units || loyaltySummary.drinkUnits || 0);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${order.id}</td>
+      <td>${escapeHtml(formatDate(order.created_at))}</td>
+      <td>${escapeHtml(order.customer_name || order.customer_key || '-')}</td>
+      <td>${escapeHtml(order.customer_phone || '-')}</td>
+      <td>${escapeHtml(order.table_no || '-')}</td>
+      <td>${formatCurrency(order.total)}</td>
+      <td>${formatCurrency(order.loyalty_discount)}</td>
+      <td>${drinks}</td>
+      <td>${escapeHtml(deviceLabel)}</td>
+      <td>${escapeHtml(order.ip_address || '-')}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function fillCustomers(rows){
+  cachedCustomers = Array.isArray(rows) ? rows : [];
+  const tb = document.querySelector('#customersTbl tbody');
+  tb.innerHTML = '';
+  if(!cachedCustomers.length){
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td colspan="9" style="text-align:center;color:#777">لا توجد بيانات للعملاء بعد.</td>';
+    tb.appendChild(tr);
+    return;
+  }
+  cachedCustomers.forEach(customer=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(customer.name || customer.customer_key || '-')}</td>
+      <td>${escapeHtml(customer.phone || '-')}</td>
+      <td>${customer.total_orders || 0}</td>
+      <td>${formatCurrency(customer.total_spent)}</td>
+      <td>${customer.total_drinks || 0}</td>
+      <td>${customer.total_rewards || 0}</td>
+      <td>${escapeHtml(customer.last_device || '-')}</td>
+      <td>${escapeHtml(customer.last_ip || '-')}</td>
+      <td>${escapeHtml(formatDate(customer.last_order_at))}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function exportOrdersCsv(){
+  if(!cachedOrders.length){
+    alert('لا توجد طلبات لتصديرها حالياً.');
+    return;
+  }
+  const rows = [ORDER_EXPORT_COLUMNS.map(col=>col.label).join(',')];
+  cachedOrders.forEach(order=>{
+    const line = ORDER_EXPORT_COLUMNS.map(col=>csvEscape(col.getter(order))).join(',');
+    rows.push(line);
+  });
+  downloadCsv(`orders-${new Date().toISOString().slice(0,10)}.csv`, rows.join('\n'));
+}
+
+function exportCustomersCsv(){
+  if(!cachedCustomers.length){
+    alert('لا توجد بيانات عملاء لتصديرها حالياً.');
+    return;
+  }
+  const rows = [CUSTOMER_EXPORT_COLUMNS.map(col=>col.label).join(',')];
+  cachedCustomers.forEach(customer=>{
+    const line = CUSTOMER_EXPORT_COLUMNS.map(col=>csvEscape(col.getter(customer))).join(',');
+    rows.push(line);
+  });
+  downloadCsv(`customers-${new Date().toISOString().slice(0,10)}.csv`, rows.join('\n'));
+}
+
+function isUnauthorizedResponse(payload){
+  return payload && typeof payload === 'object' && payload.error === 'unauthorized';
+}
+
+function handleUnauthorized(){
+  alert('انتهت صلاحية الجلسة. يرجى تسجيل الدخول مجدداً.');
+  TOKEN = '';
+  localStorage.removeItem('admin_token');
+  boot();
+}
+
+async function loadData(){
+  if(!TOKEN) return;
+  try{
+    const [items, orders, customers] = await Promise.all([listItems(), listOrders(), listCustomers()]);
+    if(isUnauthorizedResponse(orders) || isUnauthorizedResponse(customers)){
+      handleUnauthorized();
+      return;
+    }
+    fillItems(Array.isArray(items) ? items : []);
+    fillOrders(Array.isArray(orders) ? orders : []);
+    fillCustomers(Array.isArray(customers) ? customers : []);
+  }catch(err){
+    console.error('Failed to load data', err);
+    alert('تعذر تحميل البيانات. تحقق من الاتصال وحاول مجدداً.');
+  }
+}
+
+async function saveItem(){
+  const id = document.getElementById('id').value.trim();
+  const payload = {
+    name_ar: document.getElementById('name_ar').value.trim(),
+    name_en: document.getElementById('name_en').value.trim(),
+    price: Number(document.getElementById('price').value || 0),
+    calories: Number(document.getElementById('calories').value || 0),
+    img_url: document.getElementById('img_url').value.trim()
+  };
+  if(!payload.name_ar || !payload.name_en){ alert('أكمل الاسم'); return; }
+  if(id) await updateItem(id, payload); else await addItem(payload);
+  document.querySelectorAll('#id,#name_ar,#name_en,#price,#calories,#img_url').forEach(el=> el.value='');
+  await loadData();
+}
+
+async function boot(){
+  document.getElementById('login').style.display = TOKEN ? 'none' : 'block';
+  document.getElementById('app').style.display = TOKEN ? 'block' : 'none';
+  if(!TOKEN) return;
+  await loadData();
+}
+
+document.getElementById('doLogin').onclick = login;
+document.getElementById('save').onclick = saveItem;
+const refreshBtn = document.getElementById('refreshBtn');
+if(refreshBtn) refreshBtn.onclick = loadData;
+const exportOrdersBtn = document.getElementById('exportOrdersBtn');
+if(exportOrdersBtn) exportOrdersBtn.onclick = exportOrdersCsv;
+const exportCustomersBtn = document.getElementById('exportCustomersBtn');
+if(exportCustomersBtn) exportCustomersBtn.onclick = exportCustomersCsv;
+
+boot();
+</script>
+</body>
+</html>
