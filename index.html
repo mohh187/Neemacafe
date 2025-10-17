@@ -430,7 +430,8 @@ body.dark .table-modal .sheet .error{color:#e57373}
   <div class="bar">
     <div class="inner">
       <select id="table"></select>
-      <button class="btn primary" id="callBtn">🔔 <span data-i18n="call_waiter">طلب النادل</span></button>
+      <button class="btn primary" id="sendBarBtn">🚀 <span data-i18n="send_order">إرسال الطلب</span></button>
+      <button class="btn" id="callBtn">🔔 <span data-i18n="call_waiter">طلب النادل</span></button>
     </div>
   </div>
 
@@ -500,7 +501,7 @@ const STRINGS = {
     customer_name_label:'اسم العميل',
     customer_phone_label:'رقم التواصل',
     loyalty_title:'عميلنا المميز',
-    loyalty_message:'شكراً من القلب يا {name}! بعد أربع مرات من طلب <strong>{drink}</strong> المشروب الخامس علينا مجاناً. تفضل للكاشير وسجل بياناتك لتنضم لعائلة نيمة 🤎',
+    loyalty_message:'شكراً من القلب يا {name}! بعد أربع مشروبات، المشروب الخامس <strong>{drink}</strong> علينا مجاناً. تفضل للكاشير وسجل بياناتك لتنضم لعائلة نيمة 🤎',
     loyalty_button:'تمام',
     loyalty_reward_label:'هدية الولاء',
     loyalty_discount_label:'خصم الولاء',
@@ -562,7 +563,7 @@ const STRINGS = {
     customer_name_label:'Customer name',
     customer_phone_label:'Phone',
     loyalty_title:'VIP Guest',
-    loyalty_message:'Thank you so much, {name}! After four {drink} orders, this fifth one is on us. Please see the cashier so we can welcome you into the Neema family 🤎',
+    loyalty_message:'Thank you so much, {name}! After four drinks, this fifth {drink} is on us. Please see the cashier so we can welcome you into the Neema family 🤎',
     loyalty_button:'Got it',
     loyalty_reward_label:'Loyalty treat',
     loyalty_discount_label:'Loyalty discount',
@@ -572,6 +573,7 @@ const STRINGS = {
 
 const SHARED = window.NEEMA_SHARED || {};
 const IMG_DEFAULT = SHARED.IMG_DEFAULT || 'https://i.postimg.cc/Y0GT5M1f/image.png';
+const MENU_STORAGE_KEY = 'neema.menuData.custom';
 
 const EMPTY_MENU_DATA = {
   hot: { coffee: [], tea: [] },
@@ -579,9 +581,107 @@ const EMPTY_MENU_DATA = {
   dessert: { cake: [], side: [] }
 };
 
-const data = SHARED.MENU_DATA || EMPTY_MENU_DATA;
-if(!SHARED.MENU_DATA){
+function cloneMenu(obj){
+  try{
+    return JSON.parse(JSON.stringify(obj));
+  }catch(err){
+    console.warn('[Neema] Unable to clone menu dataset, falling back to reference copy.', err);
+    return obj;
+  }
+}
+
+function ensureMenuShape(menu){
+  const shape = cloneMenu(EMPTY_MENU_DATA);
+  const source = menu && typeof menu === 'object' ? menu : {};
+  Object.keys(shape).forEach(cat=>{
+    const catSource = source[cat] && typeof source[cat] === 'object' ? source[cat] : {};
+    Object.keys(shape[cat]).forEach(group=>{
+      const arr = catSource[group];
+      shape[cat][group] = Array.isArray(arr) ? arr : [];
+    });
+  });
+  return shape;
+}
+
+function loadMenuData(){
+  let stored = null;
+  try{
+    stored = JSON.parse(localStorage.getItem(MENU_STORAGE_KEY) || 'null');
+  }catch(err){
+    console.warn('[Neema] Unable to read stored menu data — ignoring custom dataset.', err);
+    stored = null;
+  }
+  if(stored && typeof stored === 'object'){
+    return ensureMenuShape(stored);
+  }
+  if(SHARED.MENU_DATA){
+    return ensureMenuShape(SHARED.MENU_DATA);
+  }
   console.warn('[Neema] Shared menu data not found — rendering with empty menu dataset.');
+  return ensureMenuShape(EMPTY_MENU_DATA);
+}
+
+const data = loadMenuData();
+
+const ITEMS_API = '/api/items';
+
+async function fetchItems(){
+  try{
+    const res = await fetch(ITEMS_API);
+    if(!res.ok) throw new Error('status');
+    const rows = await res.json();
+    const toItem = r => ({ ar:r.name_ar, en:r.name_en, price:Number(r.price), cal:Number(r.calories||0), img:r.img_url || IMG_DEFAULT });
+    const hotCoffee = rows.filter(r=>/لاتيه|اسبريسو|كابتشينو|موكا|فلات/i.test(r.name_ar)).map(toItem);
+    const hotTea    = rows.filter(r=>/شاي|ماتشا/i.test(r.name_ar)).map(toItem);
+    const coldCoffee= rows.filter(r=>/ايس|بارد/i.test(r.name_ar)).map(toItem);
+    const mojito    = rows.filter(r=>/موهيتو/i.test(r.name_ar)).map(toItem);
+    const otherCold = rows.filter(r=>/عصير|مشروب/i.test(r.name_ar) && !/موهيتو/i.test(r.name_ar)).map(toItem);
+    const dessertC  = rows.filter(r=>/كيك|كعكة/i.test(r.name_ar)).map(toItem);
+    const dessertS  = rows.filter(r=>/حلا|لقيمات|كوكي/i.test(r.name_ar)).map(toItem);
+
+    data.hot.coffee = hotCoffee;
+    data.hot.tea = hotTea;
+    data.cold.coffee = coldCoffee;
+    data.cold.mojito = mojito;
+    data.cold.other = otherCold;
+    data.dessert.cake = dessertC;
+    data.dessert.side = dessertS;
+  }catch(err){
+    console.warn('items api failed', err);
+  }
+}
+
+let pendingOrderSyncPayload = null;
+
+async function sendOrderToDB(order){
+  try{
+    const res = await fetch('/api/orders', {
+      method:'POST',
+      headers:{ 'content-type':'application/json' },
+      body: JSON.stringify(order)
+    });
+    if(!res.ok) throw new Error('status');
+    return await res.json();
+  }catch(err){
+    console.warn('order db sync failed', err);
+    return null;
+  }
+}
+
+async function afterTelegramHook(total){
+  let payload = null;
+  if(pendingOrderSyncPayload && typeof pendingOrderSyncPayload === 'object'){
+    pendingOrderSyncPayload.total = typeof total === 'number' ? total : pendingOrderSyncPayload.total;
+    payload = pendingOrderSyncPayload;
+  } else if(total && typeof total === 'object'){
+    payload = total;
+  }
+  if(!payload) return null;
+  const device = Object.assign({}, payload.device || {});
+  if(!device.user_agent && typeof navigator !== 'undefined'){ device.user_agent = navigator.userAgent || ''; }
+  payload.device = device;
+  pendingOrderSyncPayload = null;
+  return await sendOrderToDB(payload);
 }
 
 /* ===== Auto description helper ===== */
@@ -615,7 +715,23 @@ function autoDesc(it){
 }
 
 /* ===== State ===== */
-let cart = JSON.parse(localStorage.getItem('nima.cart') || '[]');
+function hydrateCart(){
+  try{
+    const raw = JSON.parse(localStorage.getItem('nima.cart') || '[]');
+    if(Array.isArray(raw)){
+      return raw.map(item=>{
+        if(!item || typeof item !== 'object') return null;
+        const copy = Object.assign({}, item);
+        if(!copy.category){
+          copy.category = copy.cat || copy.base_cat || 'unknown';
+        }
+        return copy;
+      }).filter(Boolean);
+    }
+  }catch(e){}
+  return [];
+}
+let cart = hydrateCart();
 function saveCart(){ localStorage.setItem('nima.cart', JSON.stringify(cart)); }
 function cartCount(){ return cart.reduce((s,i)=>s+i.qty,0); }
 function cartTotal(){
@@ -634,6 +750,7 @@ const CUSTOMER_PROFILE_KEY = 'nima.customerProfile';
 const CUSTOMER_REGISTRY_KEY = 'nima.customerRegistry';
 const LOYALTY_KEY = 'nima.loyaltyTracker';
 const SESSION_GREETING_KEY = 'nima.greetedSession';
+const DRINK_CATEGORIES = ['hot','cold'];
 let customerProfile = loadCustomerProfile();
 let customerRegistry = loadCustomerRegistry();
 let orderLog = loadOrderLog();
@@ -645,6 +762,14 @@ let currentDiscountCode = '';
 const $ = (s)=>document.querySelector(s);
 const REG = []; // registry for click-safe products (no inline JSON)
 function register(item, cat){ const id = REG.push({item,cat})-1; return id; }
+
+function isDrinkCartItem(item){
+  if(!item || typeof item !== 'object') return false;
+  const cat = item.category || item.base_cat || '';
+  if(!cat) return true;
+  if(cat === 'dessert') return false;
+  return DRINK_CATEGORIES.includes(cat);
+}
 
 function priceHTML(p){
   const value = Number(p);
@@ -661,6 +786,26 @@ function escapeHtml(str){
     '"':'&quot;',
     "'":'&#39;'
   }[c]));
+}
+
+function detectDeviceType(){
+  const ua = navigator.userAgent || '';
+  if(/ipad|tablet/i.test(ua)) return 'tablet';
+  if(/mobile|android|iphone|ipod/i.test(ua)) return 'mobile';
+  return 'desktop';
+}
+
+function collectDeviceInfo(){
+  const info = {
+    type: detectDeviceType(),
+    language: navigator.language || '',
+    platform: navigator.platform || '',
+    vendor: navigator.vendor || '',
+    timezone: (typeof Intl !== 'undefined' && Intl.DateTimeFormat) ? (Intl.DateTimeFormat().resolvedOptions().timeZone || '') : '',
+    screen: (window.screen && window.screen.width && window.screen.height) ? `${window.screen.width}x${window.screen.height}` : '',
+    touch: ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
+  };
+  return info;
 }
 
 function loadCustomerProfile(){
@@ -744,12 +889,54 @@ function saveOrderLog(){
   catch(e){ console.warn('Unable to persist order log', e); }
 }
 
+function normalizeLoyaltyState(raw){
+  if(!raw || typeof raw !== 'object') return { customers:{} };
+  if(raw.customers && typeof raw.customers === 'object'){
+    const normalized = {};
+    Object.keys(raw.customers).forEach(id=>{
+      const bucket = raw.customers[id] || {};
+      normalized[id] = {
+        drinkCount: Number(bucket.drinkCount) || 0,
+        rewardCount: Number(bucket.rewardCount) || 0,
+        updatedAt: Number(bucket.updatedAt) || Date.now()
+      };
+    });
+    return { customers: normalized };
+  }
+  const entries = Object.values(raw);
+  const totalCount = entries.reduce((sum, rec)=> sum + (Number(rec && rec.count) || 0), 0);
+  const rewardCount = entries.reduce((sum, rec)=>{
+    const count = Number(rec && rec.count) || 0;
+    const stored = Number(rec && rec.rewardLevel);
+    return sum + (Number.isFinite(stored) ? stored : Math.floor(count / 5));
+  }, 0);
+  return {
+    customers: {
+      guest: { drinkCount: totalCount, rewardCount, updatedAt: Date.now() }
+    }
+  };
+}
+
 function loadLoyaltyState(){
   try{
     const raw = JSON.parse(localStorage.getItem(LOYALTY_KEY) || 'null');
-    if(raw && typeof raw === 'object') return raw;
+    return normalizeLoyaltyState(raw);
   }catch(e){}
-  return {};
+  return { customers:{} };
+}
+
+function ensureLoyaltyState(){
+  if(!loyaltyState || typeof loyaltyState !== 'object') loyaltyState = { customers:{} };
+  if(!loyaltyState.customers || typeof loyaltyState.customers !== 'object') loyaltyState.customers = {};
+}
+
+function getLoyaltyBucket(customerId){
+  ensureLoyaltyState();
+  const id = customerId || 'guest';
+  if(!loyaltyState.customers[id]){
+    loyaltyState.customers[id] = { drinkCount:0, rewardCount:0, updatedAt: Date.now() };
+  }
+  return loyaltyState.customers[id];
 }
 
 function saveLoyaltyState(){
@@ -1369,6 +1556,11 @@ function sendWaiterCall(tableId){
   toast(STRINGS[lang].waiter_toast);
 }
 
+const sendBarButton = $('#sendBarBtn');
+if(sendBarButton){
+  sendBarButton.addEventListener('click', ()=>{ sendOrder(); });
+}
+
 $('#callBtn').addEventListener('click', ()=>{
   ensureTableSelection((tableId)=>{
     sendWaiterCall(tableId);
@@ -1679,6 +1871,7 @@ function addToCart(it, qty=1, options=[], variant=null){
   const idx = cart.findIndex(x=>x.key===key);
   if(idx>-1){
     cart[idx].qty += qty;
+    if(!cart[idx].category) cart[idx].category = currentCat;
   }
   else{
     cart.push({
@@ -1692,7 +1885,8 @@ function addToCart(it, qty=1, options=[], variant=null){
       cal: Number.isFinite(calories) ? calories : null,
       img,
       qty,
-      options
+      options,
+      category: currentCat
     });
   }
   saveCart(); updateCartBadge();
@@ -1783,53 +1977,74 @@ function resetDiscountCode(){
 }
 
 function calculateLoyaltyRewards(cartItems){
-  const rewards = [];
+  const bucket = getLoyaltyBucket(getActiveCustomerId());
+  const baseCount = Number(bucket && bucket.drinkCount) || 0;
+  let runningCount = baseCount;
   let totalDiscount = 0;
+  let drinkUnits = 0;
+  const rewardsMap = new Map();
+
   (cartItems || []).forEach(it=>{
-    if(!it) return;
-    const key = (it.name_en || it.name_ar || '').toLowerCase();
-    if(!key) return;
-    const record = loyaltyState[key] || { count:0, rewardLevel:0, drink_ar: it.name_ar || '', drink_en: it.name_en || '' };
-    const startCount = Number(record.count) || 0;
+    if(!isDrinkCartItem(it)) return;
     const qty = Number(it.qty) || 0;
     if(!qty) return;
-    const freebies = Math.floor((startCount + qty) / 5) - Math.floor(startCount / 5);
-    if(freebies > 0){
-      const price = Number(it.price) || 0;
-      const discount = freebies * price;
-      totalDiscount += discount;
-      rewards.push({
-        key,
-        freebies,
-        discount,
-        drink_ar: it.name_ar || record.drink_ar || '',
-        drink_en: it.name_en || record.drink_en || ''
-      });
+    const price = Number(it.price) || 0;
+    const drinkAr = it.name_ar || it.base_ar || it.name_en || '';
+    const drinkEn = it.name_en || it.base_en || it.name_ar || '';
+    const rewardKey = `${drinkAr}|${drinkEn}`;
+    for(let i=0; i<qty; i++){
+      drinkUnits += 1;
+      runningCount += 1;
+      if(runningCount % 5 === 0){
+        totalDiscount += price;
+        if(!rewardsMap.has(rewardKey)){
+          rewardsMap.set(rewardKey, { drink_ar: drinkAr, drink_en: drinkEn, freebies:0, discount:0 });
+        }
+        const rec = rewardsMap.get(rewardKey);
+        rec.freebies += 1;
+        rec.discount += price;
+      }
     }
   });
-  return { rewards, discount: totalDiscount };
+
+  const rewards = Array.from(rewardsMap.values());
+  const roundedDiscount = Number(totalDiscount.toFixed(2));
+  const projectedCount = runningCount;
+  const freebiesEarned = rewards.reduce((sum, r)=> sum + (Number(r.freebies) || 0), 0);
+
+  return {
+    rewards,
+    discount: roundedDiscount,
+    eligibleDrinks: drinkUnits,
+    baseDrinkCount: baseCount,
+    projectedDrinkCount: projectedCount,
+    rewardTiersBefore: Math.floor(baseCount / 5),
+    rewardTiersAfter: Math.floor(projectedCount / 5),
+    freebiesEarned
+  };
 }
 
 function handleLoyaltyRewards(entry){
-  if(!entry || !Array.isArray(entry.items)) return;
-  let rewardInfo = null;
-  entry.items.forEach(it=>{
-    const key = ((it && (it.name_en || it.name_ar)) || '').toLowerCase();
-    if(!key) return;
-    const qty = Number(it && it.qty) || 1;
-    const record = loyaltyState[key] || { count:0, rewardLevel:0, drink_ar: it.name_ar || '', drink_en: it.name_en || '' };
-    record.count += qty;
-    if(it.name_ar) record.drink_ar = it.name_ar;
-    if(it.name_en) record.drink_en = it.name_en;
-    const milestone = Math.floor(record.count / 5);
-    if(milestone > (record.rewardLevel || 0) && !rewardInfo){
-      rewardInfo = { drink_ar: record.drink_ar, drink_en: record.drink_en };
-    }
-    record.rewardLevel = Math.max(record.rewardLevel || 0, milestone);
-    loyaltyState[key] = record;
-  });
+  if(!entry) return;
+  const customerId = (entry.customer && entry.customer.id) || getActiveCustomerId();
+  const bucket = getLoyaltyBucket(customerId);
+  const loyalty = entry.loyalty || {};
+  const projected = Number(loyalty.projectedCount);
+  const drinksAdded = Number(loyalty.drinkUnits || 0);
+  if(Number.isFinite(projected)){
+    bucket.drinkCount = projected;
+  } else if(Number.isFinite(drinksAdded)){
+    bucket.drinkCount = Number(bucket.drinkCount || 0) + drinksAdded;
+  }
+  bucket.rewardCount = Math.floor((bucket.drinkCount || 0) / 5);
+  bucket.updatedAt = Date.now();
+  loyaltyState.customers[customerId] = bucket;
   saveLoyaltyState();
-  if(rewardInfo) showLoyaltyModal(rewardInfo);
+  const rewards = Array.isArray(entry.loyaltyRewards) ? entry.loyaltyRewards : [];
+  const freebiesEarned = rewards.reduce((sum, reward)=> sum + (Number(reward.freebies) || 0), 0);
+  if(freebiesEarned > 0){
+    showLoyaltyModal(rewards[0]);
+  }
 }
 
 /* ===== Send order to Telegram ===== */
@@ -1845,6 +2060,13 @@ function performSendOrder(tableIdOverride){
   const loyaltyCalc = calculateLoyaltyRewards(cart);
   const loyaltyDiscount = loyaltyCalc.discount;
   const loyaltyRewards = loyaltyCalc.rewards;
+  const loyaltySummary = {
+    baseCount: loyaltyCalc.baseDrinkCount,
+    projectedCount: loyaltyCalc.projectedDrinkCount,
+    drinkUnits: loyaltyCalc.eligibleDrinks,
+    freebiesEarned: loyaltyCalc.freebiesEarned,
+    discount: loyaltyDiscount
+  };
   const total = Math.max(subtotal - loyaltyDiscount, 0);
   const headerLine = `🧾 طلب جديد — طاولة ${tableId}`;
   const orderId = `N${stamp.now.getTime().toString(36).toUpperCase()}`;
@@ -1896,13 +2118,30 @@ function performSendOrder(tableIdOverride){
       phone: customerPhoneValue || ''
     },
     loyaltyRewards,
+    loyalty: loyaltySummary,
+    drink_units: loyaltyCalc.eligibleDrinks,
     items: cart.map(it=>({
       name_ar: it.name_ar,
       name_en: it.name_en,
       qty: it.qty,
       price: it.price,
-      options: Array.isArray(it.options) ? it.options : []
+      options: Array.isArray(it.options) ? it.options : [],
+      category: it.category || ''
     }))
+  };
+
+  pendingOrderSyncPayload = {
+    table_no: tableId,
+    subtotal,
+    total,
+    discount_code: discountCode,
+    loyalty_discount: loyaltyDiscount,
+    loyalty_rewards: loyaltyRewards,
+    loyalty: loyaltySummary,
+    drink_units: loyaltyCalc.eligibleDrinks,
+    cart: orderEntry.items,
+    customer: orderEntry.customer,
+    device: collectDeviceInfo()
   };
 
   const statusBase = new URL('order-status.html', window.location.href);
@@ -1922,16 +2161,26 @@ function performSendOrder(tableIdOverride){
 
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID_NEW}&text=${text}&reply_markup=${replyMarkup}`;
   fetch(url)
-    .then(res=>{
-      if(!res.ok) throw new Error('telegram');
-      recordOrderLog(orderEntry);
-      handleLoyaltyRewards(orderEntry);
+    .then(async (res) => {
+      if (!res.ok) throw new Error('telegram'); // only network/Telegram decides failure
+
+      // Telegram delivered — everything below is best-effort
+      try { await recordOrderLog(orderEntry); } catch (e) { console.warn('recordOrderLog failed', e); }
+      try { handleLoyaltyRewards(orderEntry); } catch (e) { console.warn('loyalty update failed', e); }
+
       toast(STRINGS[lang].order_sent_saved);
+
+      try { await afterTelegramHook(total); } catch (e) { console.warn('afterTelegramHook failed', e); }
+
+      // Always clear cart on delivery success
       clearCart();
       resetDiscountCode();
       closeCart();
     })
-    .catch(()=> { toast(STRINGS[lang].order_send_failed); });
+    .catch(() => {
+      // Only shows when Telegram itself failed
+      toast(STRINGS[lang].order_send_failed);
+    });
 }
 
 function sendOrder(){
@@ -1956,7 +2205,7 @@ function toast(msg){
 }
 
 /* ===== Init ===== */
-function init(){
+async function init(){
   localStorage.removeItem('nima.table');
   if(customerProfile && (customerProfile.name || customerProfile.phone)){
     if(!customerProfile.id){
@@ -1966,6 +2215,7 @@ function init(){
     ensureCustomerRegistryEntry(customerProfile.id, customerProfile);
     ensureCustomerLog(customerProfile.id, customerProfile);
   }
+  await fetchItems();
   renderAll(); updateLangBtn(); updateCartBadge();
   if(customerProfile && (customerProfile.name || customerProfile.phone)){
     maybeToastGreeting();
