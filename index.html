@@ -28,6 +28,7 @@ body.dark header{background:rgba(20,20,20,.82)}
 .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:8px 10px;border-radius:10px;font-size:14px;cursor:pointer;text-decoration:none;font-weight:600}
 .btn.small{padding:6px 8px;font-size:12px}
+.btn.tiny{width:28px;height:28px;padding:0;font-size:12px;border-radius:50%;flex:0 0 28px;text-transform:uppercase;letter-spacing:0.4px;line-height:1}
 .btn.primary{background:var(--brand);border-color:transparent;color:#fff}
 .btn.ghost{background:transparent}
 .greeting{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;text-align:right;width:100%}
@@ -41,7 +42,8 @@ body.dark header{background:rgba(20,20,20,.82)}
   .header-side{align-items:stretch;gap:12px;min-width:0}
   .greeting{justify-content:space-between;text-align:inherit}
   .actions{justify-content:space-between}
-  .actions .btn{flex:1 1 0;min-width:110px}
+.actions .btn{flex:1 1 0;min-width:110px}
+.actions .btn.tiny{flex:0 0 auto;min-width:28px}
 }
 
 /* Search */
@@ -216,7 +218,7 @@ body.dark .table-modal .sheet .error{color:#e57373}
             <button class="btn ghost small" id="profileBtn">👤 تحديث البيانات</button>
           </div>
           <div class="actions">
-            <a class="btn primary" href="dashboard.html" target="_blank" rel="noopener">لوحة التحكم</a>
+            <a class="btn tiny ghost" id="dashboardBadge" href="dashboard.html" target="_blank" rel="noopener" title="لوحة التحكم" aria-label="لوحة التحكم">P</a>
             <button class="btn ghost" id="orderLogBtn">📜 <span id="orderLogBtnLabel">سجل الطلبات</span></button>
             <button class="btn" id="langBtn">E</button>
             <button class="btn" id="modeBtn">🌙</button>
@@ -432,6 +434,7 @@ body.dark .table-modal .sheet .error{color:#e57373}
     <div class="inner">
       <select id="table"></select>
       <button class="btn primary" id="callBtn">🔔 <span data-i18n="call_waiter">طلب النادل</span></button>
+      <button class="btn ghost" id="sendOrderQuick">🚀 <span data-i18n="send_order">إرسال الطلب</span></button>
     </div>
   </div>
 
@@ -1446,6 +1449,10 @@ $('#callBtn').addEventListener('click', ()=>{
   ensureTableSelection((tableId)=>{
     sendWaiterCall(tableId);
   }, { forcePrompt:true, restoreCart:false });
+});
+
+$('#sendOrderQuick').addEventListener('click', ()=>{
+  sendOrder();
 });
 
 /* ===== Product Modal logic ===== */
