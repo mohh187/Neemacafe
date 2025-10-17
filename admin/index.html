@@ -1,161 +1,1382 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>لوحة التحكم</title>
-<style>
-body{font-family:system-ui;-webkit-font-smoothing:antialiased;margin:0;background:#fafafa}
-.wrap{max-width:960px;margin:auto;padding:16px}
-h1{margin:0 0 12px}
-.card{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:12px;margin:12px 0}
-.row{display:flex;gap:8px;flex-wrap:wrap}
-input,button{padding:10px;border-radius:10px;border:1px solid #ddd}
-button{cursor:pointer}
-table{width:100%;border-collapse:collapse}
-th,td{padding:8px;border-bottom:1px solid #eee}
-.badge{font-weight:700}
-</style>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Neema Dashboard</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Inter:wght@400;600;700&display=swap">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root{
+      --bg:#f4f3f1; --card:#ffffff; --text:#1e1b16; --muted:#6f6357; --border:#e2ddd6;
+      --accent:#8b5e3c; --accent-2:#d4a373; --accent-dark:#70492d;
+    }
+    body{margin:0;font-family:'Tajawal', 'Inter', system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;transition:background .3s,color .3s;}
+    body.dark{--bg:#101010;--card:#171717;--text:#f5f5f5;--muted:#a0a0a0;--border:#2a2a2a;--accent:#d4a373;--accent-2:#b5884f;--accent-dark:#f2c791;}
+    a{color:inherit;text-decoration:none}
+    .app{min-height:100vh;display:flex;flex-direction:column}
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20;backdrop-filter:saturate(140%) blur(12px)}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:18px}
+    .brand img{width:42px;height:42px;border-radius:14px;border:1px solid var(--border);background:#fff;object-fit:contain}
+    .chip{display:inline-flex;align-items:center;gap:8px;background:rgba(139,94,60,.08);color:var(--accent);padding:8px 12px;border-radius:999px;font-size:14px;font-weight:600}
+    body.dark .chip{background:rgba(212,163,115,.14);color:var(--accent-dark)}
+    .top-actions{display:flex;align-items:center;gap:8px}
+    button{font-family:inherit}
+    .btn{border:1px solid var(--border);background:var(--card);color:var(--text);padding:8px 12px;border-radius:10px;font-size:14px;cursor:pointer;transition:background .2s,border-color .2s,transform .2s}
+    .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+    .btn.ghost{background:transparent}
+    .btn.small{padding:6px 10px;font-size:12px}
+    .btn:active{transform:translateY(1px)}
+    main{flex:1;display:flex;flex-direction:column}
+    .auth-card{max-width:420px;margin:30px auto;padding:24px;background:var(--card);border-radius:20px;border:1px solid var(--border);box-shadow:0 16px 36px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:16px}
+    .auth-card h1{margin:0;font-size:24px}
+    .auth-card p{margin:0;color:var(--muted);font-size:14px;line-height:1.6}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field label{font-size:13px;font-weight:600;color:var(--muted)}
+    .field input,.field select,.field textarea{padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px;transition:border-color .2s,box-shadow .2s}
+    .field textarea{min-height:90px;resize:vertical}
+    .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(139,94,60,.18)}
+    .auth-links{display:flex;flex-direction:column;gap:10px;font-size:14px}
+    .auth-links button{background:none;border:none;color:var(--accent);text-align:start;padding:0;cursor:pointer;font-weight:600}
+    .dashboard{flex:1;display:grid;grid-template-columns:260px 1fr;min-height:0}
+    .sidebar{background:var(--card);border-left:1px solid var(--border);padding:18px;display:flex;flex-direction:column;gap:10px}
+    [dir="ltr"] .sidebar{border-left:none;border-right:1px solid var(--border)}
+    .sidebar h2{margin:0 0 10px;font-size:15px;color:var(--muted)}
+    .nav-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid transparent;background:transparent;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;text-align:start;transition:background .2s,border-color .2s,color .2s}
+    .nav-btn.active{background:rgba(139,94,60,.12);border-color:rgba(139,94,60,.25);color:var(--accent)}
+    body.dark .nav-btn.active{background:rgba(212,163,115,.18);border-color:rgba(212,163,115,.32);color:var(--accent-dark)}
+    .content{padding:24px;overflow:auto}
+    .panel{display:none;flex-direction:column;gap:20px}
+    .panel.active{display:flex}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 12px 28px rgba(0,0,0,.06)}
+    .card h3{margin:0 0 12px;font-size:18px}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:10px;border-bottom:1px solid var(--border);text-align:start}
+    [dir="rtl"] th,[dir="rtl"] td{text-align:right}
+    th{font-weight:700;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+    tbody tr:hover{background:rgba(139,94,60,.08)}
+    body.dark tbody tr:hover{background:rgba(212,163,115,.15)}
+    .inline{display:flex;gap:10px;flex-wrap:wrap}
+    .inline .field{flex:1}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:rgba(139,94,60,.1);color:var(--accent);font-size:12px;font-weight:600}
+    body.dark .tag{background:rgba(212,163,115,.18);color:var(--accent-dark)}
+    .promo-list{display:flex;flex-direction:column;gap:12px}
+    .promo-item{border:1px dashed var(--border);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+    .promo-item header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between}
+    .promo-dates{font-size:12px;color:var(--muted)}
+    .theme-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
+    .theme-card{position:relative;border:2px solid transparent;border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .2s,border-color .2s}
+    .theme-card.selected{border-color:var(--accent)}
+    .theme-preview{height:120px;display:flex}
+    .theme-preview span{flex:1}
+    .theme-meta{padding:10px 12px;background:var(--card);display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .muted{color:var(--muted);font-size:13px}
+    .badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.08);font-size:12px}
+    body.dark .badge{background:rgba(255,255,255,.1)}
+    .status-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600}
+    .status-chip.active{background:rgba(46,204,113,.15);color:#27ae60}
+    .status-chip.inactive{background:rgba(231,76,60,.15);color:#c0392b}
+    .customers-table{max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:16px}
+    .search-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .search-row input{flex:1;min-width:220px}
+    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:12px 18px;border-radius:999px;font-size:14px;box-shadow:0 12px 24px rgba(0,0,0,.2);opacity:0;transition:opacity .25s ease;z-index:300}
+    body.dark .toast{background:var(--accent-dark);color:#000}
+    .hidden{display:none!important}
+    .empty{color:var(--muted);font-size:14px;text-align:center;padding:22px 0}
+    @media(max-width:980px){
+      .dashboard{grid-template-columns:220px 1fr}
+    }
+    @media(max-width:780px){
+      .dashboard{grid-template-columns:1fr}
+      .sidebar{flex-direction:row;overflow:auto;padding:12px;position:sticky;top:72px;z-index:15}
+      .sidebar h2{display:none}
+      .nav-btn{flex:1 0 auto;justify-content:center}
+    }
+    @media(max-width:520px){
+      .topbar{flex-direction:column;align-items:flex-start;gap:12px}
+      .brand{font-size:16px}
+      .auth-card{margin:18px;}
+      .content{padding:18px}
+    }
+  </style>
+</head>
 <body>
-<div class="wrap">
-  <h1>لوحة التحكم</h1>
-
-  <div id="login" class="card">
-    <div class="row">
-      <input id="pw" placeholder="كلمة سر الإدارة" type="password" style="flex:1"/>
-      <button id="doLogin">دخول</button>
-    </div>
-    <small>ضع كلمة السر المساوية لمتغير البيئة <code>ADMIN_PASSWORD</code>.</small>
-  </div>
-
-  <div id="app" style="display:none">
-    <div class="card">
-      <h3>إضافة/تعديل عنصر</h3>
-      <div class="row">
-        <input id="id" placeholder="id (فارغ للإضافة الجديدة)" style="width:120px">
-        <input id="name_ar" placeholder="الاسم بالعربية" style="flex:1">
-        <input id="name_en" placeholder="الاسم بالإنجليزية" style="flex:1">
-        <input id="price" placeholder="السعر" type="number" step="0.01" style="width:160px">
-        <input id="calories" placeholder="سعرات" type="number" style="width:120px">
-        <input id="img_url" placeholder="رابط الصورة (SVG)" style="flex:1">
-        <button id="save">حفظ</button>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <img src="https://i.postimg.cc/g0g9RwM0/Untitled-design-9.png" alt="Neema Dashboard">
+        <div>
+          <div data-i18n="dashboard_title">لوحة التحكم</div>
+          <small class="muted" data-i18n="dashboard_tagline">إدارة متكاملة لتجربة ضيوف نيمة</small>
+        </div>
       </div>
-    </div>
+      <div class="top-actions">
+        <div class="chip" id="userChip" data-i18n="guest_badge">ضيف</div>
+        <button class="btn small" id="langToggle">EN</button>
+        <button class="btn small" id="modeToggle">🌙</button>
+        <button class="btn small ghost hidden" id="logoutBtn" data-i18n="logout">تسجيل الخروج</button>
+      </div>
+    </header>
 
-    <div class="card">
-      <h3>العناصر</h3>
-      <table id="itemsTbl">
-        <thead><tr><th>ID</th><th>الاسم</th><th>السعر</th><th>سعرات</th><th>صورة</th><th>أوامر</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
+    <main>
+      <section id="authSection" class="auth-card">
+        <div>
+          <h1 data-i18n="login_title">تسجيل الدخول</h1>
+          <p data-i18n="login_desc">ادخل بريدك الإلكتروني وكلمة المرور للوصول إلى لوحة التحكم.</p>
+        </div>
+        <form id="loginForm" class="form" autocomplete="on">
+          <div class="field">
+            <label for="loginEmail" data-i18n="email_label">البريد الإلكتروني</label>
+            <input id="loginEmail" type="email" autocomplete="email" required />
+          </div>
+          <div class="field">
+            <label for="loginPassword" data-i18n="password_label">كلمة المرور</label>
+            <input id="loginPassword" type="password" autocomplete="current-password" required />
+          </div>
+          <div class="field">
+            <label for="loginKey" data-i18n="admin_key_label">مفتاح الإدارة (ADMIN_PASSWORD)</label>
+            <input id="loginKey" type="password" autocomplete="off" />
+            <small class="muted" data-i18n="admin_key_hint">ضع المفتاح إذا لم يكن محفوظاً مسبقاً.</small>
+          </div>
+          <button type="submit" class="btn primary" data-i18n="login_action">دخول</button>
+        </form>
+        <div class="auth-links">
+          <button id="showRegister" type="button" data-i18n="create_account">إنشاء حساب جديد</button>
+          <button id="forgotPassword" type="button" data-i18n="forgot_password">نسيت كلمة المرور؟</button>
+        </div>
+      </section>
 
-    <div class="card">
-      <h3>آخر الطلبات</h3>
-      <div id="orders"></div>
-    </div>
+      <section id="registerSection" class="auth-card hidden">
+        <div>
+          <h1 data-i18n="register_title">إنشاء حساب جديد</h1>
+          <p data-i18n="register_desc">احفظ بيانات الدخول للعودة لاحقاً بسهولة.</p>
+        </div>
+        <form id="registerForm" autocomplete="on">
+          <div class="field">
+            <label for="regName" data-i18n="name_label">الاسم الكامل</label>
+            <input id="regName" autocomplete="name" required />
+          </div>
+          <div class="field">
+            <label for="regEmail" data-i18n="email_label">البريد الإلكتروني</label>
+            <input id="regEmail" type="email" autocomplete="email" required />
+          </div>
+          <div class="inline">
+            <div class="field">
+              <label for="regPassword" data-i18n="password_label">كلمة المرور</label>
+              <input id="regPassword" type="password" autocomplete="new-password" required />
+            </div>
+            <div class="field">
+              <label for="regPasswordConfirm" data-i18n="password_confirm_label">تأكيد كلمة المرور</label>
+              <input id="regPasswordConfirm" type="password" autocomplete="new-password" required />
+            </div>
+          </div>
+          <div class="field">
+            <label for="regKey" data-i18n="admin_key_label">مفتاح الإدارة (ADMIN_PASSWORD)</label>
+            <input id="regKey" type="password" required />
+          </div>
+          <div class="inline">
+            <button type="button" class="btn" id="cancelRegister" data-i18n="back_to_login">العودة لتسجيل الدخول</button>
+            <button type="submit" class="btn primary" data-i18n="register_action">إنشاء الحساب</button>
+          </div>
+        </form>
+      </section>
+
+      <div id="dashboard" class="dashboard hidden">
+        <aside class="sidebar">
+          <h2 data-i18n="sections">الأقسام</h2>
+          <button class="nav-btn active" data-panel-btn="overview">📊 <span data-i18n="panel_overview">نظرة عامة</span></button>
+          <button class="nav-btn" data-panel-btn="items">🧾 <span data-i18n="panel_items">المنيو</span></button>
+          <button class="nav-btn" data-panel-btn="promotions">🎁 <span data-i18n="panel_promos">العروض والولاء</span></button>
+          <button class="nav-btn" data-panel-btn="customers">👥 <span data-i18n="panel_customers">العملاء</span></button>
+          <button class="nav-btn" data-panel-btn="orders">📬 <span data-i18n="panel_orders">الطلبات</span></button>
+          <button class="nav-btn" data-panel-btn="appearance">🎨 <span data-i18n="panel_theme">مظهر المنيو</span></button>
+        </aside>
+        <section class="content">
+          <div class="panel active" data-panel="overview">
+            <div class="card">
+              <h3 data-i18n="welcome_title">مرحباً بك</h3>
+              <p data-i18n="welcome_desc">من هنا يمكنك متابعة أداء المنيو، تعديل العروض، ومراجعة بيانات العملاء في وقت واحد.</p>
+              <div class="inline">
+                <div class="tag" id="overviewAccount"></div>
+                <div class="tag" id="overviewKeyStatus"></div>
+              </div>
+            </div>
+            <div class="card">
+              <h3 data-i18n="loyalty_config_title">إعدادات هدية الولاء</h3>
+              <div class="inline">
+                <div class="field">
+                  <label for="loyaltyRequired" data-i18n="loyalty_required_label">عدد المشروبات للحصول على الهدية</label>
+                  <input id="loyaltyRequired" type="number" min="1" value="5" />
+                </div>
+                <div class="field">
+                  <label for="loyaltyNoteAr" data-i18n="loyalty_note_ar_label">وصف عربي</label>
+                  <input id="loyaltyNoteAr" />
+                </div>
+                <div class="field">
+                  <label for="loyaltyNoteEn" data-i18n="loyalty_note_en_label">English note</label>
+                  <input id="loyaltyNoteEn" />
+                </div>
+              </div>
+              <button class="btn primary" id="saveLoyaltyConfig" data-i18n="save_changes">حفظ الإعدادات</button>
+            </div>
+          </div>
+
+          <div class="panel" data-panel="items">
+            <div class="card">
+              <h3 data-i18n="item_editor">إضافة / تعديل عنصر</h3>
+              <form id="itemForm" class="form">
+                <div class="inline">
+                  <div class="field" style="max-width:120px">
+                    <label for="itemId">ID</label>
+                    <input id="itemId" type="number" min="0" />
+                  </div>
+                  <div class="field">
+                    <label for="itemNameAr" data-i18n="name_ar_label">الاسم بالعربية</label>
+                    <input id="itemNameAr" required />
+                  </div>
+                  <div class="field">
+                    <label for="itemNameEn" data-i18n="name_en_label">Name (English)</label>
+                    <input id="itemNameEn" required />
+                  </div>
+                </div>
+                <div class="inline">
+                  <div class="field" style="max-width:160px">
+                    <label for="itemPrice" data-i18n="price_label">السعر</label>
+                    <input id="itemPrice" type="number" min="0" step="0.01" required />
+                  </div>
+                  <div class="field" style="max-width:160px">
+                    <label for="itemCalories" data-i18n="calories_label">السعرات</label>
+                    <input id="itemCalories" type="number" min="0" />
+                  </div>
+                  <div class="field">
+                    <label for="itemImg" data-i18n="image_label">رابط الصورة</label>
+                    <input id="itemImg" />
+                  </div>
+                </div>
+                <div class="inline">
+                  <button type="button" class="btn" id="itemReset" data-i18n="reset_form">تفريغ الحقول</button>
+                  <button type="submit" class="btn primary" data-i18n="save_item">حفظ العنصر</button>
+                </div>
+              </form>
+            </div>
+            <div class="card">
+              <h3 data-i18n="items_table_title">قائمة العناصر</h3>
+              <div class="customers-table">
+                <table id="itemsTable">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th data-i18n="name_label">الاسم</th>
+                      <th data-i18n="price_label">السعر</th>
+                      <th data-i18n="calories_label">السعرات</th>
+                      <th data-i18n="image_label">الصورة</th>
+                      <th data-i18n="actions">الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" data-panel="promotions">
+            <div class="card">
+              <h3 data-i18n="promo_form_title">إنشاء عرض جديد</h3>
+              <form id="promoForm">
+                <div class="inline">
+                  <div class="field">
+                    <label for="promoTitleAr" data-i18n="title_ar_label">عنوان العرض (عربي)</label>
+                    <input id="promoTitleAr" required />
+                  </div>
+                  <div class="field">
+                    <label for="promoTitleEn" data-i18n="title_en_label">Promotion title (English)</label>
+                    <input id="promoTitleEn" required />
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="promoDescAr" data-i18n="desc_ar_label">وصف العرض بالعربية</label>
+                  <textarea id="promoDescAr"></textarea>
+                </div>
+                <div class="field">
+                  <label for="promoDescEn" data-i18n="desc_en_label">Promotion description (English)</label>
+                  <textarea id="promoDescEn"></textarea>
+                </div>
+                <div class="inline">
+                  <div class="field">
+                    <label for="promoStart" data-i18n="start_date_label">بداية العرض</label>
+                    <input id="promoStart" type="date" />
+                  </div>
+                  <div class="field">
+                    <label for="promoEnd" data-i18n="end_date_label">نهاية العرض</label>
+                    <input id="promoEnd" type="date" />
+                  </div>
+                </div>
+                <button type="submit" class="btn primary" data-i18n="add_promo">إضافة العرض</button>
+              </form>
+            </div>
+            <div class="card">
+              <h3 data-i18n="promo_list_title">العروض الحالية</h3>
+              <div id="promoList" class="promo-list"></div>
+              <div id="promoEmpty" class="empty" data-i18n="no_promos">لا توجد عروض حالية.</div>
+            </div>
+          </div>
+
+          <div class="panel" data-panel="customers">
+            <div class="card">
+              <h3 data-i18n="customers_title">سجل العملاء</h3>
+              <div class="search-row">
+                <input id="customerSearch" placeholder="بحث بالاسم أو الرقم" />
+                <button class="btn" id="importCustomers" data-i18n="import_excel">استيراد Excel</button>
+                <button class="btn ghost" id="refreshCustomers" data-i18n="refresh">تحديث</button>
+                <input id="customerFile" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
+              </div>
+              <div class="customers-table" style="margin-top:12px">
+                <table>
+                  <thead>
+                    <tr>
+                      <th data-i18n="customer_name_col">الاسم</th>
+                      <th data-i18n="customer_phone_col">رقم الجوال</th>
+                      <th data-i18n="customer_visits_col">الزيارات</th>
+                      <th data-i18n="customer_orders_col">الطلبات</th>
+                      <th data-i18n="customer_last_visit_col">آخر زيارة</th>
+                      <th data-i18n="customer_device_col">الجهاز</th>
+                      <th>IP</th>
+                      <th data-i18n="actions">الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody id="customersTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" data-panel="orders">
+            <div class="card">
+              <h3 data-i18n="orders_title">آخر الطلبات</h3>
+              <div id="ordersList" class="promo-list"></div>
+              <div id="ordersEmpty" class="empty" data-i18n="no_orders">لا توجد طلبات مسجلة بعد.</div>
+            </div>
+          </div>
+
+          <div class="panel" data-panel="appearance">
+            <div class="card">
+              <h3 data-i18n="theme_title">اختر مظهر المنيو</h3>
+              <div id="themeGrid" class="theme-grid"></div>
+              <div class="inline" style="margin-top:12px">
+                <div class="field">
+                  <label for="customBrand" data-i18n="custom_brand_label">لون العلامة</label>
+                  <input id="customBrand" type="color" value="#8b5e3c" />
+                </div>
+                <div class="field">
+                  <label for="customBackground" data-i18n="custom_bg_label">لون الخلفية</label>
+                  <input id="customBackground" type="color" value="#faf8f6" />
+                </div>
+                <div class="field">
+                  <label for="customCard" data-i18n="custom_card_label">بطاقات العرض</label>
+                  <input id="customCard" type="color" value="#ffffff" />
+                </div>
+              </div>
+              <button class="btn primary" id="applyCustomTheme" data-i18n="apply_theme">تطبيق المظهر</button>
+            </div>
+            <div class="card">
+              <h3 data-i18n="theme_note_title">تأثير فوري</h3>
+              <p data-i18n="theme_note_desc">أي تعديل يتم حفظه هنا ينعكس مباشرة على المنيو لدى العملاء دون الحاجة لتحديث الصفحة.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
   </div>
-</div>
 
-<script>
-const API = {
-  items: '/api/items',
-  orders: '/api/orders'
-};
-let TOKEN = localStorage.getItem('admin_token') || '';
-
-function headers(){ return TOKEN ? { 'content-type':'application/json', 'authorization': 'Bearer ' + TOKEN } : { 'content-type':'application/json' }; }
-
-async function login(){
-  const pw = document.getElementById('pw').value.trim();
-  if(!pw){ alert('أدخل كلمة السر'); return; }
-  TOKEN = pw;
-  localStorage.setItem('admin_token', TOKEN);
-  boot();
-}
-
-async function listItems(){ return (await fetch(API.items)).json(); }
-async function addItem(it){ return (await fetch(API.items, { method:'POST', headers:headers(), body: JSON.stringify(it) })).json(); }
-async function updateItem(id, it){ return (await fetch(API.items + '?id=' + id, { method:'PUT', headers:headers(), body: JSON.stringify(it) })).json(); }
-async function deleteItem(id){ return (await fetch(API.items + '?id=' + id, { method:'DELETE', headers:headers() })).json(); }
-async function listOrders(){ return (await fetch(API.orders)).json(); }
-
-function fillItems(rows){
-  const tb = document.querySelector('#itemsTbl tbody'); tb.innerHTML='';
-  rows.forEach(r=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${r.id}</td>
-      <td><div><div class="badge">${r.name_ar}</div><div>${r.name_en}</div></div></td>
-      <td>${r.price}</td>
-      <td>${r.calories||0}</td>
-      <td>${r.img_url?`<img src="${r.img_url}" alt="" style="width:48px;height:48px;object-fit:contain">`:''}</td>
-      <td>
-        <button data-edit="${r.id}">تعديل</button>
-        <button data-del="${r.id}">حذف</button>
-      </td>`;
-    tb.appendChild(tr);
-  });
-  tb.querySelectorAll('[data-edit]').forEach(b=>{
-    b.onclick = ()=>{
-      const id = b.getAttribute('data-edit');
-      const row = rows.find(x=> String(x.id)===String(id));
-      document.getElementById('id').value = row.id;
-      document.getElementById('name_ar').value = row.name_ar;
-      document.getElementById('name_en').value = row.name_en;
-      document.getElementById('price').value = row.price;
-      document.getElementById('calories').value = row.calories||0;
-      document.getElementById('img_url').value = row.img_url||'';
-      window.scrollTo({ top:0, behavior:'smooth' });
-    };
-  });
-  tb.querySelectorAll('[data-del]').forEach(b=>{
-    b.onclick = async ()=>{
-      const id = b.getAttribute('data-del');
-      if(!confirm('حذف العنصر #' + id + '?')) return;
-      await deleteItem(id);
-      boot();
-    };
-  });
-}
-
-function fillOrders(rows){
-  const box = document.getElementById('orders'); box.innerHTML='';
-  rows.forEach(o=>{
-    const div = document.createElement('div');
-    div.style.margin = '8px 0';
-    div.innerHTML = `#${o.id} — طاولة ${o.table_no||'-'} — الإجمالي: ${o.total} — ${new Date(o.created_at).toLocaleString('ar-SA')}
-      <details><summary>السلة</summary><pre>${JSON.stringify(o.cart,null,2)}</pre></details>`;
-    box.appendChild(div);
-  });
-}
-
-async function saveItem(){
-  const id = document.getElementById('id').value.trim();
-  const payload = {
-    name_ar: document.getElementById('name_ar').value.trim(),
-    name_en: document.getElementById('name_en').value.trim(),
-    price: Number(document.getElementById('price').value || 0),
-    calories: Number(document.getElementById('calories').value || 0),
-    img_url: document.getElementById('img_url').value.trim()
+  <script>
+  const STORAGE = {
+    accounts: 'nima.dashboardAccounts',
+    activeAccount: 'nima.dashboardActiveAccount',
+    adminLang: 'nima.dashboardLang',
+    adminMode: 'nima.dashboardMode',
+    promotions: 'nima.promotions',
+    dashboardConfig: 'nima.dashboardConfig',
+    theme: 'nima.menuTheme',
+    customers: 'nima.customerRegistry',
+    orderLog: 'nima.orderLog'
   };
-  if(!payload.name_ar || !payload.name_en){ alert('أكمل الاسم'); return; }
-  if(id) await updateItem(id, payload); else await addItem(payload);
-  document.querySelectorAll('#id,#name_ar,#name_en,#price,#calories,#img_url').forEach(el=> el.value='');
-  boot();
-}
 
-async function boot(){
-  document.getElementById('login').style.display = TOKEN ? 'none' : 'block';
-  document.getElementById('app').style.display = TOKEN ? 'block' : 'none';
-  if(!TOKEN) return;
-  const [items, orders] = await Promise.all([listItems(), listOrders()]);
-  fillItems(items); fillOrders(orders);
-}
+  const DEFAULT_THEME = {
+    id: 'classic',
+    label: { ar: 'كلاسيكي', en: 'Classic' },
+    colors: {
+      brand: '#8b5e3c',
+      'brand-2': '#d4a373',
+      'brand-dark': '#70492d',
+      bg: '#faf8f6',
+      card: '#ffffff',
+      text: '#1f1f1f',
+      muted: '#6b6b6b',
+      border: '#e9e6e3'
+    }
+  };
 
-document.getElementById('doLogin').onclick = login;
-document.getElementById('save').onclick = saveItem;
+  const THEME_PRESETS = [
+    DEFAULT_THEME,
+    {
+      id: 'midnight',
+      label: { ar: 'ليلي فاخر', en: 'Midnight Luxe' },
+      colors: {
+        brand: '#c084fc',
+        'brand-2': '#a855f7',
+        'brand-dark': '#7c3aed',
+        bg: '#0f0f1a',
+        card: '#181826',
+        text: '#f5f4ff',
+        muted: '#b5b0d6',
+        border: '#26263a'
+      }
+    },
+    {
+      id: 'fresh',
+      label: { ar: 'نسمة صباح', en: 'Morning Breeze' },
+      colors: {
+        brand: '#2f9d8f',
+        'brand-2': '#8bd3c7',
+        'brand-dark': '#1f6f66',
+        bg: '#f0fbf8',
+        card: '#ffffff',
+        text: '#1b2624',
+        muted: '#607771',
+        border: '#d7ede6'
+      }
+    },
+    {
+      id: 'sunset',
+      label: { ar: 'غروب ذهبي', en: 'Golden Sunset' },
+      colors: {
+        brand: '#f97316',
+        'brand-2': '#fbbf24',
+        'brand-dark': '#ea580c',
+        bg: '#fff5eb',
+        card: '#ffffff',
+        text: '#26170b',
+        muted: '#8c6141',
+        border: '#f0d2b2'
+      }
+    }
+  ];
 
-boot();
-</script>
+  const STRINGS = {
+    ar: {
+      dashboard_title: 'لوحة التحكم',
+      dashboard_tagline: 'إدارة متكاملة لتجربة ضيوف نيمة',
+      guest_badge: 'ضيف',
+      logout: 'تسجيل الخروج',
+      login_title: 'تسجيل الدخول',
+      login_desc: 'ادخل بريدك الإلكتروني وكلمة المرور للوصول إلى لوحة التحكم.',
+      email_label: 'البريد الإلكتروني',
+      password_label: 'كلمة المرور',
+      password_confirm_label: 'تأكيد كلمة المرور',
+      admin_key_label: 'مفتاح الإدارة (ADMIN_PASSWORD)',
+      admin_key_hint: 'ضع المفتاح إذا لم يكن محفوظاً مسبقاً.',
+      login_action: 'دخول',
+      create_account: 'إنشاء حساب جديد',
+      forgot_password: 'نسيت كلمة المرور؟',
+      register_title: 'إنشاء حساب جديد',
+      register_desc: 'احفظ بيانات الدخول للعودة لاحقاً بسهولة.',
+      name_label: 'الاسم الكامل',
+      back_to_login: 'العودة لتسجيل الدخول',
+      register_action: 'إنشاء الحساب',
+      sections: 'الأقسام',
+      panel_overview: 'نظرة عامة',
+      panel_items: 'المنيو',
+      panel_promos: 'العروض والولاء',
+      panel_customers: 'العملاء',
+      panel_orders: 'الطلبات',
+      panel_theme: 'مظهر المنيو',
+      welcome_title: 'مرحباً بك',
+      welcome_desc: 'من هنا يمكنك متابعة أداء المنيو، تعديل العروض، ومراجعة بيانات العملاء في وقت واحد.',
+      loyalty_config_title: 'إعدادات هدية الولاء',
+      loyalty_required_label: 'عدد المشروبات للحصول على الهدية',
+      loyalty_note_ar_label: 'رسالة الولاء بالعربية',
+      loyalty_note_en_label: 'Loyalty message (English)',
+      save_changes: 'حفظ الإعدادات',
+      item_editor: 'إضافة / تعديل عنصر',
+      name_ar_label: 'الاسم بالعربية',
+      name_en_label: 'Name (English)',
+      price_label: 'السعر',
+      calories_label: 'السعرات',
+      image_label: 'رابط الصورة',
+      reset_form: 'تفريغ الحقول',
+      save_item: 'حفظ العنصر',
+      items_table_title: 'قائمة العناصر',
+      actions: 'الإجراءات',
+      promo_form_title: 'إنشاء عرض جديد',
+      title_ar_label: 'عنوان العرض (عربي)',
+      title_en_label: 'Promotion title (English)',
+      desc_ar_label: 'وصف العرض بالعربية',
+      desc_en_label: 'Promotion description (English)',
+      start_date_label: 'بداية العرض',
+      end_date_label: 'نهاية العرض',
+      add_promo: 'إضافة العرض',
+      promo_list_title: 'العروض الحالية',
+      no_promos: 'لا توجد عروض حالية.',
+      customers_empty: 'لا توجد بيانات عملاء مسجلة بعد.',
+      customers_title: 'سجل العملاء',
+      import_excel: 'استيراد Excel',
+      refresh: 'تحديث',
+      customer_name_col: 'الاسم',
+      customer_phone_col: 'رقم الجوال',
+      customer_visits_col: 'الزيارات',
+      customer_orders_col: 'الطلبات',
+      customer_last_visit_col: 'آخر زيارة',
+      customer_device_col: 'الجهاز',
+      send_whatsapp: 'رسالة واتس آب',
+      orders_title: 'آخر الطلبات',
+      no_orders: 'لا توجد طلبات مسجلة بعد.',
+      theme_title: 'اختر مظهر المنيو',
+      custom_brand_label: 'لون العلامة',
+      custom_bg_label: 'لون الخلفية',
+      custom_card_label: 'بطاقات العرض',
+      apply_theme: 'تطبيق المظهر',
+      theme_note_title: 'تأثير فوري',
+      theme_note_desc: 'أي تعديل يتم حفظه هنا ينعكس مباشرة على المنيو لدى العملاء دون الحاجة لتحديث الصفحة.',
+      promo_active: 'نشط',
+      promo_inactive: 'غير نشط',
+      delete: 'حذف',
+      mark_active: 'تفعيل',
+      mark_inactive: 'إيقاف',
+      toast_login_success: 'تم تسجيل الدخول بنجاح ✅',
+      toast_register_success: 'تم إنشاء الحساب بنجاح ✅',
+      toast_account_exists: 'هذا البريد مسجل مسبقاً.',
+      toast_password_mismatch: 'كلمتا المرور غير متطابقتين.',
+      toast_invalid_credentials: 'بيانات الدخول غير صحيحة.',
+      toast_admin_key_saved: 'تم حفظ مفتاح الإدارة.',
+      toast_loyalty_saved: 'تم تحديث إعدادات الولاء.',
+      toast_promo_added: 'تم إضافة العرض.',
+      toast_promo_updated: 'تم تحديث حالة العرض.',
+      toast_promo_deleted: 'تم حذف العرض.',
+      toast_theme_applied: 'تم تحديث مظهر المنيو.',
+      toast_import_success: 'تم استيراد العملاء بنجاح.',
+      toast_import_failed: 'تعذّر استيراد ملف العملاء.',
+      toast_reset_sent: 'تم إرسال كلمة مرور مؤقتة إلى بريدك.',
+      loyalty_note_default_ar: 'بعد {count} مشروبات متنوعة ستحصل على التالي مجاناً!',
+      loyalty_note_default_en: 'After {count} drinks of any kind, enjoy the next one on the house!',
+      overview_account_label: 'الحساب',
+      overview_key_ready: 'مفتاح الإدارة جاهز',
+      overview_key_missing: 'أدخل مفتاح الإدارة لتحديث البيانات',
+      forgot_prompt_missing: 'يرجى إدخال البريد الإلكتروني أولاً.',
+      forgot_prompt_unknown: 'لا يوجد حساب مرتبط بهذا البريد.',
+      orders_table_total: 'الإجمالي',
+      orders_table_created: 'التوقيت',
+      orders_table_table: 'الطاولة',
+      whatsapp_template: 'مرحبا {name}، معكم فريق نيمة 💛'
+    },
+    en: {
+      dashboard_title: 'Dashboard',
+      dashboard_tagline: 'All-in-one control for the Neema guest journey',
+      guest_badge: 'Guest',
+      logout: 'Log out',
+      login_title: 'Sign in',
+      login_desc: 'Enter your e-mail and password to access the dashboard.',
+      email_label: 'E-mail',
+      password_label: 'Password',
+      password_confirm_label: 'Confirm password',
+      admin_key_label: 'Admin key (ADMIN_PASSWORD)',
+      admin_key_hint: 'Provide the key if it is not already saved.',
+      login_action: 'Sign in',
+      create_account: 'Create a new account',
+      forgot_password: 'Forgot password?',
+      register_title: 'Create account',
+      register_desc: 'Store your credentials for quick access later.',
+      name_label: 'Full name',
+      back_to_login: 'Back to sign in',
+      register_action: 'Create account',
+      sections: 'Sections',
+      panel_overview: 'Overview',
+      panel_items: 'Menu items',
+      panel_promos: 'Promotions & loyalty',
+      panel_customers: 'Customers',
+      panel_orders: 'Orders',
+      panel_theme: 'Menu theme',
+      welcome_title: 'Welcome back',
+      welcome_desc: 'Follow menu performance, configure promotions and review customer insights from one place.',
+      loyalty_config_title: 'Loyalty reward settings',
+      loyalty_required_label: 'Drinks needed for the reward',
+      loyalty_note_ar_label: 'Arabic loyalty message',
+      loyalty_note_en_label: 'English loyalty message',
+      save_changes: 'Save changes',
+      item_editor: 'Add / edit item',
+      name_ar_label: 'Arabic name',
+      name_en_label: 'English name',
+      price_label: 'Price',
+      calories_label: 'Calories',
+      image_label: 'Image URL',
+      reset_form: 'Clear form',
+      save_item: 'Save item',
+      items_table_title: 'Menu items',
+      actions: 'Actions',
+      promo_form_title: 'Create promotion',
+      title_ar_label: 'Promotion title (Arabic)',
+      title_en_label: 'Promotion title (English)',
+      desc_ar_label: 'Promotion description (Arabic)',
+      desc_en_label: 'Promotion description (English)',
+      start_date_label: 'Start date',
+      end_date_label: 'End date',
+      add_promo: 'Add promotion',
+      promo_list_title: 'Current promotions',
+      no_promos: 'No promotions yet.',
+      customers_empty: 'No customer data recorded yet.',
+      customers_title: 'Customer registry',
+      import_excel: 'Import Excel',
+      refresh: 'Refresh',
+      customer_name_col: 'Name',
+      customer_phone_col: 'Phone',
+      customer_visits_col: 'Visits',
+      customer_orders_col: 'Orders',
+      customer_last_visit_col: 'Last visit',
+      customer_device_col: 'Device',
+      send_whatsapp: 'Send WhatsApp',
+      orders_title: 'Recent orders',
+      no_orders: 'No orders recorded yet.',
+      theme_title: 'Choose menu appearance',
+      custom_brand_label: 'Brand color',
+      custom_bg_label: 'Background color',
+      custom_card_label: 'Card color',
+      apply_theme: 'Apply theme',
+      theme_note_title: 'Instant impact',
+      theme_note_desc: 'Any updates saved here are reflected live on the guest menu without refreshing the page.',
+      promo_active: 'Active',
+      promo_inactive: 'Inactive',
+      delete: 'Delete',
+      mark_active: 'Activate',
+      mark_inactive: 'Deactivate',
+      toast_login_success: 'Signed in successfully ✅',
+      toast_register_success: 'Account created ✅',
+      toast_account_exists: 'This e-mail is already registered.',
+      toast_password_mismatch: 'Passwords do not match.',
+      toast_invalid_credentials: 'Invalid credentials.',
+      toast_admin_key_saved: 'Admin key saved.',
+      toast_loyalty_saved: 'Loyalty settings updated.',
+      toast_promo_added: 'Promotion added.',
+      toast_promo_updated: 'Promotion updated.',
+      toast_promo_deleted: 'Promotion removed.',
+      toast_theme_applied: 'Menu theme updated.',
+      toast_import_success: 'Customers imported successfully.',
+      toast_import_failed: 'Could not import the customer file.',
+      toast_reset_sent: 'A temporary password was sent to your e-mail.',
+      loyalty_note_default_ar: 'بعد {count} مشروبات متنوعة ستحصل على التالي مجاناً!',
+      loyalty_note_default_en: 'After {count} drinks of any kind, enjoy the next one on the house!',
+      overview_account_label: 'Account',
+      overview_key_ready: 'Admin key ready',
+      overview_key_missing: 'Provide the admin key to sync data',
+      forgot_prompt_missing: 'Please enter an e-mail first.',
+      forgot_prompt_unknown: 'No account found for this e-mail.',
+      orders_table_total: 'Total',
+      orders_table_created: 'Created at',
+      orders_table_table: 'Table',
+      whatsapp_template: 'Hello {name}, this is the Neema team 💛'
+    }
+  };
+
+  let lang = localStorage.getItem(STORAGE.adminLang) || 'ar';
+  let mode = localStorage.getItem(STORAGE.adminMode) || 'light';
+  if(!['ar','en'].includes(lang)) lang = 'ar';
+  if(mode === 'dark'){ document.body.classList.add('dark'); }
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+  const API = { items: '/api/items', orders: '/api/orders' };
+  let TOKEN = localStorage.getItem('admin_token') || '';
+
+  const els = {
+    authSection: document.getElementById('authSection'),
+    registerSection: document.getElementById('registerSection'),
+    dashboard: document.getElementById('dashboard'),
+    loginForm: document.getElementById('loginForm'),
+    registerForm: document.getElementById('registerForm'),
+    showRegister: document.getElementById('showRegister'),
+    cancelRegister: document.getElementById('cancelRegister'),
+    forgotPassword: document.getElementById('forgotPassword'),
+    loyaltyRequired: document.getElementById('loyaltyRequired'),
+    loyaltyNoteAr: document.getElementById('loyaltyNoteAr'),
+    loyaltyNoteEn: document.getElementById('loyaltyNoteEn'),
+    saveLoyaltyConfig: document.getElementById('saveLoyaltyConfig'),
+    itemForm: document.getElementById('itemForm'),
+    itemReset: document.getElementById('itemReset'),
+    itemsTable: document.querySelector('#itemsTable tbody'),
+    promoForm: document.getElementById('promoForm'),
+    promoList: document.getElementById('promoList'),
+    promoEmpty: document.getElementById('promoEmpty'),
+    ordersList: document.getElementById('ordersList'),
+    ordersEmpty: document.getElementById('ordersEmpty'),
+    customersTableBody: document.getElementById('customersTableBody'),
+    customerSearch: document.getElementById('customerSearch'),
+    importCustomers: document.getElementById('importCustomers'),
+    customerFile: document.getElementById('customerFile'),
+    refreshCustomers: document.getElementById('refreshCustomers'),
+    themeGrid: document.getElementById('themeGrid'),
+    customBrand: document.getElementById('customBrand'),
+    customBackground: document.getElementById('customBackground'),
+    customCard: document.getElementById('customCard'),
+    applyCustomTheme: document.getElementById('applyCustomTheme'),
+    userChip: document.getElementById('userChip'),
+    logoutBtn: document.getElementById('logoutBtn'),
+    langToggle: document.getElementById('langToggle'),
+    modeToggle: document.getElementById('modeToggle'),
+    overviewAccount: document.getElementById('overviewAccount'),
+    overviewKeyStatus: document.getElementById('overviewKeyStatus')
+  };
+
+  function t(key){
+    return (STRINGS[lang] && STRINGS[lang][key]) || key;
+  }
+
+  function toast(message){
+    const div = document.createElement('div');
+    div.className = 'toast';
+    div.textContent = message;
+    document.body.appendChild(div);
+    requestAnimationFrame(()=>{ div.style.opacity = '1'; });
+    setTimeout(()=>{ div.style.opacity = '0'; setTimeout(()=> div.remove(), 300); }, 2600);
+  }
+
+  function applyTranslations(){
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+      const key = el.getAttribute('data-i18n');
+      const text = t(key);
+      if(el.tagName === 'INPUT' && el.hasAttribute('placeholder')){
+        el.placeholder = text;
+      } else if(el.tagName === 'INPUT' && el.type === 'submit'){
+        el.value = text;
+      } else {
+        el.innerHTML = text;
+      }
+    });
+    els.langToggle.textContent = lang === 'ar' ? 'EN' : 'عربى';
+    els.modeToggle.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+  }
+
+  applyTranslations();
+
+  els.langToggle.addEventListener('click', ()=>{
+    lang = lang === 'ar' ? 'en' : 'ar';
+    localStorage.setItem(STORAGE.adminLang, lang);
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    applyTranslations();
+    renderPromotions();
+    renderCustomers();
+    renderOrders();
+    renderThemeGrid();
+    updateOverview();
+  });
+
+  els.modeToggle.addEventListener('click', ()=>{
+    document.body.classList.toggle('dark');
+    mode = document.body.classList.contains('dark') ? 'dark' : 'light';
+    localStorage.setItem(STORAGE.adminMode, mode);
+    els.modeToggle.textContent = mode === 'dark' ? '☀️' : '🌙';
+  });
+
+  function loadAccounts(){
+    try{
+      const raw = JSON.parse(localStorage.getItem(STORAGE.accounts) || '[]');
+      return Array.isArray(raw) ? raw : [];
+    }catch(e){ return []; }
+  }
+
+  function saveAccounts(list){
+    localStorage.setItem(STORAGE.accounts, JSON.stringify(list));
+  }
+
+  function loadDashboardConfig(){
+    try{
+      const raw = JSON.parse(localStorage.getItem(STORAGE.dashboardConfig) || 'null');
+      if(raw && typeof raw === 'object'){
+        if(!raw.loyalty) raw.loyalty = {};
+        if(typeof raw.loyalty.requiredCount !== 'number') raw.loyalty.requiredCount = 5;
+        if(!raw.loyalty.noteAr) raw.loyalty.noteAr = STRINGS.ar.loyalty_note_default_ar.replace('{count}', raw.loyalty.requiredCount || 5);
+        if(!raw.loyalty.noteEn) raw.loyalty.noteEn = STRINGS.en.loyalty_note_default_en.replace('{count}', raw.loyalty.requiredCount || 5);
+        return raw;
+      }
+    }catch(e){}
+    return {
+      loyalty: {
+        requiredCount: 5,
+        noteAr: STRINGS.ar.loyalty_note_default_ar.replace('{count}', 5),
+        noteEn: STRINGS.en.loyalty_note_default_en.replace('{count}', 5)
+      }
+    };
+  }
+
+  function saveDashboardConfig(config){
+    localStorage.setItem(STORAGE.dashboardConfig, JSON.stringify(config));
+  }
+
+  function loadPromotions(){
+    try{
+      const raw = JSON.parse(localStorage.getItem(STORAGE.promotions) || '[]');
+      return Array.isArray(raw) ? raw : [];
+    }catch(e){ return []; }
+  }
+
+  function savePromotions(list){
+    localStorage.setItem(STORAGE.promotions, JSON.stringify(list));
+  }
+
+  function loadTheme(){
+    try{
+      const raw = JSON.parse(localStorage.getItem(STORAGE.theme) || 'null');
+      if(raw && raw.colors) return raw;
+    }catch(e){}
+    return DEFAULT_THEME;
+  }
+
+  function saveTheme(theme){
+    localStorage.setItem(STORAGE.theme, JSON.stringify(theme));
+  }
+
+  let accounts = loadAccounts();
+  let activeAccountId = localStorage.getItem(STORAGE.activeAccount) || '';
+  let currentAccount = accounts.find(acc => acc.id === activeAccountId) || null;
+  if(currentAccount && !TOKEN && currentAccount.adminKey){
+    TOKEN = currentAccount.adminKey;
+    localStorage.setItem('admin_token', TOKEN);
+  }
+
+  const dashboardConfig = loadDashboardConfig();
+
+  els.loyaltyRequired.value = dashboardConfig.loyalty.requiredCount || 5;
+  els.loyaltyNoteAr.value = dashboardConfig.loyalty.noteAr || '';
+  els.loyaltyNoteEn.value = dashboardConfig.loyalty.noteEn || '';
+
+  function showDashboard(){
+    els.authSection.classList.add('hidden');
+    els.registerSection.classList.add('hidden');
+    els.dashboard.classList.remove('hidden');
+    els.logoutBtn.classList.remove('hidden');
+    els.userChip.textContent = currentAccount ? currentAccount.email : t('guest_badge');
+    updateOverview();
+    boot();
+  }
+
+  function showLogin(){
+    els.authSection.classList.remove('hidden');
+    els.registerSection.classList.add('hidden');
+    els.dashboard.classList.add('hidden');
+    els.logoutBtn.classList.add('hidden');
+    els.userChip.textContent = t('guest_badge');
+  }
+
+  function showRegister(){
+    els.authSection.classList.add('hidden');
+    els.registerSection.classList.remove('hidden');
+  }
+
+  if(currentAccount && TOKEN){
+    showDashboard();
+  } else {
+    showLogin();
+  }
+
+  els.showRegister.addEventListener('click', showRegister);
+  els.cancelRegister.addEventListener('click', showLogin);
+
+  els.logoutBtn.addEventListener('click', ()=>{
+    localStorage.removeItem(STORAGE.activeAccount);
+    localStorage.removeItem('admin_token');
+    currentAccount = null;
+    TOKEN = '';
+    showLogin();
+  });
+
+  function headers(){
+    return TOKEN ? { 'content-type':'application/json', 'authorization':'Bearer ' + TOKEN } : { 'content-type':'application/json' };
+  }
+
+  async function fetchItems(){
+    const res = await fetch(API.items);
+    if(!res.ok) throw new Error('items');
+    return res.json();
+  }
+
+  async function fetchOrders(){
+    const res = await fetch(API.orders);
+    if(!res.ok) throw new Error('orders');
+    return res.json();
+  }
+
+  async function addItem(payload){
+    const res = await fetch(API.items, { method:'POST', headers: headers(), body: JSON.stringify(payload) });
+    if(!res.ok) throw new Error('add');
+    return res.json();
+  }
+
+  async function updateItem(id, payload){
+    const res = await fetch(`${API.items}?id=${id}`, { method:'PUT', headers: headers(), body: JSON.stringify(payload) });
+    if(!res.ok) throw new Error('update');
+    return res.json();
+  }
+
+  async function deleteItem(id){
+    const res = await fetch(`${API.items}?id=${id}`, { method:'DELETE', headers: headers() });
+    if(!res.ok) throw new Error('delete');
+    return res.json();
+  }
+
+  function renderItems(items){
+    els.itemsTable.innerHTML = '';
+    items.forEach(item=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.id}</td>
+        <td><div>${item.name_ar}<br><span class="muted">${item.name_en}</span></div></td>
+        <td>${item.price}</td>
+        <td>${item.calories || 0}</td>
+        <td>${item.img_url ? `<img src="${item.img_url}" alt="" style="width:48px;height:48px;object-fit:contain;border-radius:12px">` : ''}</td>
+        <td>
+          <button class="btn small" data-edit="${item.id}">${t('save_item')}</button>
+          <button class="btn small ghost" data-delete="${item.id}">${t('delete')}</button>
+        </td>`;
+      els.itemsTable.appendChild(tr);
+    });
+    els.itemsTable.querySelectorAll('[data-edit]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.getAttribute('data-edit');
+        const item = items.find(it => String(it.id) === String(id));
+        if(!item) return;
+        document.getElementById('itemId').value = item.id;
+        document.getElementById('itemNameAr').value = item.name_ar;
+        document.getElementById('itemNameEn').value = item.name_en;
+        document.getElementById('itemPrice').value = item.price;
+        document.getElementById('itemCalories').value = item.calories || 0;
+        document.getElementById('itemImg').value = item.img_url || '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+    els.itemsTable.querySelectorAll('[data-delete]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.getAttribute('data-delete');
+        if(!confirm(t('delete') + ' #' + id + '?')) return;
+        await deleteItem(id);
+        toast(t('toast_promo_deleted'));
+        boot();
+      });
+    });
+  }
+
+  function activePromotions(){
+    const list = loadPromotions();
+    const now = new Date();
+    return list.filter(p => {
+      const startOk = !p.start || new Date(p.start) <= now;
+      const endOk = !p.end || new Date(p.end) >= now;
+      return !p.inactive && startOk && endOk;
+    });
+  }
+
+  function renderPromotions(){
+    const promos = loadPromotions();
+    els.promoList.innerHTML = '';
+    els.promoEmpty.style.display = promos.length ? 'none' : 'block';
+    promos.forEach(promo=>{
+      const item = document.createElement('div');
+      item.className = 'promo-item';
+      const statusClass = promo.inactive ? 'inactive' : 'active';
+      item.innerHTML = `
+        <header>
+          <div>
+            <strong>${lang === 'ar' ? promo.title_ar : promo.title_en}</strong>
+            <div class="promo-dates">${promo.start || '—'} → ${promo.end || '—'}</div>
+          </div>
+          <div class="status-chip ${statusClass}" data-status>${promo.inactive ? t('promo_inactive') : t('promo_active')}</div>
+        </header>
+        <p class="muted">${lang === 'ar' ? (promo.desc_ar || '') : (promo.desc_en || '')}</p>
+        <div class="inline">
+          <button class="btn small" data-toggle="${promo.id}">${promo.inactive ? t('mark_active') : t('mark_inactive')}</button>
+          <button class="btn small ghost" data-remove="${promo.id}">${t('delete')}</button>
+        </div>`;
+      els.promoList.appendChild(item);
+    });
+    els.promoList.querySelectorAll('[data-toggle]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.getAttribute('data-toggle');
+        const promos = loadPromotions();
+        const promo = promos.find(p => p.id === id);
+        if(!promo) return;
+        promo.inactive = !promo.inactive;
+        savePromotions(promos);
+        toast(t('toast_promo_updated'));
+        renderPromotions();
+      });
+    });
+    els.promoList.querySelectorAll('[data-remove]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.getAttribute('data-remove');
+        const promos = loadPromotions().filter(p => p.id !== id);
+        savePromotions(promos);
+        toast(t('toast_promo_deleted'));
+        renderPromotions();
+      });
+    });
+  }
+
+  function loadCustomerRegistry(){
+    try{
+      const raw = JSON.parse(localStorage.getItem(STORAGE.customers) || 'null');
+      return raw && typeof raw === 'object' ? raw : {};
+    }catch(e){ return {}; }
+  }
+
+  function loadOrderLog(){
+    try{
+      const raw = JSON.parse(localStorage.getItem(STORAGE.orderLog) || 'null');
+      return raw && typeof raw === 'object' ? raw : { customers:{} };
+    }catch(e){ return { customers:{} }; }
+  }
+
+  function renderCustomers(){
+    const registry = loadCustomerRegistry();
+    const log = loadOrderLog();
+    const rows = [];
+    Object.keys(registry).forEach(id=>{
+      const entry = registry[id] || {};
+      const customerLog = log.customers && log.customers[id];
+      const orders = customerLog && Array.isArray(customerLog.orders) ? customerLog.orders.length : 0;
+      rows.push({
+        id,
+        name: entry.name || '',
+        phone: entry.phone || '',
+        visits: entry.attendance || orders || 0,
+        orders,
+        lastVisit: entry.lastVisit || '',
+        device: entry.device || '',
+        ip: entry.ip || '',
+        whatsapp: entry.phone ? entry.phone.replace(/\D+/g,'') : '',
+        lastOrderTotal: entry.lastTotal || '',
+        lastTable: entry.lastTable || ''
+      });
+    });
+    const keyword = (els.customerSearch.value || '').trim().toLowerCase();
+    const filtered = keyword ? rows.filter(r =>
+      (r.name && r.name.toLowerCase().includes(keyword)) ||
+      (r.phone && r.phone.toLowerCase().includes(keyword)) ||
+      (r.ip && r.ip.toLowerCase().includes(keyword))) : rows;
+    els.customersTableBody.innerHTML = '';
+    if(!filtered.length){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td colspan="8" class="empty">${t('customers_empty')}</td>`;
+      els.customersTableBody.appendChild(tr);
+      return;
+    }
+    filtered.forEach(row=>{
+      const tr = document.createElement('tr');
+      const waLink = row.whatsapp ? `https://wa.me/${row.whatsapp}?text=${encodeURIComponent(t('whatsapp_template').replace('{name}', row.name || ''))}` : '';
+      tr.innerHTML = `
+        <td>${row.name || '—'}</td>
+        <td>${row.phone || '—'}</td>
+        <td>${row.visits}</td>
+        <td>${row.orders}</td>
+        <td>${row.lastVisit ? new Date(row.lastVisit).toLocaleString(lang === 'ar' ? 'ar-SA' : 'en-GB') : '—'}</td>
+        <td>${row.device || '—'}</td>
+        <td>${row.ip || '—'}</td>
+        <td>${waLink ? `<a class="btn small" target="_blank" rel="noopener" href="${waLink}">${t('send_whatsapp')}</a>` : '—'}</td>`;
+      els.customersTableBody.appendChild(tr);
+    });
+  }
+
+  function renderOrders(){
+    if(!Array.isArray(latestOrders) || !latestOrders.length){
+      els.ordersList.innerHTML = '';
+      els.ordersEmpty.style.display = 'block';
+      return;
+    }
+    els.ordersEmpty.style.display = 'none';
+    els.ordersList.innerHTML = '';
+    latestOrders.forEach(order=>{
+      const div = document.createElement('div');
+      div.className = 'promo-item';
+      div.innerHTML = `
+        <header>
+          <div><strong>#${order.id}</strong></div>
+          <div class="promo-dates">${t('orders_table_table')}: ${order.table_no || '—'}</div>
+        </header>
+        <div class="muted">${t('orders_table_total')}: ${order.total} SAR</div>
+        <div class="muted">${t('orders_table_created')}: ${new Date(order.created_at).toLocaleString(lang === 'ar' ? 'ar-SA' : 'en-GB')}</div>
+        <details>
+          <summary>${t('actions')}</summary>
+          <pre style="white-space:pre-wrap;background:rgba(0,0,0,.04);padding:10px;border-radius:12px">${JSON.stringify(order.cart, null, 2)}</pre>
+        </details>`;
+      els.ordersList.appendChild(div);
+    });
+  }
+
+  function renderThemeGrid(){
+    const saved = loadTheme();
+    els.themeGrid.innerHTML = '';
+    THEME_PRESETS.forEach(theme=>{
+      const card = document.createElement('div');
+      card.className = 'theme-card' + (saved.id === theme.id ? ' selected' : '');
+      card.setAttribute('data-theme', theme.id);
+      const colors = theme.colors;
+      card.innerHTML = `
+        <div class="theme-preview">
+          <span style="background:${colors.bg}"></span>
+          <span style="background:${colors['brand-2']}"></span>
+          <span style="background:${colors.brand}"></span>
+        </div>
+        <div class="theme-meta">
+          <div>
+            <strong>${theme.label[lang]}</strong>
+            <div class="muted">${theme.id}</div>
+          </div>
+          <div class="badge">${saved.id === theme.id ? '✓' : ''}</div>
+        </div>`;
+      card.addEventListener('click', ()=>{
+        saveTheme(theme);
+        renderThemeGrid();
+        applyThemeSelection(theme);
+        toast(t('toast_theme_applied'));
+      });
+      els.themeGrid.appendChild(card);
+    });
+    els.customBrand.value = saved.colors.brand || '#8b5e3c';
+    els.customBackground.value = saved.colors.bg || '#faf8f6';
+    els.customCard.value = saved.colors.card || '#ffffff';
+  }
+
+  function applyThemeSelection(theme){
+    if(!theme || !theme.colors) return;
+    saveTheme(theme);
+  }
+
+  renderThemeGrid();
+
+  let latestOrders = [];
+
+  async function boot(){
+    try{
+      const [items, orders] = await Promise.all([fetchItems(), fetchOrders()]);
+      renderItems(items);
+      latestOrders = orders;
+      renderOrders();
+    }catch(e){
+      console.error(e);
+    }
+    renderPromotions();
+    renderCustomers();
+    updateOverview();
+  }
+
+  function updateOverview(){
+    els.overviewAccount.textContent = `${t('overview_account_label')}: ${currentAccount ? currentAccount.email : t('guest_badge')}`;
+    const status = TOKEN ? t('overview_key_ready') : t('overview_key_missing');
+    els.overviewKeyStatus.textContent = status;
+  }
+
+  els.itemForm.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const id = document.getElementById('itemId').value.trim();
+    const payload = {
+      name_ar: document.getElementById('itemNameAr').value.trim(),
+      name_en: document.getElementById('itemNameEn').value.trim(),
+      price: Number(document.getElementById('itemPrice').value || 0),
+      calories: Number(document.getElementById('itemCalories').value || 0),
+      img_url: document.getElementById('itemImg').value.trim()
+    };
+    try{
+      if(id){ await updateItem(id, payload); }
+      else { await addItem(payload); }
+      toast(t('save_item'));
+      els.itemForm.reset();
+      document.getElementById('itemId').value = '';
+      boot();
+    }catch(err){
+      alert('Error saving item');
+    }
+  });
+
+  els.itemReset.addEventListener('click', ()=>{
+    els.itemForm.reset();
+    document.getElementById('itemId').value = '';
+  });
+
+  els.promoForm.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const promos = loadPromotions();
+    const payload = {
+      id: `promo-${Date.now()}`,
+      title_ar: document.getElementById('promoTitleAr').value.trim(),
+      title_en: document.getElementById('promoTitleEn').value.trim(),
+      desc_ar: document.getElementById('promoDescAr').value.trim(),
+      desc_en: document.getElementById('promoDescEn').value.trim(),
+      start: document.getElementById('promoStart').value,
+      end: document.getElementById('promoEnd').value,
+      inactive: false
+    };
+    promos.unshift(payload);
+    savePromotions(promos);
+    toast(t('toast_promo_added'));
+    els.promoForm.reset();
+    renderPromotions();
+  });
+
+  els.customerSearch.addEventListener('input', renderCustomers);
+  els.refreshCustomers.addEventListener('click', renderCustomers);
+
+  els.importCustomers.addEventListener('click', ()=>{
+    els.customerFile.click();
+  });
+
+  els.customerFile.addEventListener('change', (e)=>{
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (event)=>{
+      try{
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[firstSheetName];
+        const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+        const registry = loadCustomerRegistry();
+        json.forEach(row=>{
+          const id = row.id || row.ID || row.email || row.phone || `cust-${Date.now()}`;
+          if(!registry[id]) registry[id] = {};
+          if(row.name) registry[id].name = row.name;
+          if(row.phone) registry[id].phone = row.phone;
+          if(row.visits) registry[id].attendance = Number(row.visits) || 0;
+          if(row.orders) registry[id].orders = Number(row.orders) || 0;
+          if(row.ip) registry[id].ip = row.ip;
+          if(row.device) registry[id].device = row.device;
+        });
+        localStorage.setItem(STORAGE.customers, JSON.stringify(registry));
+        toast(t('toast_import_success'));
+        renderCustomers();
+      }catch(err){
+        console.error(err);
+        toast(t('toast_import_failed'));
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  els.saveLoyaltyConfig.addEventListener('click', ()=>{
+    const required = Math.max(1, Number(els.loyaltyRequired.value) || 5);
+    dashboardConfig.loyalty.requiredCount = required;
+    dashboardConfig.loyalty.noteAr = els.loyaltyNoteAr.value.trim() || STRINGS.ar.loyalty_note_default_ar.replace('{count}', required);
+    dashboardConfig.loyalty.noteEn = els.loyaltyNoteEn.value.trim() || STRINGS.en.loyalty_note_default_en.replace('{count}', required);
+    saveDashboardConfig(dashboardConfig);
+    toast(t('toast_loyalty_saved'));
+  });
+
+  els.applyCustomTheme.addEventListener('click', ()=>{
+    const current = loadTheme();
+    const updated = {
+      id: 'custom',
+      label: current.label,
+      colors: {
+        ...current.colors,
+        brand: els.customBrand.value,
+        'brand-2': current.colors['brand-2'],
+        'brand-dark': current.colors['brand-dark'],
+        bg: els.customBackground.value,
+        card: els.customCard.value,
+        text: current.colors.text,
+        muted: current.colors.muted,
+        border: current.colors.border
+      }
+    };
+    saveTheme(updated);
+    renderThemeGrid();
+    toast(t('toast_theme_applied'));
+  });
+
+  document.querySelectorAll('[data-panel-btn]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.getAttribute('data-panel-btn');
+      document.querySelectorAll('[data-panel-btn]').forEach(b=> b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.panel').forEach(panel=>{
+        panel.classList.toggle('active', panel.getAttribute('data-panel') === id);
+      });
+    });
+  });
+
+  els.loginForm.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+    const password = document.getElementById('loginPassword').value;
+    const key = document.getElementById('loginKey').value.trim();
+    const account = accounts.find(acc => acc.email === email && acc.password === password);
+    if(!account){ toast(t('toast_invalid_credentials')); return; }
+    currentAccount = account;
+    activeAccountId = account.id;
+    localStorage.setItem(STORAGE.activeAccount, activeAccountId);
+    if(key){
+      currentAccount.adminKey = key;
+      saveAccounts(accounts);
+      TOKEN = key;
+      localStorage.setItem('admin_token', TOKEN);
+      toast(t('toast_admin_key_saved'));
+    } else if(currentAccount.adminKey){
+      TOKEN = currentAccount.adminKey;
+      localStorage.setItem('admin_token', TOKEN);
+    }
+    toast(t('toast_login_success'));
+    showDashboard();
+  });
+
+  els.registerForm.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const name = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim().toLowerCase();
+    const password = document.getElementById('regPassword').value;
+    const confirm = document.getElementById('regPasswordConfirm').value;
+    const adminKey = document.getElementById('regKey').value.trim();
+    if(password !== confirm){ toast(t('toast_password_mismatch')); return; }
+    if(accounts.find(acc => acc.email === email)){ toast(t('toast_account_exists')); return; }
+    const account = {
+      id: `acc-${Date.now()}`,
+      name,
+      email,
+      password,
+      adminKey
+    };
+    accounts.push(account);
+    saveAccounts(accounts);
+    toast(t('toast_register_success'));
+    showLogin();
+    document.getElementById('loginEmail').value = email;
+  });
+
+  els.forgotPassword.addEventListener('click', ()=>{
+    const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+    if(!email){ toast(t('forgot_prompt_missing')); return; }
+    const account = accounts.find(acc => acc.email === email);
+    if(!account){ toast(t('forgot_prompt_unknown')); return; }
+    const temp = Math.random().toString(36).slice(-8);
+    account.password = temp;
+    saveAccounts(accounts);
+    const subject = encodeURIComponent('Neema dashboard password reset');
+    const body = encodeURIComponent(`Hi ${account.name || ''},\n\nYour temporary password is: ${temp}\nPlease sign in and update it from the dashboard.\n\nNeema Team`);
+    window.open(`mailto:${account.email}?subject=${subject}&body=${body}`, '_blank');
+    toast(t('toast_reset_sent'));
+  });
+
+  applyTranslations();
+  renderPromotions();
+  renderCustomers();
+  renderOrders();
+
+  window.addEventListener('storage', (event)=>{
+    if(event.key === STORAGE.promotions){ renderPromotions(); }
+    if(event.key === STORAGE.customers || event.key === STORAGE.orderLog){ renderCustomers(); }
+    if(event.key === STORAGE.theme){ renderThemeGrid(); }
+    if(event.key === STORAGE.dashboardConfig){
+      const cfg = loadDashboardConfig();
+      els.loyaltyRequired.value = cfg.loyalty.requiredCount || 5;
+      els.loyaltyNoteAr.value = cfg.loyalty.noteAr || '';
+      els.loyaltyNoteEn.value = cfg.loyalty.noteEn || '';
+    }
+  });
+  </script>
 </body>
 </html>
