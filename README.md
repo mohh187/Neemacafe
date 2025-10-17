@@ -4,32 +4,80 @@ This repo contains two builds of the interactive Neema Café menu:
 
 - `index.html` – the production-ready build with the full loyalty and logging experience.
 - `menu` – the compact legacy build that shares the same functionality and strings.
-- `menu-data.js` – the shared catalogue of drinks and desserts that both builds render.
+- `menu-data.js` – fallback catalogue that seeds the API if no remote data exists yet.
 - `order-status.html` – lightweight view Telegram uses when a waiter accepts or finishes an order.
+- `dashboard.html` – لوحة تحكم داخلية لإدارة المنيو والحسابات في نسخة الـ SaaS.
+- `api/menu.js` – serverless endpoint that exposes the structured menu consumed by the public UI.
+- `api/items.js` – simple CRUD endpoint for experiments while wiring a permanent database.
 
-## Using the shared menu data in another page
+## SaaS operations dashboard
 
-If you are copying the menu UI into a new HTML file, add the shared dataset before the main script that renders the menu:
+`dashboard.html` provides a separate, Arabic-first control panel for cloud operators. تبدأ التجربة من نفس الصفحة عبر خيار **"إنشاء حساب ومنيو جديد"** الذي ينشئ مساحة SaaS مستقلة لكل مقهى تتضمن نطاقًا سحابيًا افتراضيًا (مثل `your-brand.neema.menu`)، ثيمًا مختارًا، ولوحة تحكم مخصصة مرتبطة به. بعد تسجيل الحساب يتم تسجيل الدخول تلقائيًا، ويمكن للمالكين أو المسؤولين العودة لاحقًا من خلال تسجيل الدخول بالبريد الإلكتروني والنطاق المرتبط.
+
+بعد إنشاء مساحتك يمكنك:
+
+- إنشاء، تعديل، أو حذف الأقسام والفئات الفرعية قبل نشرها في المنيو العام.
+- إضافة أصناف جديدة مع الأسعار والسعرات والوسوم والحالة (متاح/غير متاح/موسمي).
+- إدارة حسابات الفريق (مالك، مسؤول نظام، مدير فرع، موظف خدمة، عرض فقط) والتحكم في حالة كل حساب أو إعادة ضبط كلمة المرور.
+- تصدير نسخة JSON احتياطية للمنيو أو استيراد ملف جديد لتحديث البيانات مجمعًا.
+- مراجعة تقارير سريعة حول العناصر التي تحتاج متابعة، مثل الأصناف بلا صور أو غير المتاحة حاليًا.
+- تخصيص الثيم ونمط عرض المنيو، وتحديث النطاق السحابي أو ربط دومينك الخاص من خلال إعدادات المنصة.
+
+### روابط سريعة بين اللوحة والمنيو
+
+- شارة حرف **P** الصغيرة في ترويسة `index.html` تفتح `dashboard.html` في لسان جديد لتتمكن من إدارة المحتوى بسرعة من نفس الموقع العام.
+- زر **"عرض المنيو العام"** داخل اللوحة يتم تحديثه تلقائيًا ليقود إلى رابط المنيو الخاص بكل مساحة (سواء النطاق السحابي الافتراضي أو الدومين المخصص).
+- زر **"لوحة الحساب"** داخل اللوحة يعرض رابط الداشبورد المربوط بالمساحة الحالية لتشاركه مع بقية أعضاء الفريق عند الحاجة.
+
+### واجهات برمجية جاهزة للاستخدام
+
+- `GET /api/menu` – يرجع البنية الكاملة للمنيو (الأقسام، الفئات، الأصناف) التي تستخدمها الواجهة العامة.
+- `PUT /api/menu` – يستقبل الجسم الكامل للمنيو لحفظه في الذاكرة المؤقتة (تستعمله اللوحة عند الحفظ أو الاستيراد).
+- `DELETE /api/menu` – يعيد تهيئة المنيو إلى قائمة فارغة (مفيد لتجارب التطوير).
+- `GET /api/items` – يرجع مصفوفة الأصناف المسطحة للاستخدامات التجريبية أو لدمج قاعدة بيانات مستقبلية.
+- `POST /api/items` – يضيف صنفًا جديدًا إلى القائمة المؤقتة ويُرجع المعرف المولد.
+- `PUT /api/items?id=<uuid>` – يحدّث بيانات صنف موجود.
+- `DELETE /api/items?id=<uuid>` – يحذف صنفًا من القائمة المؤقتة.
+
+هذه الواجهات الحالية تستخدم تخزينًا داخل الذاكرة حتى يتم ربط قاعدة بيانات فعلية. في بيئة الإنتاج على Vercel يظل المحتوى متاحًا طالما أن الدالة لم تُعد تهيئتها.
+
+### مفاتيح التخزين المحلي الخاصة باللوحة
+
+- `neema-dashboard-menu-v1` – نسخة المنيو التي يجري العمل عليها داخل اللوحة.
+- `neema-dashboard-users-v1` – قائمة حسابات الفريق المخزنة محليًا.
+- `neema-dashboard-session-v1` – جلسة تسجيل دخول المسؤول الحالي.
+- `neema-dashboard-activity-v1` – آخر الأنشطة التي تمت داخل اللوحة (بحد أقصى 50 حركة).
+
+## Consuming the menu data in other clients
+
+The public menu (`index.html`) now fetches its catalogue from the serverless endpoint at `/api/menu`. That endpoint returns the same structure persisted by the dashboard, so any other client can reuse the data by calling:
+
+```bash
+curl https://<your-vercel-app>/api/menu
+```
+
+If the API has not been initialised yet, `menu-data.js` seeds it with the bundled catalogue so the first request still returns a useful payload. You can also embed the fallback script manually when running the menu in offline/demo mode:
 
 ```html
 <!-- Your menu markup … -->
 <script src="menu-data.js"></script>
 <script>
-  // Existing menu logic that expects window.NEEMA_SHARED.MENU_DATA
+  // window.NEEMA_SHARED.MENU_DATA will be available if the API is offline.
 </script>
 ```
 
-The JavaScript inside each menu file now looks up `window.NEEMA_SHARED.MENU_DATA`. If that script does not load, the UI will still render but without any menu items, and the console logs:
+## نشر المنصة على Vercel مع دومين مخصص
 
-```
-[Neema] Shared menu data not found — rendering with empty menu dataset.
-```
-
-Including `menu-data.js` on the page ensures both menu builds use the same catalogue of products and imagery.
+1. اربط المستودع مع مشروع جديد في [Vercel](https://vercel.com/) (زر **New Project** ثم اختر الريبو الحالي).
+2. بعد الإطلاق الأولي، افتح إعدادات المشروع في Vercel وانتقل إلى تبويب **Domains**.
+3. أضف الدومين المخصص الذي ترغب به (مثل `brand.yourdomain.sa`) عبر زر **Add**، ويمكنك ربط عدة دومينات إذا كنت تدير أكثر من مساحة.
+4. إذا كان الدومين مستضافًا لدى مزود خارجي، أنشئ سجل `A` أو `CNAME` حسب التوجيهات التي تعرضها Vercel بعد إضافة الدومين.
+5. بعد نشر السجلات، استخدم زر **Verify** في Vercel للتأكد من الربط. بعدها يمكنك إدخال نفس الدومين داخل لوحة التحكم في تبويب **تهيئة المنيو والدومين** ليتم عرضه تلقائيًا في الروابط العامة ولوحة التحكم الخاصة بمساحتك.
+6. يمكن الإبقاء على النطاق السحابي الافتراضي (`<slug>.neema.menu`) لأي مساحة بجانب الدومين المخصص، وجميع الروابط داخل اللوحة تتحدث تلقائيًا وفقًا للإعدادات المحفوظة.
 
 ## Customising the catalogue
 
-Edit `menu-data.js` to update prices, calories, or images. Every change automatically propagates to both menu builds the next time the page loads because they read from the shared module.
+The recommended workflow is to sign in to `dashboard.html`, edit the sections/items there, and let the UI sync the new structure to `/api/menu`. If you prefer scripted updates you can `PUT` the full JSON payload to the endpoint directly. The bundled `menu-data.js` file is still available when you need to ship a static demo or reseed the API with the default drinks.
 
 ## Persisted data keys
 
