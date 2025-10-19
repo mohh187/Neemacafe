@@ -9,8 +9,10 @@ CREATE TABLE IF NOT EXISTS items (
 
 CREATE TABLE IF NOT EXISTS orders (
   id serial PRIMARY KEY,
+  order_code text DEFAULT '',
   table_no text,
   cart jsonb NOT NULL,
   total numeric(10,2) NOT NULL,
+  customer jsonb DEFAULT '{}'::jsonb,
   created_at timestamptz DEFAULT now()
 );
