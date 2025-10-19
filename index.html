@@ -652,10 +652,17 @@ async function fetchItems(){
 
 async function sendOrderToDB(order){
   try{
+    const payload = {
+      order_code: order.order_code || '',
+      table_no: order.table_no || '',
+      cart: Array.isArray(order.cart) ? order.cart : [],
+      total: Number(order.total || 0),
+      customer: order.customer && typeof order.customer === 'object' ? order.customer : {}
+    };
     const res = await fetch('/api/orders', {
       method:'POST',
       headers:{ 'content-type':'application/json' },
-      body: JSON.stringify(order)
+      body: JSON.stringify(payload)
     });
     if(!res.ok) throw new Error('status');
     return await res.json();
@@ -665,12 +672,18 @@ async function sendOrderToDB(order){
   }
 }
 
-async function afterTelegramHook(total){
-  const tableId = getCurrentTableValue() || '';
+async function afterTelegramHook(entry){
+  if(!entry) return;
   const order = {
-    table_no: tableId,
-    cart: cart.map(it=>({ name_ar:it.name_ar, name_en:it.name_en, qty:it.qty, price:it.price, options:it.options||[] })),
-    total: total
+    order_code: entry.orderId || entry.id || '',
+    table_no: entry.table || getCurrentTableValue() || '',
+    cart: Array.isArray(entry.items) ? entry.items : cart.map(it=>({ name_ar:it.name_ar, name_en:it.name_en, qty:it.qty, price:it.price, options:it.options||[] })),
+    total: entry.total || cartTotal(),
+    customer: entry.customer || {
+      id: getActiveCustomerId(),
+      name: customerProfile && customerProfile.name ? customerProfile.name : '',
+      phone: customerProfile && customerProfile.phone ? customerProfile.phone : ''
+    }
   };
   await sendOrderToDB(order);
 }
@@ -2018,7 +2031,7 @@ function performSendOrder(tableIdOverride){
       recordOrderLog(orderEntry);
       handleLoyaltyRewards(orderEntry);
       toast(STRINGS[lang].order_sent_saved);
-      await afterTelegramHook(total);
+      await afterTelegramHook(orderEntry);
       clearCart();
       resetDiscountCode();
       closeCart();

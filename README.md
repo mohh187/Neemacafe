@@ -46,6 +46,13 @@ You now have two options when updating the menu:
 
 - `ADMIN_PASSWORD` – required لكلا لوحة التحكم والعمليات المحمية في واجهات `/api`.
 - `CORS_ORIGIN` – (اختياري) اضبطه لتحجيم النطاقات المسموح لها باستهلاك الواجهات؛ القيمة الافتراضية `*`.
+- `RESEND_API_KEY` – مفتاح خدمة [Resend](https://resend.com/) لإرسال رسائل البريد لتقارير نهاية اليوم.
+- `REPORT_SENDER_EMAIL` – البريد المرسل المعتمد من Resend (مثل `Neema Café <reports@yourdomain.com>`).
+- `DAILY_REPORT_RECIPIENT` – (اختياري) يبدّل البريد الافتراضي المستلم للتقارير.
+
+### Daily report automation
+
+يوجد دالة مجدولة (`netlify/functions/daily-report.js`) تعمل تلقائيًا عند منتصف الليل بتوقيت الرياض (21:00 بالتوقيت العالمي) لإرسال تقرير مفصل بالبريد يحتوي على إجمالي الطلبات، الإيرادات، وأسماء العملاء مع تفاصيل طلباتهم إلى البريد `Moh.idris.18@gmail.com` ما لم يتم تحديد بريد آخر في المتغير البيئي `DAILY_REPORT_RECIPIENT`.
 
 ## Persisted data keys
 
