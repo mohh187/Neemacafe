@@ -494,11 +494,11 @@ const STRINGS = {
     sugar_external:'سكر خارجي', sugar_none:'بدون سكر', sugar_less:'سكر قليل', sugar_normal:'سكر عادي',
     water_cold:'بارد (من الثلاجة)', water_room:'غير مبرد (درجة الغرفة)',
     kcal_unknown:'غير متوفر',
-    variant_heading:'اختر النكهة',
-    variant_note:'اختر إحدى النكهات لإكمال الطلب (سعر سفن آب ظاهر افتراضياً).',
+    variant_heading:'اختر الخيار',
+    variant_note:'اختر أحد الخيارات لإكمال الطلب. يظهر السعر الافتراضي تلقائيًا.',
     variant_selected:'تم اختيار {variant}.',
     variant_default_tag:' (افتراضي)',
-    variant_required:'يرجى اختيار النكهة قبل إضافة الطلب.',
+    variant_required:'يرجى اختيار أحد الخيارات قبل إضافة الطلب.',
     select_table:'اختر رقم الطاولة',
     table_modal_title:'حدد رقم الطاولة',
     table_modal_desc:'يجب اختيار رقم الطاولة قبل متابعة الطلب.',
@@ -559,11 +559,11 @@ const STRINGS = {
     sugar_external:'Sugar on the side', sugar_none:'No sugar', sugar_less:'Less sugar', sugar_normal:'Regular sugar',
     water_cold:'Cold (chilled)', water_room:'Room temperature',
     kcal_unknown:'N/A',
-    variant_heading:'Choose a flavor',
-    variant_note:'Pick a flavor to continue (7up price shows by default).',
+    variant_heading:'Choose an option',
+    variant_note:'Pick an option to continue. The default price is shown automatically.',
     variant_selected:'Selected: {variant}.',
     variant_default_tag:' (Default)',
-    variant_required:'Please choose a flavor before adding to the cart.',
+    variant_required:'Please choose an option before adding to the cart.',
     select_table:'Select a table number',
     table_modal_title:'Choose your table',
     table_modal_desc:'Please pick a table number before continuing.',
@@ -1594,10 +1594,17 @@ function getSelectedVariant(it){
   if(!key) return null;
   return it.variants.find(v=> variantKeyFromData(v) === key) || null;
 }
-function updateProductPriceAndCal(it, variant){
-  const price = getVariantPrice(it, variant);
+function updateProductPriceAndCal(it, variant, extraPrice=0){
+  const basePrice = getVariantPrice(it, variant);
+  const addon = Number(extraPrice) || 0;
+  let finalPrice = NaN;
+  if(Number.isFinite(basePrice)){
+    finalPrice = basePrice + addon;
+  } else if(addon){
+    finalPrice = addon;
+  }
   const cal = getVariantCalories(it, variant);
-  $('#pPrice').innerHTML = priceHTML(price);
+  $('#pPrice').innerHTML = priceHTML(finalPrice);
   const calText = Number.isFinite(cal) ? `${cal} ${STRINGS[lang].kcal}` : (STRINGS[lang].kcal_unknown || '—');
   $('#pCal').textContent = calText;
 }
@@ -1660,10 +1667,29 @@ function renderVariantOptions(it){
   });
   updateVariantNote(it);
 }
+function calculateAddonPrice(it){
+  if(!it) return 0;
+  let extra = 0;
+  if(isGingerLemonDrink(it)){
+    const addHoney = document.getElementById('optAddHoney');
+    if(addHoney && addHoney.checked) extra += 1;
+  }
+  return extra;
+}
+function honeyLabelWithPrice(langCode){
+  const base = STRINGS[langCode].add_honey;
+  const currency = langCode === 'ar' ? 'ريال' : 'SAR';
+  return `${base} (+1 ${currency})`;
+}
+function updateDisplayedPrice(){
+  if(!currentProduct) return;
+  const variant = getSelectedVariant(currentProduct) || getDefaultVariant(currentProduct);
+  const extra = calculateAddonPrice(currentProduct);
+  updateProductPriceAndCal(currentProduct, variant, extra);
+}
 function selectVariant(it, key){
   currentVariantKey = normalizeVariantKey(key);
-  const chosen = getSelectedVariant(it);
-  updateProductPriceAndCal(it, chosen || getDefaultVariant(it));
+  updateDisplayedPrice();
   renderVariantOptions(it);
 }
 function resetVariantSelection(){
@@ -1698,7 +1724,7 @@ function updateCustomizationLabels(){
   const addExtraGingerLabel = document.getElementById('lblAddExtraGinger');
   if(addExtraGingerLabel) addExtraGingerLabel.textContent = STRINGS[lang].add_extra_ginger;
   const addHoneyLabel = document.getElementById('lblAddHoney');
-  if(addHoneyLabel) addHoneyLabel.textContent = STRINGS[lang].add_honey;
+  if(addHoneyLabel) addHoneyLabel.textContent = honeyLabelWithPrice(lang);
   const removeLemonLabel = document.getElementById('lblRemoveLemon');
   if(removeLemonLabel) removeLemonLabel.textContent = STRINGS[lang].remove_lemon;
   const removeMintLabel = document.getElementById('lblRemoveMint');
@@ -1724,6 +1750,7 @@ function updateCustomizationLabels(){
   if(currentProduct && isVariantItem(currentProduct)){
     renderVariantOptions(currentProduct);
   }
+  updateDisplayedPrice();
 }
 
 function openProduct(it, cat){
@@ -1732,10 +1759,8 @@ function openProduct(it, cat){
   resetVariantSelection();
   $('#pImg').src = (it && it.img) || IMG_DEFAULT;
   $('#pName').textContent = (lang==='ar'?it.ar:it.en);
-  updateProductPriceAndCal(it, getDefaultVariant(it));
   $('#pDesc').textContent = it['desc_'+lang] || autoDesc(it);
   $('#pQty').textContent = '1';
-  updateCustomizationLabels();
 
   // reset radios
   document.querySelectorAll('input[name="sugar"]').forEach(r=> r.checked = (r.value==='external'));
@@ -1745,6 +1770,8 @@ function openProduct(it, cat){
   $('#optCardamom').checked = false;
   document.querySelectorAll('#gingerLemonOptions input[type="checkbox"]').forEach(cb=> cb.checked = false);
   document.querySelectorAll('input[name="strength"]').forEach(r=> r.checked = (r.value==='balanced'));
+
+  updateCustomizationLabels();
 
   // visibility
   const water = isWater(it);
@@ -1760,15 +1787,21 @@ function openProduct(it, cat){
   if(gingerWrap) gingerWrap.style.display = gingerLemon ? 'flex' : 'none';
   document.getElementById('strengthGroup').style.display = jab ? 'flex' : 'none';
 
-  renderVariantOptions(it);
+  updateDisplayedPrice();
   document.getElementById('productModal').style.display='flex';
 }
+
+document.querySelectorAll('#gingerLemonOptions input[type="checkbox"]').forEach(cb=>{
+  cb.addEventListener('change', ()=> updateDisplayedPrice());
+});
+
 function closeProduct(){ document.getElementById('productModal').style.display='none'; }
 function incQty(){ let q=parseInt($('#pQty').textContent)||1; $('#pQty').textContent = Math.min(q+1,99); }
 function decQty(){ let q=parseInt($('#pQty').textContent)||1; $('#pQty').textContent = Math.max(q-1,1); }
 
 function gatherCustomization(selectedVariant){
   const opts = [];
+  let priceDelta = 0;
   if(selectedVariant){
     const variantLabel = getVariantLabel(selectedVariant, lang);
     if(variantLabel) opts.push(variantLabel);
@@ -1777,7 +1810,7 @@ function gatherCustomization(selectedVariant){
   if(isWater(currentProduct)){
     const wt = (document.querySelector('input[name="waterTemp"]:checked')||{}).value || 'cold';
     opts.push(wt==='cold' ? STRINGS[lang].water_cold : STRINGS[lang].water_room);
-    return opts;
+    return { labels: opts, priceDelta };
   }
   // sugar
   if (document.getElementById('sugarGroup').style.display!=='none') {
@@ -1804,7 +1837,10 @@ function gatherCustomization(selectedVariant){
     const addExtraGinger = document.getElementById('optAddExtraGinger');
     if(addExtraGinger && addExtraGinger.checked) opts.push(STRINGS[lang].add_extra_ginger);
     const addHoney = document.getElementById('optAddHoney');
-    if(addHoney && addHoney.checked) opts.push(STRINGS[lang].add_honey);
+    if(addHoney && addHoney.checked){
+      opts.push(honeyLabelWithPrice(lang));
+      priceDelta += 1;
+    }
     const removeLemon = document.getElementById('optRemoveLemon');
     if(removeLemon && removeLemon.checked) opts.push(STRINGS[lang].remove_lemon);
     const removeMint = document.getElementById('optRemoveMint');
@@ -1814,7 +1850,7 @@ function gatherCustomization(selectedVariant){
     const removeHoney = document.getElementById('optRemoveHoney');
     if(removeHoney && removeHoney.checked) opts.push(STRINGS[lang].remove_honey);
   }
-  return opts;
+  return { labels: opts, priceDelta };
 }
 
 function addCurrentToCart(){
@@ -1824,9 +1860,9 @@ function addCurrentToCart(){
     toast(STRINGS[lang].variant_required || STRINGS[lang].variant_note || '');
     return;
   }
-  const options = gatherCustomization(variant);
+  const { labels, priceDelta } = gatherCustomization(variant);
   ensureTableSelection(()=>{
-    addToCart(currentProduct, q, options, variant);
+    addToCart(currentProduct, q, labels, variant, priceDelta);
     closeProduct();
     toast(STRINGS[lang].added);
   });
@@ -1837,11 +1873,13 @@ function openCart(){ renderCart(); document.getElementById('cartSheet').style.di
 function closeCart(){ document.getElementById('cartSheet').style.display='none'; }
 document.getElementById('cartFab').addEventListener('click', openCart);
 
-function addToCart(it, qty=1, options=[], variant=null){
+function addToCart(it, qty=1, options=[], variant=null, priceDelta=0){
   if(!it) return;
   const variantKey = variant ? variantKeyFromData(variant) : '';
   const baseName = (it.en||it.ar||'');
-  const keyParts = [baseName, variantKey || '-', options.join(',') || '-'];
+  const optionList = Array.isArray(options) ? options.slice() : [];
+  const addon = Number(priceDelta) || 0;
+  const keyParts = [baseName, variantKey || '-', optionList.join(',') || '-', addon ? addon.toFixed(2) : '0'];
   const key = keyParts.join('|');
   const nameArBase = it.ar || '';
   const nameEnBase = it.en || '';
@@ -1849,12 +1887,16 @@ function addToCart(it, qty=1, options=[], variant=null){
   const variantLabelEn = variant ? getVariantLabel(variant, 'en') : '';
   const nameAr = variant ? `${nameArBase} (${variantLabelAr || variantLabelEn})` : nameArBase;
   const nameEn = variant ? `${nameEnBase} (${variantLabelEn || variantLabelAr})` : nameEnBase;
-  const price = getVariantPrice(it, variant);
+  const basePrice = getVariantPrice(it, variant);
+  const unitPrice = Number.isFinite(basePrice) ? basePrice + addon : addon;
   const calories = getVariantCalories(it, variant);
   const img = (variant && variant.img) ? variant.img : (it.img || IMG_DEFAULT);
   const idx = cart.findIndex(x=>x.key===key);
   if(idx>-1){
     cart[idx].qty += qty;
+    cart[idx].price = Number.isFinite(unitPrice) ? unitPrice : 0;
+    cart[idx].price_adjustment = addon;
+    cart[idx].options = optionList;
   }
   else{
     cart.push({
@@ -1864,11 +1906,12 @@ function addToCart(it, qty=1, options=[], variant=null){
       base_ar: nameArBase,
       base_en: nameEnBase,
       variant_key: variantKey,
-      price: Number.isFinite(price) ? price : 0,
+      price: Number.isFinite(unitPrice) ? unitPrice : 0,
       cal: Number.isFinite(calories) ? calories : null,
       img,
       qty,
-      options
+      options: optionList,
+      price_adjustment: addon
     });
   }
   saveCart(); updateCartBadge();
