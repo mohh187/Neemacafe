@@ -32,7 +32,7 @@ Including `menu-data.js` on the page ensures both menu builds use the same catal
 
 You now have two options when updating the menu:
 
-1. **لوحة التحكم (`/admin/`)** – صفحة تفاعلية تتصل بنقطة النهاية `/api/items` لإدارة العناصر (إضافة، تعديل، حذف) بعد إدخال كلمة المرور المطابقة للمتغير البيئي `ADMIN_PASSWORD`. نفس اللوحة تعرض آخر ٢٠٠ طلب تم إرسالها من خلال واجهة `/api/orders`.
+1. **لوحة التحكم (`/admin/`)** – صفحة تفاعلية ثنائية اللغة تتصل بنقطة النهاية `/api/items` لإدارة العناصر (إضافة، تعديل، حذف) بعد إدخال كلمة المرور المطابقة للمتغير البيئي `ADMIN_PASSWORD`. اللوحة المحدثة تتضمن تسجيل دخول عبر البريد، استعادة كلمة المرور بالبريد، تحكم كامل في العروض وهدية الولاء، إعداد الثيمات، عرض سجلات العملاء مع إمكانية تصدير/استيراد Excel، بالإضافة إلى استعراض آخر ٢٠٠ طلب من خلال واجهة `/api/orders`.
 2. **تعديل الملف يدويًا** – ما زال بالإمكان تحرير `menu-data.js` مباشرة لتغيير الأسعار أو البطاقات في حال احتجت إلى بيانات افتراضية عند غياب قاعدة البيانات.
 
 ## Serverless API
@@ -61,9 +61,13 @@ The menu stores customer preferences and order history in `localStorage`. These 
 - `nima.lang` – preferred language (`ar` or `en`).
 - `nima.mode` – theme (`dark` or `light`).
 - `nima.customerProfile` – saved name and phone number.
-- `nima.customerRegistry` – known customers for multi-guest logs.
+- `nima.customerRegistry` – known customers with device/IP metadata, visit counts, and loyalty summaries.
 - `nima.orderLog` – history of orders sent from the device.
-- `nima.loyaltyTracker` – loyalty counts per drink.
+- `nima.loyaltyTracker` – loyalty history (now tracked globally across all drinks).
+- `nima.dashboardConfig` – shared settings from the dashboard (loyalty rules, notes, etc.).
+- `nima.promotions` – active promotions defined in the dashboard.
+- `nima.menuTheme` – palette and selected theme for the customer-facing menu.
+- `nima.cachedIp` – cached public IP address for the current device.
 - `neema.menuData.custom` – نسخة محلية من أصناف المنيو يتم إنشاؤها من خلال لوحة التحكم.
 
 Clearing browser storage resets the greeting, loyalty counts, and saved customer details.
