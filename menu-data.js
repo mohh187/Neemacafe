@@ -25,6 +25,7 @@
         {ar:'شاي', en:'Tea', price:3, cal:2, img:IMG_DEFAULT},
         {ar:'شاي مقنن', en:'Strong Tea', price:6, cal:2, img:IMG_DEFAULT},
         {ar:'شاي تلقيمة', en:'Talgema Tea', price:7, cal:2, img:IMG_DEFAULT},
+        {ar:'زنجبيل بالليمون', en:'Ginger Lemon Tea', price:10, cal:25, img:IMG_DEFAULT},
         {ar:'شاي حليب', en:'Milk Tea', price:6, cal:140, img:IMG_DEFAULT},
         {ar:'هوت شوكلت', en:'Hot Chocolate', price:13, cal:300, img:IMG_DEFAULT},
         {ar:'ماتشا', en:'Matcha (Hot)', price:16, cal:180, img:'https://i.postimg.cc/SRCKyTF5/image.png'}

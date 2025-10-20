@@ -127,6 +127,9 @@ body.dark .variant-btn.selected{box-shadow:0 0 0 2px rgba(212,163,115,.25)}
 .custom .opts{display:flex;flex-wrap:wrap;gap:8px}
 .custom label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:10px;padding:6px 10px;background:var(--card);cursor:pointer;font-size:13px}
 .custom .radios{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.custom-ginger{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.custom-ginger .group-title{font-weight:600;font-size:13px;color:var(--muted)}
+.custom-ginger .opts{margin-top:4px}
 
 /* -------- Floating Cart Button -------- */
 .fab{
@@ -312,6 +315,27 @@ body.dark .table-modal .sheet .error{color:#e57373}
           <label><input type="checkbox" id="optCardamom"> <span id="lblCardamom">هبهان</span></label>
         </div>
 
+        <!-- Ginger lemon options -->
+        <div class="custom-ginger" id="gingerLemonOptions" style="display:none">
+          <div>
+            <span class="group-title" id="lblGingerLemonAdditions">إضافات</span>
+            <div class="opts">
+              <label><input type="checkbox" id="optAddMint"> <span id="lblAddMint">إضافة نعناع</span></label>
+              <label><input type="checkbox" id="optAddExtraGinger"> <span id="lblAddExtraGinger">إضافة زيادة زنجبيل</span></label>
+              <label><input type="checkbox" id="optAddHoney"> <span id="lblAddHoney">إضافة عسل</span></label>
+            </div>
+          </div>
+          <div>
+            <span class="group-title" id="lblGingerLemonRemovals">إزالة</span>
+            <div class="opts">
+              <label><input type="checkbox" id="optRemoveLemon"> <span id="lblRemoveLemon">إزالة ليمون</span></label>
+              <label><input type="checkbox" id="optRemoveMint"> <span id="lblRemoveMint">إزالة نعناع</span></label>
+              <label><input type="checkbox" id="optRemoveGinger"> <span id="lblRemoveGinger">إزالة زنجبيل</span></label>
+              <label><input type="checkbox" id="optRemoveHoney"> <span id="lblRemoveHoney">إزالة عسل</span></label>
+            </div>
+          </div>
+        </div>
+
         <div class="radios" id="strengthGroup" style="display:none">
           <label><input type="radio" name="strength" value="heavy"> <span id="lblHeavy">ثقيلة</span></label>
           <label><input type="radio" name="strength" value="light"> <span id="lblLight">خفيفة</span></label>
@@ -463,6 +487,9 @@ const STRINGS = {
     order_send_failed:'تعذّر إرسال الطلب ❌',
     customize:'التخصيص', less_ice:'ثلج أقل',
     ginger:'زنجبيل', cardamom:'هبهان',
+    ginger_lemon_additions:'إضافات', ginger_lemon_removals:'إزالة',
+    add_mint:'إضافة نعناع', add_extra_ginger:'إضافة زيادة زنجبيل', add_honey:'إضافة عسل',
+    remove_lemon:'إزالة ليمون', remove_mint:'إزالة نعناع', remove_ginger:'إزالة زنجبيل', remove_honey:'إزالة عسل',
     strength:'القوة', heavy:'ثقيلة', light:'خفيفة', balanced:'موزونة',
     sugar_external:'سكر خارجي', sugar_none:'بدون سكر', sugar_less:'سكر قليل', sugar_normal:'سكر عادي',
     water_cold:'بارد (من الثلاجة)', water_room:'غير مبرد (درجة الغرفة)',
@@ -525,6 +552,9 @@ const STRINGS = {
     order_send_failed:'Failed to send ❌',
     customize:'Customize', less_ice:'Less ice',
     ginger:'Ginger', cardamom:'Cardamom',
+    ginger_lemon_additions:'Add-ons', ginger_lemon_removals:'Remove',
+    add_mint:'Add mint', add_extra_ginger:'Extra ginger', add_honey:'Add honey',
+    remove_lemon:'Remove lemon', remove_mint:'Remove mint', remove_ginger:'Remove ginger', remove_honey:'Remove honey',
     strength:'Strength', heavy:'Strong', light:'Light', balanced:'Balanced',
     sugar_external:'Sugar on the side', sugar_none:'No sugar', sugar_less:'Less sugar', sugar_normal:'Regular sugar',
     water_cold:'Cold (chilled)', water_room:'Room temperature',
@@ -1500,6 +1530,10 @@ function isHibiscusDrink(it){
   const a=(it.ar||'').toLowerCase(); const e=(it.en||'').toLowerCase();
   return a.includes('كركديه') || a.includes('كركدي') || e.includes('hibiscus');
 }
+function isGingerLemonDrink(it){
+  const a=(it.ar||''); const e=(it.en||'').toLowerCase();
+  return a.includes('زنجبيل بالليمون') || (e.includes('ginger') && e.includes('lemon'));
+}
 function shouldHideExternalSugar(it){
   return isMojito(it) || isHibiscusDrink(it);
 }
@@ -1655,6 +1689,24 @@ function updateCustomizationLabels(){
   $('#lblLessIce').textContent = STRINGS[lang].less_ice;
   $('#lblGinger').textContent = STRINGS[lang].ginger;
   $('#lblCardamom').textContent = STRINGS[lang].cardamom;
+  const gingerAddTitle = document.getElementById('lblGingerLemonAdditions');
+  if(gingerAddTitle) gingerAddTitle.textContent = STRINGS[lang].ginger_lemon_additions;
+  const gingerRemoveTitle = document.getElementById('lblGingerLemonRemovals');
+  if(gingerRemoveTitle) gingerRemoveTitle.textContent = STRINGS[lang].ginger_lemon_removals;
+  const addMintLabel = document.getElementById('lblAddMint');
+  if(addMintLabel) addMintLabel.textContent = STRINGS[lang].add_mint;
+  const addExtraGingerLabel = document.getElementById('lblAddExtraGinger');
+  if(addExtraGingerLabel) addExtraGingerLabel.textContent = STRINGS[lang].add_extra_ginger;
+  const addHoneyLabel = document.getElementById('lblAddHoney');
+  if(addHoneyLabel) addHoneyLabel.textContent = STRINGS[lang].add_honey;
+  const removeLemonLabel = document.getElementById('lblRemoveLemon');
+  if(removeLemonLabel) removeLemonLabel.textContent = STRINGS[lang].remove_lemon;
+  const removeMintLabel = document.getElementById('lblRemoveMint');
+  if(removeMintLabel) removeMintLabel.textContent = STRINGS[lang].remove_mint;
+  const removeGingerLabel = document.getElementById('lblRemoveGinger');
+  if(removeGingerLabel) removeGingerLabel.textContent = STRINGS[lang].remove_ginger;
+  const removeHoneyLabel = document.getElementById('lblRemoveHoney');
+  if(removeHoneyLabel) removeHoneyLabel.textContent = STRINGS[lang].remove_honey;
   $('#lblHeavy').textContent = STRINGS[lang].heavy;
   $('#lblLight').textContent = STRINGS[lang].light;
   $('#lblBalanced').textContent = STRINGS[lang].balanced;
@@ -1691,17 +1743,21 @@ function openProduct(it, cat){
   $('#optLessIce').checked = false;
   $('#optGinger').checked = false;
   $('#optCardamom').checked = false;
+  document.querySelectorAll('#gingerLemonOptions input[type="checkbox"]').forEach(cb=> cb.checked = false);
   document.querySelectorAll('input[name="strength"]').forEach(r=> r.checked = (r.value==='balanced'));
 
   // visibility
   const water = isWater(it);
   const jab = isJabana(it);
+  const gingerLemon = isGingerLemonDrink(it);
 
   toggleSugarExternalOption(shouldHideExternalSugar(it));
   document.getElementById('wrapLessIce').style.display = (currentCat==='cold' && !water) ? 'inline-flex' : 'none';
   document.getElementById('sugarGroup').style.display = (currentCat!=='dessert' && !water) ? 'flex' : 'none';
   document.getElementById('waterTempGroup').style.display = water ? 'flex' : 'none';
   document.getElementById('customJabana').style.display = jab ? 'flex' : 'none';
+  const gingerWrap = document.getElementById('gingerLemonOptions');
+  if(gingerWrap) gingerWrap.style.display = gingerLemon ? 'flex' : 'none';
   document.getElementById('strengthGroup').style.display = jab ? 'flex' : 'none';
 
   renderVariantOptions(it);
@@ -1741,6 +1797,22 @@ function gatherCustomization(selectedVariant){
     const st = (document.querySelector('input[name="strength"]:checked')||{}).value || 'balanced';
     const stLabel = st==='heavy'?STRINGS[lang].heavy: st==='light'?STRINGS[lang].light: STRINGS[lang].balanced;
     opts.push(stLabel);
+  }
+  if(isGingerLemonDrink(currentProduct)){
+    const addMint = document.getElementById('optAddMint');
+    if(addMint && addMint.checked) opts.push(STRINGS[lang].add_mint);
+    const addExtraGinger = document.getElementById('optAddExtraGinger');
+    if(addExtraGinger && addExtraGinger.checked) opts.push(STRINGS[lang].add_extra_ginger);
+    const addHoney = document.getElementById('optAddHoney');
+    if(addHoney && addHoney.checked) opts.push(STRINGS[lang].add_honey);
+    const removeLemon = document.getElementById('optRemoveLemon');
+    if(removeLemon && removeLemon.checked) opts.push(STRINGS[lang].remove_lemon);
+    const removeMint = document.getElementById('optRemoveMint');
+    if(removeMint && removeMint.checked) opts.push(STRINGS[lang].remove_mint);
+    const removeGinger = document.getElementById('optRemoveGinger');
+    if(removeGinger && removeGinger.checked) opts.push(STRINGS[lang].remove_ginger);
+    const removeHoney = document.getElementById('optRemoveHoney');
+    if(removeHoney && removeHoney.checked) opts.push(STRINGS[lang].remove_honey);
   }
   return opts;
 }
