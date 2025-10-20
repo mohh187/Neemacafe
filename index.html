@@ -455,6 +455,7 @@ body.dark .table-modal .sheet .error{color:#e57373}
     <div class="inner">
       <select id="table"></select>
       <button class="btn primary" id="callBtn">🔔 <span data-i18n="call_waiter">طلب النادل</span></button>
+      <button class="btn primary" id="sendOrderBtn">🚀 <span data-i18n="send_order">إرسال الطلب</span></button>
     </div>
   </div>
 
@@ -1508,6 +1509,13 @@ $('#callBtn').addEventListener('click', ()=>{
     sendWaiterCall(tableId);
   }, { forcePrompt:true, restoreCart:false });
 });
+
+const sendOrderBtn = $('#sendOrderBtn');
+if(sendOrderBtn){
+  sendOrderBtn.addEventListener('click', ()=>{
+    sendOrder();
+  });
+}
 
 /* ===== Product Modal logic ===== */
 let currentProduct = null;
