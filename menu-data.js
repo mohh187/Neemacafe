@@ -6,8 +6,18 @@
       coffee: [
         {ar:'ڤي 60', en:'V60', price:13, cal:5, img:IMG_DEFAULT},
         {ar:'قهوة اليوم', en:'Coffee of the Day', price:8, cal:5, img:IMG_DEFAULT},
-        {ar:'امريكانو (صغير)', en:'Americano (Small)', price:6, cal:5, img:IMG_DEFAULT},
-        {ar:'امريكانو (وسط)', en:'Americano (Medium)', price:8, cal:10, img:IMG_DEFAULT},
+        {
+          ar:'امريكانو',
+          en:'Americano',
+          price:6,
+          cal:5,
+          defaultVariantKey:'small',
+          img:IMG_DEFAULT,
+          variants:[
+            {key:'small', ar:'صغير', en:'Small', price:6, cal:5},
+            {key:'large', ar:'كبير', en:'Large', price:8, cal:10}
+          ]
+        },
         {ar:'اسبريسو', en:'Espresso', price:6, cal:5, img:IMG_DEFAULT},
         {ar:'قهوة تركي', en:'Turkish Coffee', price:8, cal:15, img:IMG_DEFAULT},
         {ar:'جبنة (قهوة سودانية)', en:'Jabana (Sudanese Coffee)', price:6, cal:10, img:'https://i.postimg.cc/Wzg42WLQ/image.png'},
@@ -24,6 +34,19 @@
       tea: [
         {ar:'شاي', en:'Tea', price:3, cal:2, img:IMG_DEFAULT},
         {ar:'شاي مقنن', en:'Strong Tea', price:6, cal:2, img:IMG_DEFAULT},
+        {ar:'شاي تلقيمة', en:'Talgema Tea', price:7, cal:2, img:IMG_DEFAULT},
+        {
+          ar:'زنجبيل بالليمون',
+          en:'Ginger Lemon Tea',
+          price:7,
+          cal:25,
+          defaultVariantKey:'small',
+          img:IMG_DEFAULT,
+          variants:[
+            {key:'small', ar:'صغير', en:'Small', price:7, cal:25},
+            {key:'large', ar:'كبير', en:'Large', price:9, cal:35}
+          ]
+        },
         {ar:'شاي حليب', en:'Milk Tea', price:6, cal:140, img:IMG_DEFAULT},
         {ar:'هوت شوكلت', en:'Hot Chocolate', price:13, cal:300, img:IMG_DEFAULT},
         {ar:'ماتشا', en:'Matcha (Hot)', price:16, cal:180, img:'https://i.postimg.cc/SRCKyTF5/image.png'}
