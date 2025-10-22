@@ -49,6 +49,7 @@
         {ar:'شاي تلقيمة', en:'Loose Leaf Tea', price:7, cal:5, img:IMG_DEFAULT, mixins:GINGER_LEMON_MIXINS},
         {
           ar:'زنجبيل بالليمون',
+          ar:'مشروب الزنجبيل بالليمون',
           en:'Ginger Lemon Drink',
           price:7,
           cal:20,
