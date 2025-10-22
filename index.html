@@ -306,6 +306,9 @@ body.dark .table-modal .sheet .error{color:#e57373}
           <label id="wrapLessIce"><input type="checkbox" id="optLessIce"> <span id="lblLessIce">ثلج أقل</span></label>
         </div>
 
+        <!-- Herbal mixins -->
+        <div class="opts" id="customMixins" style="display:none"></div>
+
         <!-- Jabana-only -->
         <div class="opts" id="customJabana" style="display:none">
           <label><input type="checkbox" id="optGinger"> <span id="lblGinger">زنجبيل</span></label>
@@ -469,10 +472,16 @@ const STRINGS = {
     water_cold:'بارد (من الثلاجة)', water_room:'غير مبرد (درجة الغرفة)',
     kcal_unknown:'غير متوفر',
     variant_heading:'اختر النكهة',
+    variant_heading_flavor:'اختر النكهة',
+    variant_heading_size:'اختر الحجم',
     variant_note:'اختر إحدى النكهات لإكمال الطلب (سعر سفن آب ظاهر افتراضياً).',
+    variant_note_flavor:'اختر إحدى النكهات لإكمال الطلب (سعر سفن آب ظاهر افتراضياً).',
+    variant_note_size:'اختر الحجم المناسب لإكمال الطلب.',
     variant_selected:'تم اختيار {variant}.',
     variant_default_tag:' (افتراضي)',
     variant_required:'يرجى اختيار النكهة قبل إضافة الطلب.',
+    variant_required_flavor:'يرجى اختيار النكهة قبل إضافة الطلب.',
+    variant_required_size:'يرجى اختيار الحجم قبل إضافة الطلب.',
     select_table:'اختر رقم الطاولة',
     table_modal_title:'حدد رقم الطاولة',
     table_modal_desc:'يجب اختيار رقم الطاولة قبل متابعة الطلب.',
@@ -531,10 +540,16 @@ const STRINGS = {
     water_cold:'Cold (chilled)', water_room:'Room temperature',
     kcal_unknown:'N/A',
     variant_heading:'Choose a flavor',
+    variant_heading_flavor:'Choose a flavor',
+    variant_heading_size:'Choose a size',
     variant_note:'Pick a flavor to continue (7up price shows by default).',
+    variant_note_flavor:'Pick a flavor to continue (7up price shows by default).',
+    variant_note_size:'Please choose a size to complete the order.',
     variant_selected:'Selected: {variant}.',
     variant_default_tag:' (Default)',
     variant_required:'Please choose a flavor before adding to the cart.',
+    variant_required_flavor:'Please choose a flavor before adding to the cart.',
+    variant_required_size:'Please choose a size before adding to the cart.',
     select_table:'Select a table number',
     table_modal_title:'Choose your table',
     table_modal_desc:'Please pick a table number before continuing.',
@@ -1591,6 +1606,48 @@ function isHibiscusDrink(it){
 function shouldHideExternalSugar(it){
   return isMojito(it) || isHibiscusDrink(it);
 }
+
+function getMixins(it){
+  if(!it || !Array.isArray(it.mixins)) return [];
+  return it.mixins.filter(Boolean);
+}
+
+function renderCustomMixins(it, preserveSelection=false){
+  const wrap = document.getElementById('customMixins');
+  if(!wrap) return;
+  const existingSelections = new Set();
+  if(preserveSelection){
+    wrap.querySelectorAll('input[data-option-id]').forEach(input=>{
+      if(input.checked) existingSelections.add(input.dataset.optionId);
+    });
+  }
+  wrap.innerHTML='';
+  const options = getMixins(it);
+  if(!options.length){
+    wrap.style.display='none';
+    return;
+  }
+  wrap.style.display='flex';
+  options.forEach((opt, idx)=>{
+    if(!opt) return;
+    const optionId = opt.id ? String(opt.id) : `mix-${idx}`;
+    const label = document.createElement('label');
+    const input = document.createElement('input');
+    input.type='checkbox';
+    input.dataset.optionId = optionId;
+    input.dataset.price = Number(opt.price) || 0;
+    input.dataset.labelAr = opt.ar || opt.en || '';
+    input.dataset.labelEn = opt.en || opt.ar || '';
+    if(preserveSelection && existingSelections.has(optionId)){
+      input.checked = true;
+    }
+    const span = document.createElement('span');
+    span.textContent = lang==='ar' ? (opt.ar || opt.en || '') : (opt.en || opt.ar || '');
+    label.appendChild(input);
+    label.appendChild(span);
+    wrap.appendChild(label);
+  });
+}
 function isVariantItem(it){
   return !!(it && Array.isArray(it.variants) && it.variants.length);
 }
@@ -1630,6 +1687,52 @@ function getVariantCalories(it, variant){
   const base = Number(it && it.cal);
   return Number.isFinite(base) ? base : NaN;
 }
+function getVariantHeadingKey(it){
+  if(!it) return '';
+  const raw = it.variantHeadingKey || it.variantKind || '';
+  return normalizeVariantKey(raw);
+}
+function getVariantNoteKey(it){
+  if(!it) return '';
+  const raw = it.variantNoteKey || it.variantHeadingKey || it.variantKind || '';
+  return normalizeVariantKey(raw);
+}
+function resolveVariantHeading(it, langCode = lang){
+  if(!it || !isVariantItem(it)) return '';
+  const strings = STRINGS[langCode] || {};
+  const key = getVariantHeadingKey(it);
+  if(key){
+    const specific = strings[`variant_heading_${key}`];
+    if(typeof specific === 'string' && specific.trim()) return specific;
+  }
+  return strings.variant_heading || '';
+}
+function resolveVariantNote(it, langCode = lang){
+  if(!it || !isVariantItem(it)) return '';
+  const strings = STRINGS[langCode] || {};
+  const key = getVariantNoteKey(it);
+  if(key){
+    const lookup = `variant_note_${key}`;
+    if(Object.prototype.hasOwnProperty.call(strings, lookup)){
+      const specific = strings[lookup];
+      if(typeof specific === 'string') return specific;
+    }
+  }
+  return strings.variant_note || '';
+}
+function resolveVariantRequired(it, langCode = lang){
+  const strings = STRINGS[langCode] || {};
+  if(!it || !isVariantItem(it)) return strings.variant_required || '';
+  const key = getVariantNoteKey(it);
+  if(key){
+    const lookup = `variant_required_${key}`;
+    if(Object.prototype.hasOwnProperty.call(strings, lookup)){
+      const specific = strings[lookup];
+      if(typeof specific === 'string') return specific;
+    }
+  }
+  return strings.variant_required || '';
+}
 function getItemDisplayMetrics(it){
   if(!isVariantItem(it)){
     const price = Number(it && it.price);
@@ -1668,7 +1771,7 @@ function updateVariantNote(it){
     const template = STRINGS[lang].variant_selected || '';
     noteEl.textContent = template.replace('{variant}', label);
   } else {
-    noteEl.textContent = STRINGS[lang].variant_note || '';
+    noteEl.textContent = resolveVariantNote(it);
   }
 }
 function renderVariantOptions(it){
@@ -1683,7 +1786,7 @@ function renderVariantOptions(it){
   }
   group.style.display = 'flex';
   const headingEl = document.getElementById('variantHeading');
-  if(headingEl) headingEl.textContent = STRINGS[lang].variant_heading || '';
+  if(headingEl) headingEl.textContent = resolveVariantHeading(it);
   optionsEl.innerHTML='';
   const defaultVariant = getDefaultVariant(it);
   const defaultKey = variantKeyFromData(defaultVariant);
@@ -1755,8 +1858,9 @@ function updateCustomizationLabels(){
   document.querySelector('#lblWaterCold').textContent = STRINGS[lang].water_cold;
   document.querySelector('#lblWaterRoom').textContent = STRINGS[lang].water_room;
   const headingEl = document.getElementById('variantHeading');
-  if(headingEl) headingEl.textContent = STRINGS[lang].variant_heading || '';
+  if(headingEl) headingEl.textContent = resolveVariantHeading(currentProduct);
   updateVariantNote(currentProduct);
+  renderCustomMixins(currentProduct, true);
   if(currentProduct && isVariantItem(currentProduct)){
     renderVariantOptions(currentProduct);
   }
@@ -1792,6 +1896,7 @@ function openProduct(it, cat){
   document.getElementById('customJabana').style.display = jab ? 'flex' : 'none';
   document.getElementById('strengthGroup').style.display = jab ? 'flex' : 'none';
 
+  renderCustomMixins(it);
   renderVariantOptions(it);
   document.getElementById('productModal').style.display='flex';
 }
@@ -1800,49 +1905,65 @@ function incQty(){ let q=parseInt($('#pQty').textContent)||1; $('#pQty').textCon
 function decQty(){ let q=parseInt($('#pQty').textContent)||1; $('#pQty').textContent = Math.max(q-1,1); }
 
 function gatherCustomization(selectedVariant){
-  const opts = [];
+  const result = { labels: [], extraPrice: 0 };
   if(selectedVariant){
     const variantLabel = getVariantLabel(selectedVariant, lang);
-    if(variantLabel) opts.push(variantLabel);
+    if(variantLabel) result.labels.push(variantLabel);
   }
   // water temp
   if(isWater(currentProduct)){
     const wt = (document.querySelector('input[name="waterTemp"]:checked')||{}).value || 'cold';
-    opts.push(wt==='cold' ? STRINGS[lang].water_cold : STRINGS[lang].water_room);
-    return opts;
+    result.labels.push(wt==='cold' ? STRINGS[lang].water_cold : STRINGS[lang].water_room);
+    return result;
   }
   // sugar
-  if (document.getElementById('sugarGroup').style.display!=='none') {
+  const sugarGroup = document.getElementById('sugarGroup');
+  if (sugarGroup && sugarGroup.style.display!=='none') {
     const sugar = (document.querySelector('input[name="sugar"]:checked')||{}).value || 'external';
     const sugarLabel = sugar==='external'?STRINGS[lang].sugar_external
                       : sugar==='none'?STRINGS[lang].sugar_none
                       : sugar==='less'?STRINGS[lang].sugar_less
                       : STRINGS[lang].sugar_normal;
-    opts.push(sugarLabel);
+    result.labels.push(sugarLabel);
   }
   // ice
-  if($('#optLessIce').checked && currentCat==='cold') opts.push(STRINGS[lang].less_ice);
+  if($('#optLessIce').checked && currentCat==='cold') result.labels.push(STRINGS[lang].less_ice);
   // jabana
   if(isJabana(currentProduct)){
-    if($('#optGinger').checked) opts.push(STRINGS[lang].ginger);
-    if($('#optCardamom').checked) opts.push(STRINGS[lang].cardamom);
+    if($('#optGinger').checked) result.labels.push(STRINGS[lang].ginger);
+    if($('#optCardamom').checked) result.labels.push(STRINGS[lang].cardamom);
     const st = (document.querySelector('input[name="strength"]:checked')||{}).value || 'balanced';
     const stLabel = st==='heavy'?STRINGS[lang].heavy: st==='light'?STRINGS[lang].light: STRINGS[lang].balanced;
-    opts.push(stLabel);
+    result.labels.push(stLabel);
   }
-  return opts;
+  // herbal mixins
+  const mixinWrap = document.getElementById('customMixins');
+  if(mixinWrap && mixinWrap.style.display!=='none'){
+    mixinWrap.querySelectorAll('input[type="checkbox"]').forEach(input=>{
+      if(!input.checked) return;
+      const label = lang==='ar'
+        ? (input.dataset.labelAr || input.dataset.labelEn || '')
+        : (input.dataset.labelEn || input.dataset.labelAr || '');
+      if(label) result.labels.push(label);
+      const extra = Number(input.dataset.price);
+      if(Number.isFinite(extra)) result.extraPrice += extra;
+    });
+  }
+  return result;
 }
 
 function addCurrentToCart(){
   const q = parseInt($('#pQty').textContent)||1;
   const variant = getSelectedVariant(currentProduct);
   if(isVariantItem(currentProduct) && !variant){
-    toast(STRINGS[lang].variant_required || STRINGS[lang].variant_note || '');
+    toast(resolveVariantRequired(currentProduct) || STRINGS[lang].variant_note || '');
     return;
   }
-  const options = gatherCustomization(variant);
+  const customization = gatherCustomization(variant);
+  const options = customization.labels;
+  const extraPrice = customization.extraPrice;
   ensureTableSelection(()=>{
-    addToCart(currentProduct, q, options, variant);
+    addToCart(currentProduct, q, options, variant, extraPrice);
     closeProduct();
     toast(STRINGS[lang].added);
   });
@@ -1853,7 +1974,7 @@ function openCart(){ renderCart(); document.getElementById('cartSheet').style.di
 function closeCart(){ document.getElementById('cartSheet').style.display='none'; }
 document.getElementById('cartFab').addEventListener('click', openCart);
 
-function addToCart(it, qty=1, options=[], variant=null){
+function addToCart(it, qty=1, options=[], variant=null, extraPrice=0){
   if(!it) return;
   const variantKey = variant ? variantKeyFromData(variant) : '';
   const baseName = (it.en||it.ar||'');
@@ -1865,7 +1986,9 @@ function addToCart(it, qty=1, options=[], variant=null){
   const variantLabelEn = variant ? getVariantLabel(variant, 'en') : '';
   const nameAr = variant ? `${nameArBase} (${variantLabelAr || variantLabelEn})` : nameArBase;
   const nameEn = variant ? `${nameEnBase} (${variantLabelEn || variantLabelAr})` : nameEnBase;
-  const price = getVariantPrice(it, variant);
+  const basePrice = getVariantPrice(it, variant);
+  const extra = Number(extraPrice) || 0;
+  const price = (Number.isFinite(basePrice) ? Number(basePrice) : 0) + extra;
   const calories = getVariantCalories(it, variant);
   const img = (variant && variant.img) ? variant.img : (it.img || IMG_DEFAULT);
   const idx = cart.findIndex(x=>x.key===key);
