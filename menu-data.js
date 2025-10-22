@@ -1,13 +1,36 @@
 (function(global){
   const IMG_DEFAULT = 'https://i.postimg.cc/Y0GT5M1f/image.png';
 
+  const GINGER_LEMON_MIXINS = Object.freeze([
+    {id:'add-mint', ar:'إضافة نعناع', en:'Add Mint', price:0},
+    {id:'add-lemon', ar:'إضافة ليمون', en:'Add Lemon', price:0},
+    {id:'add-ginger', ar:'إضافة زنجبيل', en:'Add Ginger', price:0},
+    {id:'add-honey', ar:'إضافة عسل (+1)', en:'Add Honey (+1 SAR)', price:1},
+    {id:'remove-lemon', ar:'إزالة ليمون', en:'No Lemon', price:0},
+    {id:'remove-honey', ar:'إزالة عسل', en:'No Honey', price:0},
+    {id:'remove-ginger', ar:'إزالة زنجبيل', en:'No Ginger', price:0},
+    {id:'remove-mint', ar:'إزالة نعناع', en:'No Mint', price:0}
+  ]);
+
   const MENU_DATA = {
     hot: {
       coffee: [
         {ar:'ڤي 60', en:'V60', price:13, cal:5, img:IMG_DEFAULT},
         {ar:'قهوة اليوم', en:'Coffee of the Day', price:8, cal:5, img:IMG_DEFAULT},
-        {ar:'امريكانو (صغير)', en:'Americano (Small)', price:6, cal:5, img:IMG_DEFAULT},
-        {ar:'امريكانو (وسط)', en:'Americano (Medium)', price:8, cal:10, img:IMG_DEFAULT},
+        {
+          ar:'امريكانو',
+          en:'Americano',
+          price:6,
+          cal:5,
+          img:IMG_DEFAULT,
+          defaultVariantKey:'small',
+          variantHeadingKey:'size',
+          variantNoteKey:'size',
+          variants:[
+            {key:'small', ar:'حجم صغير', en:'Small', price:6, cal:5},
+            {key:'large', ar:'حجم كبير', en:'Large', price:8, cal:10}
+          ]
+        },
         {ar:'اسبريسو', en:'Espresso', price:6, cal:5, img:IMG_DEFAULT},
         {ar:'قهوة تركي', en:'Turkish Coffee', price:8, cal:15, img:IMG_DEFAULT},
         {ar:'جبنة (قهوة سودانية)', en:'Jabana (Sudanese Coffee)', price:6, cal:10, img:'https://i.postimg.cc/Wzg42WLQ/image.png'},
@@ -23,6 +46,22 @@
       ],
       tea: [
         {ar:'شاي', en:'Tea', price:3, cal:2, img:IMG_DEFAULT},
+        {ar:'شاي تلقيمة', en:'Loose Leaf Tea', price:7, cal:5, img:IMG_DEFAULT, mixins:GINGER_LEMON_MIXINS},
+        {
+          ar:'زنجبيل بالليمون',
+          en:'Ginger Lemon Drink',
+          price:7,
+          cal:20,
+          img:IMG_DEFAULT,
+          defaultVariantKey:'small',
+          variantHeadingKey:'size',
+          variantNoteKey:'size',
+          variants:[
+            {key:'small', ar:'حجم صغير', en:'Small', price:7, cal:20},
+            {key:'large', ar:'حجم كبير', en:'Large', price:9, cal:28}
+          ],
+          mixins:GINGER_LEMON_MIXINS
+        },
         {ar:'شاي مقنن', en:'Strong Tea', price:6, cal:2, img:IMG_DEFAULT},
         {ar:'شاي حليب', en:'Milk Tea', price:6, cal:140, img:IMG_DEFAULT},
         {ar:'هوت شوكلت', en:'Hot Chocolate', price:13, cal:300, img:IMG_DEFAULT},
