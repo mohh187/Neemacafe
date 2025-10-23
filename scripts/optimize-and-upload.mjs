@@ -43,7 +43,13 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+const configuredDirs = (process.env.IMAGE_SOURCE_DIRS || '')
+  .split(',')
+  .map((entry) => entry.trim())
+  .filter(Boolean);
+
 const possibleDirs = [
+  ...configuredDirs,
   'public/images',
   'assets/images',
   'static',
@@ -51,8 +57,11 @@ const possibleDirs = [
   'admin/images'
 ];
 
+const seenDirs = new Set();
 const srcDirs = [];
 for (const rel of possibleDirs) {
+  if (seenDirs.has(rel)) continue;
+  seenDirs.add(rel);
   try {
     const abs = path.resolve(process.cwd(), rel);
     const stats = await fs.stat(abs);
@@ -135,10 +144,12 @@ for (const baseDir of srcDirs) {
 
     console.log(`Uploading ${absolutePath} -> ${fileName}`);
     const result = await uploadBuffer(optimized, uploadOptions);
-    uploadMap.push({ local: path.relative(process.cwd(), absolutePath), url: result.secure_url });
+    const relativePath = path.relative(process.cwd(), absolutePath).split(path.sep).join('/');
+    uploadMap.push({ local: relativePath, url: result.secure_url });
   }
 }
 
 const outputPath = path.join(process.cwd(), 'scripts', 'upload-map.json');
+uploadMap.sort((a, b) => a.local.localeCompare(b.local));
 await fs.writeFile(outputPath, JSON.stringify(uploadMap, null, 2));
 console.log(`Wrote ${outputPath} with ${uploadMap.length} entries.`);

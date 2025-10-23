@@ -23,7 +23,7 @@ Static assets are now optimized and hosted on Cloudinary to keep the repository 
 - `scripts/update-menu-data.mjs` – rewrites image URLs inside the shared menu dataset so that every drink image points to the freshly uploaded Cloudinary URLs.
 - `scripts/git-cleanup.sh` – runs [BFG Repo-Cleaner](https://rtyley.github.io/bfg-repo-cleaner/) to purge large blobs from history after the assets move.
 
-Create `scripts/.env` (see `scripts/.env.example`) with your Cloudinary credentials plus `BUILD_DIR` and `MENU_DATA_FILE` overrides if needed, then run:
+Create `scripts/.env` (see `scripts/.env.example`) with your Cloudinary credentials plus `BUILD_DIR`, `MENU_DATA_FILE`, and optional `IMAGE_SOURCE_DIRS` overrides if needed, then run:
 
 ```bash
 npm ci

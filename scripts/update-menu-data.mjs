@@ -28,10 +28,33 @@ if (!envLoaded) {
 }
 
 const menuDataFile = process.env.MENU_DATA_FILE || 'menu-data.js';
+try {
+  await fs.access(menuDataFile);
+} catch (error) {
+  if (error.code === 'ENOENT') {
+    throw new Error(`MENU_DATA_FILE not found at ${menuDataFile}. Update your .env or run from the project root.`);
+  }
+  throw error;
+}
 const uploadMapPath = path.join(process.cwd(), 'scripts', 'upload-map.json');
 
-const rawMap = await fs.readFile(uploadMapPath, 'utf8');
-const uploadMap = JSON.parse(rawMap);
+let rawMap;
+try {
+  rawMap = await fs.readFile(uploadMapPath, 'utf8');
+} catch (error) {
+  if (error.code === 'ENOENT') {
+    console.warn(`Upload manifest not found at ${uploadMapPath}. Run img:upload first.`);
+    process.exit(0);
+  }
+  throw error;
+}
+
+let uploadMap;
+try {
+  uploadMap = JSON.parse(rawMap);
+} catch (error) {
+  throw new Error(`Unable to parse ${uploadMapPath}: ${error.message}`);
+}
 
 const byRelative = new Map();
 const byBase = new Map();
