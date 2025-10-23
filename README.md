@@ -15,6 +15,28 @@ This repo contains two builds of the interactive Neema Café menu:
 - الطلبات المخزنة في قاعدة البيانات تتضمن ملف العميل، إجمالي المشروبات، خصومات الولاء، نوع الجهاز، اللغة، وعنوان الـ IP.
 - لوحة التحكم الإدارية تعرض الطلبات ببيانات الجهاز وتتيح تصدير تقارير CSV لكل من الطلبات والعملاء عبر `/api/orders` و`/api/customers`.
 
+## Asset pipeline and hosting
+
+Static assets are now optimized and hosted on Cloudinary to keep the repository lean and avoid paid storage tiers. The workflow lives in `scripts/`:
+
+- `scripts/optimize-and-upload.mjs` – walks common image folders, converts assets to WebP with `sharp`, uploads them to Cloudinary, and writes a manifest to `scripts/upload-map.json`.
+- `scripts/update-menu-data.mjs` – rewrites image URLs inside the shared menu dataset so that every drink image points to the freshly uploaded Cloudinary URLs.
+- `scripts/git-cleanup.sh` – runs [BFG Repo-Cleaner](https://rtyley.github.io/bfg-repo-cleaner/) to purge large blobs from history after the assets move.
+
+Create `scripts/.env` (see `scripts/.env.example`) with your Cloudinary credentials plus `BUILD_DIR` and `MENU_DATA_FILE` overrides if needed, then run:
+
+```bash
+npm ci
+npm run img:upload
+npm run img:rewrite
+```
+
+Commit the resulting manifest and menu data changes. After assets move, run `bash scripts/git-cleanup.sh` to shrink the Git history.
+
+## Builds and deployment
+
+The Netlify build (`npm run build`) copies the static bundle into `dist/`, which matches `BUILD_DIR` in `netlify.toml`. A GitHub Action in `.github/workflows/deploy-netlify.yml` installs dependencies, builds, and triggers a Netlify deploy on pushes to `main`. Set `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` secrets in the repository to enable automated deployments.
+
 ## Using the shared menu data in another page
 
 If you are copying the menu UI into a new HTML file, add the shared dataset before the main script that renders the menu:
