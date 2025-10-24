@@ -24,6 +24,8 @@
           cal:5,
           img:IMG_DEFAULT,
           defaultVariantKey:'small',
+          variantHeadingKey:'size',
+          variantNoteKey:'size',
           variants:[
             {key:'small', ar:'حجم صغير', en:'Small', price:6, cal:5},
             {key:'large', ar:'حجم كبير', en:'Large', price:8, cal:10}
@@ -46,12 +48,15 @@
         {ar:'شاي', en:'Tea', price:3, cal:2, img:IMG_DEFAULT},
         {ar:'شاي تلقيمة', en:'Loose Leaf Tea', price:7, cal:5, img:IMG_DEFAULT, mixins:GINGER_LEMON_MIXINS},
         {
+          ar:'زنجبيل بالليمون',
           ar:'مشروب الزنجبيل بالليمون',
           en:'Ginger Lemon Drink',
           price:7,
           cal:20,
           img:IMG_DEFAULT,
           defaultVariantKey:'small',
+          variantHeadingKey:'size',
+          variantNoteKey:'size',
           variants:[
             {key:'small', ar:'حجم صغير', en:'Small', price:7, cal:20},
             {key:'large', ar:'حجم كبير', en:'Large', price:9, cal:28}

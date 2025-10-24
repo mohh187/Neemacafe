@@ -472,10 +472,16 @@ const STRINGS = {
     water_cold:'بارد (من الثلاجة)', water_room:'غير مبرد (درجة الغرفة)',
     kcal_unknown:'غير متوفر',
     variant_heading:'اختر النكهة',
+    variant_heading_flavor:'اختر النكهة',
+    variant_heading_size:'اختر الحجم',
     variant_note:'اختر إحدى النكهات لإكمال الطلب (سعر سفن آب ظاهر افتراضياً).',
+    variant_note_flavor:'اختر إحدى النكهات لإكمال الطلب (سعر سفن آب ظاهر افتراضياً).',
+    variant_note_size:'اختر الحجم المناسب لإكمال الطلب.',
     variant_selected:'تم اختيار {variant}.',
     variant_default_tag:' (افتراضي)',
     variant_required:'يرجى اختيار النكهة قبل إضافة الطلب.',
+    variant_required_flavor:'يرجى اختيار النكهة قبل إضافة الطلب.',
+    variant_required_size:'يرجى اختيار الحجم قبل إضافة الطلب.',
     select_table:'اختر رقم الطاولة',
     table_modal_title:'حدد رقم الطاولة',
     table_modal_desc:'يجب اختيار رقم الطاولة قبل متابعة الطلب.',
@@ -534,10 +540,16 @@ const STRINGS = {
     water_cold:'Cold (chilled)', water_room:'Room temperature',
     kcal_unknown:'N/A',
     variant_heading:'Choose a flavor',
+    variant_heading_flavor:'Choose a flavor',
+    variant_heading_size:'Choose a size',
     variant_note:'Pick a flavor to continue (7up price shows by default).',
+    variant_note_flavor:'Pick a flavor to continue (7up price shows by default).',
+    variant_note_size:'Please choose a size to complete the order.',
     variant_selected:'Selected: {variant}.',
     variant_default_tag:' (Default)',
     variant_required:'Please choose a flavor before adding to the cart.',
+    variant_required_flavor:'Please choose a flavor before adding to the cart.',
+    variant_required_size:'Please choose a size before adding to the cart.',
     select_table:'Select a table number',
     table_modal_title:'Choose your table',
     table_modal_desc:'Please pick a table number before continuing.',
@@ -1675,6 +1687,52 @@ function getVariantCalories(it, variant){
   const base = Number(it && it.cal);
   return Number.isFinite(base) ? base : NaN;
 }
+function getVariantHeadingKey(it){
+  if(!it) return '';
+  const raw = it.variantHeadingKey || it.variantKind || '';
+  return normalizeVariantKey(raw);
+}
+function getVariantNoteKey(it){
+  if(!it) return '';
+  const raw = it.variantNoteKey || it.variantHeadingKey || it.variantKind || '';
+  return normalizeVariantKey(raw);
+}
+function resolveVariantHeading(it, langCode = lang){
+  if(!it || !isVariantItem(it)) return '';
+  const strings = STRINGS[langCode] || {};
+  const key = getVariantHeadingKey(it);
+  if(key){
+    const specific = strings[`variant_heading_${key}`];
+    if(typeof specific === 'string' && specific.trim()) return specific;
+  }
+  return strings.variant_heading || '';
+}
+function resolveVariantNote(it, langCode = lang){
+  if(!it || !isVariantItem(it)) return '';
+  const strings = STRINGS[langCode] || {};
+  const key = getVariantNoteKey(it);
+  if(key){
+    const lookup = `variant_note_${key}`;
+    if(Object.prototype.hasOwnProperty.call(strings, lookup)){
+      const specific = strings[lookup];
+      if(typeof specific === 'string') return specific;
+    }
+  }
+  return strings.variant_note || '';
+}
+function resolveVariantRequired(it, langCode = lang){
+  const strings = STRINGS[langCode] || {};
+  if(!it || !isVariantItem(it)) return strings.variant_required || '';
+  const key = getVariantNoteKey(it);
+  if(key){
+    const lookup = `variant_required_${key}`;
+    if(Object.prototype.hasOwnProperty.call(strings, lookup)){
+      const specific = strings[lookup];
+      if(typeof specific === 'string') return specific;
+    }
+  }
+  return strings.variant_required || '';
+}
 function getItemDisplayMetrics(it){
   if(!isVariantItem(it)){
     const price = Number(it && it.price);
@@ -1713,7 +1771,7 @@ function updateVariantNote(it){
     const template = STRINGS[lang].variant_selected || '';
     noteEl.textContent = template.replace('{variant}', label);
   } else {
-    noteEl.textContent = STRINGS[lang].variant_note || '';
+    noteEl.textContent = resolveVariantNote(it);
   }
 }
 function renderVariantOptions(it){
@@ -1728,7 +1786,7 @@ function renderVariantOptions(it){
   }
   group.style.display = 'flex';
   const headingEl = document.getElementById('variantHeading');
-  if(headingEl) headingEl.textContent = STRINGS[lang].variant_heading || '';
+  if(headingEl) headingEl.textContent = resolveVariantHeading(it);
   optionsEl.innerHTML='';
   const defaultVariant = getDefaultVariant(it);
   const defaultKey = variantKeyFromData(defaultVariant);
@@ -1800,7 +1858,7 @@ function updateCustomizationLabels(){
   document.querySelector('#lblWaterCold').textContent = STRINGS[lang].water_cold;
   document.querySelector('#lblWaterRoom').textContent = STRINGS[lang].water_room;
   const headingEl = document.getElementById('variantHeading');
-  if(headingEl) headingEl.textContent = STRINGS[lang].variant_heading || '';
+  if(headingEl) headingEl.textContent = resolveVariantHeading(currentProduct);
   updateVariantNote(currentProduct);
   renderCustomMixins(currentProduct, true);
   if(currentProduct && isVariantItem(currentProduct)){
@@ -1898,7 +1956,7 @@ function addCurrentToCart(){
   const q = parseInt($('#pQty').textContent)||1;
   const variant = getSelectedVariant(currentProduct);
   if(isVariantItem(currentProduct) && !variant){
-    toast(STRINGS[lang].variant_required || STRINGS[lang].variant_note || '');
+    toast(resolveVariantRequired(currentProduct) || STRINGS[lang].variant_note || '');
     return;
   }
   const customization = gatherCustomization(variant);
