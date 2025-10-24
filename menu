@@ -487,6 +487,34 @@
       pendingOrderSyncPayload = null;
       return await sendOrderToDB(payload);
     }
+
+    async function syncCustomerRecord(total){
+      const profile = customerProfile || {};
+      const phone = (profile.phone || '').trim();
+      if(!phone) return;
+      let amount = Number(total);
+      if(!Number.isFinite(amount) || amount <= 0){
+        amount = Number(cartTotal());
+      }
+      const payload = {
+        name: profile.name || '',
+        phone,
+        last_order_value: Math.max(amount, 0)
+      };
+      const device = collectDeviceInfo();
+      if(device && device.type){
+        payload.device_type = device.type;
+      }
+      try{
+        await fetch('/api/record-customer', {
+          method:'POST',
+          headers:{ 'content-type':'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }catch(err){
+        console.warn('record-customer sync failed', err);
+      }
+    }
     let selectedTable = '';
     const ORDER_LOG_KEY = 'nima.orderLog';
     const CUSTOMER_PROFILE_KEY = 'nima.customerProfile';
@@ -1731,6 +1759,8 @@
         drink_units: loyaltyCalc.eligibleDrinks,
         cart: orderEntry.items,
         customer: orderEntry.customer,
+        device: collectDeviceInfo(),
+        skip_customer_upsert: true
         device: collectDeviceInfo()
       };
 
@@ -1761,6 +1791,7 @@
           toast(STRINGS[lang].order_sent_saved);
 
           try { await afterTelegramHook(total); } catch (e) { console.warn('afterTelegramHook failed', e); }
+          try { await syncCustomerRecord(total); } catch (e) { console.warn('record-customer hook failed', e); }
 
           // Always clear cart on delivery success
           cart=[];

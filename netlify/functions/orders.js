@@ -86,6 +86,7 @@ export default async (req) => {
     const total = sanitizeNumber(body.total, subtotal);
     const discountCode = sanitizeString(body.discount_code);
     const loyaltyDiscount = sanitizeNumber(body.loyalty_discount, 0);
+    const skipCustomerUpsert = Boolean(body.skip_customer_upsert);
     const customer = body && body.customer ? body.customer : {};
     const customerKeyRaw = sanitizeString(customer.id || '');
     const customerKey = customerKeyRaw || 'guest';
@@ -105,6 +106,7 @@ export default async (req) => {
     const ipAddress = sanitizeString(getClientIp(req));
     const { rewards: loyaltyRewards, summary: loyaltySummary } = buildLoyaltySummary(body);
     const drinkUnits = sanitizeNumber(loyaltySummary.drinkUnits, 0);
+    const lastOrderValue = total;
 
     const [row] = await sql`
       INSERT INTO orders (
@@ -121,6 +123,43 @@ export default async (req) => {
       )
       RETURNING *`;
 
+    if (!skipCustomerUpsert) {
+      try {
+        if (customerKey) {
+          const totalRewards = loyaltySummary.freebiesEarned;
+          await sql`
+            INSERT INTO customers (
+              customer_key, name, phone, total_orders, total_spent,
+              total_drinks, total_rewards, last_order_at, last_device,
+              last_user_agent, last_ip, last_order_value, device_type,
+              ip_address
+            )
+            VALUES (
+              ${customerKey}, NULLIF(${customerName}, ''), NULLIF(${customerPhone}, ''), 1, ${total},
+              ${drinkUnits}, ${totalRewards}, now(), NULLIF(${deviceInfo.type}, ''),
+              NULLIF(${userAgent}, ''), NULLIF(${ipAddress}, ''), ${lastOrderValue},
+              NULLIF(${deviceInfo.type}, ''), NULLIF(${ipAddress}, '')
+            )
+            ON CONFLICT (customer_key) DO UPDATE SET
+              name = COALESCE(EXCLUDED.name, customers.name),
+              phone = COALESCE(EXCLUDED.phone, customers.phone),
+              total_orders = customers.total_orders + 1,
+              total_spent = customers.total_spent + EXCLUDED.total_spent,
+              total_drinks = customers.total_drinks + EXCLUDED.total_drinks,
+              total_rewards = customers.total_rewards + EXCLUDED.total_rewards,
+              last_order_at = now(),
+              last_order_value = EXCLUDED.last_order_value,
+              last_device = COALESCE(EXCLUDED.last_device, customers.last_device),
+              device_type = COALESCE(EXCLUDED.device_type, customers.device_type),
+              last_user_agent = COALESCE(EXCLUDED.last_user_agent, customers.last_user_agent),
+              ip_address = COALESCE(EXCLUDED.ip_address, customers.ip_address),
+              last_ip = COALESCE(EXCLUDED.last_ip, customers.last_ip),
+              updated_at = now();
+          `;
+        }
+      } catch (err) {
+        console.error('Failed to upsert customer', err);
+      }
     try {
       if (customerKey) {
         const totalRewards = loyaltySummary.freebiesEarned;

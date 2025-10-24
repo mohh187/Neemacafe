@@ -52,6 +52,9 @@ CREATE TABLE IF NOT EXISTS customers (
   last_device text,
   last_user_agent text,
   last_ip text,
+  last_order_value numeric(10,2) DEFAULT 0,
+  device_type text,
+  ip_address text,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -66,5 +69,8 @@ ALTER TABLE customers ADD COLUMN IF NOT EXISTS last_order_at timestamptz;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS last_device text;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS last_user_agent text;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS last_ip text;
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS last_order_value numeric(10,2) DEFAULT 0;
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS device_type text;
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS ip_address text;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
