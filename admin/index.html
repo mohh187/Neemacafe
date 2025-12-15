@@ -288,13 +288,13 @@ const API = {
 };
 
 const CATEGORY_LABELS = {
-  'hot-coffee': '☕ قهوة ساخنة',
-  'hot-tea': '🍵 شاي',
-  'cold-coffee': '❄️ قهوة باردة',
-  'cold-mojito': '🍹 موهيتو',
-  'cold-other': '🥤 مشروبات باردة',
-  'dessert-cake': '🍰 كيك',
-  'dessert-side': '🍪 جانبيات'
+  'hot-coffee': '☕ مشروبات ساخنة',
+  'hot-tea': '☕ مشروبات ساخنة',
+  'cold-coffee': '❄️ مشروبات باردة',
+  'cold-mojito': '❄️ مشروبات باردة',
+  'cold-other': '❄️ مشروبات باردة',
+  'dessert-cake': '🍰 حلويات',
+  'dessert-side': '🍰 حلويات'
 };
 
 let TOKEN = localStorage.getItem('admin_token') || '';
@@ -452,7 +452,10 @@ function fillItemsTable(items) {
     return;
   }
 
-  allItems.forEach(item => {
+  // Sort items by ordering
+  const sortedItems = [...allItems].sort((a, b) => (a.ordering || 0) - (b.ordering || 0));
+  
+  sortedItems.forEach(item => {
     const tr = document.createElement('tr');
     const categoryLabel = item.category ? (CATEGORY_LABELS[item.category] || item.category) : '-';
     const imgCell = item.img_url 
