@@ -1,97 +1,280 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+<head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>لوحة التحكم</title>
+<title>لوحة التحكم - إدارة القائمة | Menu Dashboard</title>
 <style>
-body{font-family:system-ui;-webkit-font-smoothing:antialiased;margin:0;background:#fafafa}
-.wrap{max-width:960px;margin:auto;padding:16px}
-h1{margin:0 0 12px}
-.card{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:12px;margin:12px 0}
-.row{display:flex;gap:8px;flex-wrap:wrap}
-input,button{padding:10px;border-radius:10px;border:1px solid #ddd}
-button{cursor:pointer}
+:root{
+  --brand:#8b5e3c;--brand-light:#d4a373;--brand-dark:#70492d;
+  --bg:#fafafa;--card:#fff;--text:#1f1f1f;--muted:#6b6b6b;--border:#e9e6e3;
+  --success:#27ae60;--danger:#e74c3c;--warning:#f39c12;--info:#3498db;
+  --radius:12px;--shadow:0 4px 12px rgba(0,0,0,.08);
+}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1200px;margin:auto;padding:20px}
+h1{margin:0 0 8px;display:flex;align-items:center;gap:12px;font-size:28px}
+h1 .emoji{font-size:32px}
+h2{margin:20px 0 12px;font-size:20px;color:var(--brand)}
+h3{margin:0 0 12px;font-size:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin:16px 0;box-shadow:var(--shadow)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.col{flex:1;min-width:200px}
+input,select,textarea{padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px;width:100%;box-sizing:border-box}
+textarea{min-height:80px;resize:vertical;font-family:inherit}
+button{padding:10px 16px;border-radius:10px;border:none;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s}
+button:hover{transform:translateY(-1px);box-shadow:0 4px 8px rgba(0,0,0,.15)}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-success{background:var(--success);color:#fff}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-warning{background:var(--warning);color:#fff}
+.btn-info{background:var(--info);color:#fff}
+.btn-secondary{background:#95a5a6;color:#fff}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-sm{padding:6px 10px;font-size:12px}
 table{width:100%;border-collapse:collapse}
-th,td{padding:8px;border-bottom:1px solid #eee}
-.badge{font-weight:700}
-.table-wrap{overflow:auto}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
-.toolbar button{flex:1 1 160px}
-.note{color:#777;font-size:12px}
+th,td{padding:10px;text-align:right;border-bottom:1px solid var(--border)}
+th{background:#f8f8f8;font-weight:700;position:sticky;top:0;z-index:1}
+.badge{font-weight:700;color:var(--brand)}
+.table-wrap{overflow:auto;max-height:600px;border-radius:var(--radius);border:1px solid var(--border)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+.toolbar button{flex:1 1 140px}
+.note{color:var(--muted);font-size:13px;margin-top:8px;line-height:1.6}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:var(--muted)}
+.img-preview{width:100px;height:100px;border-radius:10px;border:1px solid var(--border);object-fit:contain;background:#f8f8f8;margin-top:8px}
+.category-badge{display:inline-block;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;background:var(--brand-light);color:#fff;margin:2px}
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:16px}
+.tab{padding:10px 16px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-weight:600;border-bottom:3px solid transparent;transition:all .2s}
+.tab.active{color:var(--brand);border-bottom-color:var(--brand)}
+.tab:hover{color:var(--brand-dark)}
+.hidden{display:none!important}
+.alert{padding:12px 16px;border-radius:10px;margin:12px 0;font-size:14px}
+.alert-success{background:#d4edda;color:#155724;border:1px solid #c3e6cb}
+.alert-danger{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb}
+.alert-info{background:#d1ecf1;color:#0c5460;border:1px solid #bee5eb}
+.variant-item{background:#f8f8f8;padding:10px;border-radius:8px;margin:8px 0;border:1px solid var(--border)}
+.variant-item .variant-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.variant-item .variant-row input{flex:1}
+.mixin-item{background:#f0f0f0;padding:8px;border-radius:6px;margin:6px 0;display:flex;gap:8px;align-items:center}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:20px 0}
+.stat-card{background:linear-gradient(135deg,var(--brand),var(--brand-light));color:#fff;padding:20px;border-radius:var(--radius);box-shadow:var(--shadow)}
+.stat-card h4{margin:0;font-size:14px;opacity:.9}
+.stat-card .value{font-size:32px;font-weight:800;margin:8px 0}
+.stat-card .label{font-size:12px;opacity:.8}
+#login{max-width:400px;margin:100px auto}
 </style>
+</head>
 <body>
 <div class="wrap">
-  <h1>لوحة التحكم</h1>
+  <h1><span class="emoji">☕</span> لوحة التحكم - قائمة نيمة كافيه</h1>
 
   <div id="login" class="card">
-    <div class="row">
-      <input id="pw" placeholder="كلمة سر الإدارة" type="password" style="flex:1"/>
-      <button id="doLogin">دخول</button>
+    <h3>تسجيل الدخول</h3>
+    <div class="form-group">
+      <label>كلمة السر</label>
+      <input id="pw" placeholder="أدخل كلمة المرور" type="password"/>
     </div>
-    <small>ضع كلمة السر المساوية لمتغير البيئة <code>ADMIN_PASSWORD</code>.</small>
+    <button id="doLogin" class="btn-primary" style="width:100%">دخول</button>
+    <div class="note">استخدم كلمة السر المطابقة لمتغير البيئة <code>ADMIN_PASSWORD</code></div>
   </div>
 
-  <div id="app" style="display:none">
-    <div class="card">
-      <h3>إضافة/تعديل عنصر</h3>
-      <div class="row">
-        <input id="id" placeholder="id (فارغ للإضافة الجديدة)" style="width:120px">
-        <input id="name_ar" placeholder="الاسم بالعربية" style="flex:1">
-        <input id="name_en" placeholder="الاسم بالإنجليزية" style="flex:1">
-        <input id="price" placeholder="السعر" type="number" step="0.01" style="width:160px">
-        <input id="calories" placeholder="سعرات" type="number" style="width:120px">
-        <input id="img_url" placeholder="رابط الصورة (SVG)" style="flex:1">
-        <button id="save">حفظ</button>
+  <div id="app" class="hidden">
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card">
+        <h4>إجمالي العناصر</h4>
+        <div class="value" id="stat-items">0</div>
+        <div class="label">عنصر في القائمة</div>
+      </div>
+      <div class="stat-card" style="background:linear-gradient(135deg,#27ae60,#2ecc71)">
+        <h4>إجمالي الطلبات</h4>
+        <div class="value" id="stat-orders">0</div>
+        <div class="label">طلب مستلم</div>
+      </div>
+      <div class="stat-card" style="background:linear-gradient(135deg,#3498db,#5dade2)">
+        <h4>العملاء</h4>
+        <div class="value" id="stat-customers">0</div>
+        <div class="label">عميل مسجل</div>
       </div>
     </div>
 
-    <div class="card">
-      <h3>إدارة البيانات</h3>
-      <div class="toolbar">
-        <button id="refreshBtn">تحديث البيانات</button>
-        <button id="exportOrdersBtn">تصدير الطلبات (CSV)</button>
-        <button id="exportCustomersBtn">تصدير العملاء (CSV)</button>
-      </div>
-      <div class="note">تتضمن الطلبات المخزنة معلومات الجهاز وعنوان الـ IP لكل عميل.</div>
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="menu">📋 إدارة القائمة</button>
+      <button class="tab" data-tab="orders">🛒 الطلبات</button>
+      <button class="tab" data-tab="customers">👥 العملاء</button>
     </div>
 
-    <div class="card">
-      <h3>العناصر</h3>
-      <div class="table-wrap">
-        <table id="itemsTbl">
-          <thead><tr><th>ID</th><th>الاسم</th><th>السعر</th><th>سعرات</th><th>صورة</th><th>أوامر</th></tr></thead>
-          <tbody></tbody>
-        </table>
+    <!-- Menu Management Tab -->
+    <div id="tab-menu" class="tab-content">
+      <div class="card">
+        <h3 id="form-title">إضافة عنصر جديد</h3>
+        <div id="alert-container"></div>
+        
+        <form id="item-form">
+          <input type="hidden" id="item-id">
+          
+          <div class="row">
+            <div class="col">
+              <div class="form-group">
+                <label>الاسم بالعربية *</label>
+                <input id="name-ar" placeholder="مثال: اسبريسو" required>
+              </div>
+            </div>
+            <div class="col">
+              <div class="form-group">
+                <label>الاسم بالإنجليزية *</label>
+                <input id="name-en" placeholder="Example: Espresso" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col">
+              <div class="form-group">
+                <label>السعر (ريال) *</label>
+                <input id="price" type="number" step="0.01" min="0" placeholder="15.00" required>
+              </div>
+            </div>
+            <div class="col">
+              <div class="form-group">
+                <label>السعرات الحرارية</label>
+                <input id="calories" type="number" min="0" placeholder="120">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>رابط الصورة</label>
+            <input id="img-url" type="url" placeholder="https://...">
+            <img id="img-preview" class="img-preview hidden" alt="معاينة الصورة">
+          </div>
+
+          <div class="form-group">
+            <label>التصنيف</label>
+            <select id="category">
+              <option value="">-- اختر التصنيف --</option>
+              <optgroup label="المشروبات الساخنة">
+                <option value="hot-coffee">☕ قهوة ساخنة</option>
+                <option value="hot-tea">🍵 شاي ومشروبات ساخنة</option>
+              </optgroup>
+              <optgroup label="المشروبات الباردة">
+                <option value="cold-coffee">❄️ قهوة باردة</option>
+                <option value="cold-mojito">🍹 موهيتو</option>
+                <option value="cold-other">🥤 مشروبات باردة أخرى</option>
+              </optgroup>
+              <optgroup label="الحلى">
+                <option value="dessert-cake">🍰 كيك</option>
+                <option value="dessert-side">🍪 جانبيات</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="has-variants"> هذا العنصر له أحجام/نكهات مختلفة
+            </label>
+          </div>
+
+          <div id="variants-section" class="hidden">
+            <h4>الأحجام/النكهات</h4>
+            <div id="variants-container"></div>
+            <button type="button" class="btn-secondary btn-sm" id="add-variant">+ إضافة حجم/نكهة</button>
+          </div>
+
+          <div class="toolbar">
+            <button type="submit" class="btn-success">💾 حفظ العنصر</button>
+            <button type="button" class="btn-ghost" id="cancel-edit">إلغاء</button>
+            <button type="button" class="btn-danger" id="delete-current" class="hidden">🗑️ حذف</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>إدارة العناصر</h3>
+        <div class="toolbar">
+          <button class="btn-info" id="refresh-items">🔄 تحديث</button>
+          <button class="btn-warning" id="export-menu">📥 تصدير القائمة</button>
+          <input type="text" id="search-items" placeholder="🔍 بحث في العناصر..." style="flex:2">
+        </div>
+        
+        <div class="table-wrap">
+          <table id="items-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>صورة</th>
+                <th>الاسم</th>
+                <th>التصنيف</th>
+                <th>السعر</th>
+                <th>السعرات</th>
+                <th>أوامر</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <div class="card">
-      <h3>آخر الطلبات</h3>
-      <div class="table-wrap">
-        <table id="ordersTbl">
-          <thead>
-            <tr>
-              <th>ID</th><th>التاريخ</th><th>العميل</th><th>الهاتف</th><th>طاولة</th>
-              <th>الإجمالي</th><th>خصم الولاء</th><th>عدد المشروبات</th><th>الجهاز</th><th>IP</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+    <!-- Orders Tab -->
+    <div id="tab-orders" class="tab-content hidden">
+      <div class="card">
+        <h3>آخر الطلبات</h3>
+        <div class="toolbar">
+          <button class="btn-info" id="refresh-orders">🔄 تحديث</button>
+          <button class="btn-warning" id="export-orders">📥 تصدير الطلبات CSV</button>
+        </div>
+        <div class="note">تعرض القائمة آخر 200 طلب مع تفاصيل العميل والجهاز</div>
+        <div class="table-wrap">
+          <table id="orders-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>التاريخ</th>
+                <th>العميل</th>
+                <th>الهاتف</th>
+                <th>طاولة</th>
+                <th>الإجمالي</th>
+                <th>خصم الولاء</th>
+                <th>المشروبات</th>
+                <th>الجهاز</th>
+                <th>IP</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <div class="card">
-      <h3>العملاء</h3>
-      <div class="table-wrap">
-        <table id="customersTbl">
-          <thead>
-            <tr>
-              <th>العميل</th><th>الهاتف</th><th>الطلبات</th><th>إجمالي الصرف</th>
-              <th>إجمالي المشروبات</th><th>هدايا الولاء</th><th>آخر جهاز</th><th>آخر IP</th><th>آخر طلب</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+    <!-- Customers Tab -->
+    <div id="tab-customers" class="tab-content hidden">
+      <div class="card">
+        <h3>قائمة العملاء</h3>
+        <div class="toolbar">
+          <button class="btn-info" id="refresh-customers">🔄 تحديث</button>
+          <button class="btn-warning" id="export-customers">📥 تصدير العملاء CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table id="customers-table">
+            <thead>
+              <tr>
+                <th>العميل</th>
+                <th>الهاتف</th>
+                <th>الطلبات</th>
+                <th>الإنفاق</th>
+                <th>المشروبات</th>
+                <th>الهدايا</th>
+                <th>آخر جهاز</th>
+                <th>آخر IP</th>
+                <th>آخر طلب</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -103,63 +286,90 @@ const API = {
   orders: '/api/orders',
   customers: '/api/customers'
 };
-let TOKEN = localStorage.getItem('admin_token') || '';
-let cachedOrders = [];
-let cachedCustomers = [];
 
-function authHeaders(includeJson = true){
+const CATEGORY_LABELS = {
+  'hot-coffee': '☕ قهوة ساخنة',
+  'hot-tea': '🍵 شاي',
+  'cold-coffee': '❄️ قهوة باردة',
+  'cold-mojito': '🍹 موهيتو',
+  'cold-other': '🥤 مشروبات باردة',
+  'dessert-cake': '🍰 كيك',
+  'dessert-side': '🍪 جانبيات'
+};
+
+let TOKEN = localStorage.getItem('admin_token') || '';
+let allItems = [];
+let allOrders = [];
+let allCustomers = [];
+let currentEditId = null;
+let variantCounter = 0;
+
+function authHeaders(includeJson = true) {
   const h = {};
-  if(includeJson) h['content-type'] = 'application/json';
-  if(TOKEN) h['authorization'] = 'Bearer ' + TOKEN;
+  if (includeJson) h['content-type'] = 'application/json';
+  if (TOKEN) h['authorization'] = 'Bearer ' + TOKEN;
   return h;
 }
 
-async function login(){
+async function login() {
   const pw = document.getElementById('pw').value.trim();
-  if(!pw){ alert('أدخل كلمة السر'); return; }
+  if (!pw) {
+    alert('أدخل كلمة السر / Enter password');
+    return;
+  }
   TOKEN = pw;
   localStorage.setItem('admin_token', TOKEN);
-  boot();
+  
+  try {
+    await boot();
+  } catch (err) {
+    console.error('Login error:', err);
+    alert('خطأ في تسجيل الدخول. تحقق من وحدة التحكم / Login error. Check console');
+    TOKEN = '';
+    localStorage.removeItem('admin_token');
+  }
 }
 
-async function listItems(){ return (await fetch(API.items)).json(); }
-async function addItem(it){ return (await fetch(API.items, { method:'POST', headers:authHeaders(), body: JSON.stringify(it) })).json(); }
-async function updateItem(id, it){ return (await fetch(API.items + '?id=' + id, { method:'PUT', headers:authHeaders(), body: JSON.stringify(it) })).json(); }
-async function deleteItem(id){ return (await fetch(API.items + '?id=' + id, { method:'DELETE', headers:authHeaders(false) })).json(); }
-async function listOrders(){ return (await fetch(API.orders, { headers:authHeaders(false) })).json(); }
-async function listCustomers(){ return (await fetch(API.customers, { headers:authHeaders(false) })).json(); }
+async function listItems() { return (await fetch(API.items)).json(); }
+async function addItem(it) { return (await fetch(API.items, { method: 'POST', headers: authHeaders(), body: JSON.stringify(it) })).json(); }
+async function updateItem(id, it) { return (await fetch(API.items + '?id=' + id, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(it) })).json(); }
+async function deleteItem(id) { return (await fetch(API.items + '?id=' + id, { method: 'DELETE', headers: authHeaders(false) })).json(); }
+async function listOrders() { return (await fetch(API.orders, { headers: authHeaders(false) })).json(); }
+async function listCustomers() { return (await fetch(API.customers, { headers: authHeaders(false) })).json(); }
 
-function escapeHtml(str){
+function showAlert(message, type = 'info') {
+  const container = document.getElementById('alert-container');
+  container.innerHTML = `<div class="alert alert-${type}">${escapeHtml(message)}</div>`;
+  setTimeout(() => container.innerHTML = '', 5000);
+}
+
+function escapeHtml(str) {
   return String(str === undefined || str === null ? '' : str).replace(/[&<>"']/g, c => ({
-    '&':'&amp;',
-    '<':'&lt;',
-    '>':'&gt;',
-    '"':'&quot;',
-    "'":'&#39;'
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
 }
 
-function formatCurrency(value){
+function formatCurrency(value) {
   const num = Number(value);
-  if(!Number.isFinite(num)) return '-';
-  return num.toLocaleString('ar-SA', { minimumFractionDigits:0, maximumFractionDigits:2 });
+  if (!Number.isFinite(num)) return '-';
+  return num.toLocaleString('ar-SA', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
-function formatDate(value){
-  if(!value) return '-';
+function formatDate(value) {
+  if (!value) return '-';
   const d = new Date(value);
-  if(Number.isNaN(d.getTime())) return '-';
+  if (Number.isNaN(d.getTime())) return '-';
   return d.toLocaleString('ar-SA');
 }
 
-function csvEscape(value){
-  if(value === undefined || value === null) return '""';
+function csvEscape(value) {
+  if (value === undefined || value === null) return '""';
   const str = String(value).replace(/"/g, '""');
   return `"${str}"`;
 }
 
-function downloadCsv(filename, rows){
-  const blob = new Blob([rows], { type:'text/csv;charset=utf-8;' });
+function downloadCsv(filename, rows) {
+  const blob = new Blob([rows], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -170,234 +380,460 @@ function downloadCsv(filename, rows){
   URL.revokeObjectURL(url);
 }
 
-const ORDER_EXPORT_COLUMNS = [
-  { label:'id', getter:o=>o.id },
-  { label:'created_at', getter:o=>o.created_at || '' },
-  { label:'table_no', getter:o=>o.table_no || '' },
-  { label:'customer_key', getter:o=>o.customer_key || '' },
-  { label:'customer_name', getter:o=>o.customer_name || '' },
-  { label:'customer_phone', getter:o=>o.customer_phone || '' },
-  { label:'subtotal', getter:o=>o.subtotal ?? '' },
-  { label:'total', getter:o=>o.total ?? '' },
-  { label:'discount_code', getter:o=>o.discount_code || '' },
-  { label:'loyalty_discount', getter:o=>o.loyalty_discount ?? 0 },
-  { label:'loyalty_freebies', getter:o=>(o.loyalty_summary && o.loyalty_summary.freebiesEarned) || 0 },
-  { label:'drink_units', getter:o=>o.drink_units ?? (o.loyalty_summary && o.loyalty_summary.drinkUnits) || 0 },
-  { label:'cart', getter:o=>JSON.stringify(o.cart || []) },
-  { label:'loyalty_rewards', getter:o=>JSON.stringify(o.loyalty_rewards || []) },
-  { label:'loyalty_summary', getter:o=>JSON.stringify(o.loyalty_summary || {}) },
-  { label:'device_type', getter:o=>(o.device_info && o.device_info.type) || '' },
-  { label:'device_platform', getter:o=>(o.device_info && o.device_info.platform) || '' },
-  { label:'device_language', getter:o=>(o.device_info && o.device_info.language) || '' },
-  { label:'ip_address', getter:o=>o.ip_address || '' },
-  { label:'user_agent', getter:o=>o.user_agent || '' }
-];
+function switchTab(tabName) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+  document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+  document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+}
 
-const CUSTOMER_EXPORT_COLUMNS = [
-  { label:'customer_key', getter:c=>c.customer_key || '' },
-  { label:'name', getter:c=>c.name || '' },
-  { label:'phone', getter:c=>c.phone || '' },
-  { label:'total_orders', getter:c=>c.total_orders || 0 },
-  { label:'total_spent', getter:c=>c.total_spent || 0 },
-  { label:'total_drinks', getter:c=>c.total_drinks || 0 },
-  { label:'total_rewards', getter:c=>c.total_rewards || 0 },
-  { label:'last_order_at', getter:c=>c.last_order_at || '' },
-  { label:'last_device', getter:c=>c.last_device || '' },
-  { label:'last_user_agent', getter:c=>c.last_user_agent || '' },
-  { label:'last_ip', getter:c=>c.last_ip || '' },
-  { label:'created_at', getter:c=>c.created_at || '' },
-  { label:'updated_at', getter:c=>c.updated_at || '' }
-];
+function addVariantRow() {
+  const container = document.getElementById('variants-container');
+  const id = ++variantCounter;
+  const div = document.createElement('div');
+  div.className = 'variant-item';
+  div.dataset.variantId = id;
+  div.innerHTML = `
+    <div class="variant-row">
+      <input type="text" placeholder="مفتاح (key)" data-field="key">
+      <input type="text" placeholder="الاسم بالعربي" data-field="ar">
+      <input type="text" placeholder="الاسم بالإنجليزي" data-field="en">
+      <input type="number" step="0.01" placeholder="السعر" data-field="price">
+      <button type="button" class="btn-danger btn-sm" onclick="this.parentElement.parentElement.remove()">✖</button>
+    </div>
+  `;
+  container.appendChild(div);
+}
 
-function fillItems(rows){
-  const tb = document.querySelector('#itemsTbl tbody'); tb.innerHTML='';
-  rows.forEach(r=>{
+function getVariantsData() {
+  const variants = [];
+  document.querySelectorAll('#variants-container .variant-item').forEach(item => {
+    const variant = {
+      key: item.querySelector('[data-field="key"]').value.trim(),
+      ar: item.querySelector('[data-field="ar"]').value.trim(),
+      en: item.querySelector('[data-field="en"]').value.trim(),
+      price: parseFloat(item.querySelector('[data-field="price"]').value) || 0
+    };
+    if (variant.key && variant.ar && variant.en) {
+      variants.push(variant);
+    }
+  });
+  return variants;
+}
+
+function setVariantsData(variants) {
+  document.getElementById('variants-container').innerHTML = '';
+  if (!variants || !variants.length) return;
+  variants.forEach(v => {
+    const id = ++variantCounter;
+    const div = document.createElement('div');
+    div.className = 'variant-item';
+    div.dataset.variantId = id;
+    div.innerHTML = `
+      <div class="variant-row">
+        <input type="text" placeholder="مفتاح" data-field="key" value="${escapeHtml(v.key || '')}">
+        <input type="text" placeholder="عربي" data-field="ar" value="${escapeHtml(v.ar || '')}">
+        <input type="text" placeholder="إنجليزي" data-field="en" value="${escapeHtml(v.en || '')}">
+        <input type="number" step="0.01" placeholder="سعر" data-field="price" value="${v.price || ''}">
+        <button type="button" class="btn-danger btn-sm" onclick="this.parentElement.parentElement.remove()">✖</button>
+      </div>
+    `;
+    document.getElementById('variants-container').appendChild(div);
+  });
+}
+
+function fillItemsTable(items) {
+  allItems = items || [];
+  const tbody = document.querySelector('#items-table tbody');
+  tbody.innerHTML = '';
+  
+  if (!allItems.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">لا توجد عناصر بعد</td></tr>';
+    return;
+  }
+
+  allItems.forEach(item => {
     const tr = document.createElement('tr');
-    const nameAr = escapeHtml(r.name_ar || '');
-    const nameEn = escapeHtml(r.name_en || '');
-    const price = Number(r.price || 0).toLocaleString('ar-SA');
-    const calories = Number(r.calories || 0);
-    const imgCell = r.img_url ? `<img src="${escapeHtml(r.img_url)}" alt="" style="width:48px;height:48px;object-fit:contain">` : '';
+    const categoryLabel = item.category ? (CATEGORY_LABELS[item.category] || item.category) : '-';
+    const imgCell = item.img_url 
+      ? `<img src="${escapeHtml(item.img_url)}" style="width:40px;height:40px;object-fit:contain;border-radius:6px;border:1px solid var(--border)" alt="">`
+      : '<span style="color:var(--muted);font-size:12px">لا توجد</span>';
+    
     tr.innerHTML = `
-      <td>${r.id}</td>
-      <td><div><div class="badge">${nameAr}</div><div>${nameEn}</div></div></td>
-      <td>${price}</td>
-      <td>${calories}</td>
+      <td>${item.id}</td>
       <td>${imgCell}</td>
       <td>
-        <button data-edit="${r.id}">تعديل</button>
-        <button data-del="${r.id}">حذف</button>
-      </td>`;
-    tb.appendChild(tr);
+        <div class="badge">${escapeHtml(item.name_ar || '')}</div>
+        <div style="font-size:12px;color:var(--muted)">${escapeHtml(item.name_en || '')}</div>
+      </td>
+      <td><span class="category-badge">${categoryLabel}</span></td>
+      <td style="font-weight:700;color:var(--brand)">${formatCurrency(item.price)}</td>
+      <td>${item.calories || 0}</td>
+      <td>
+        <button class="btn-info btn-sm" data-edit="${item.id}">✏️ تعديل</button>
+        <button class="btn-danger btn-sm" data-del="${item.id}">🗑️ حذف</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
   });
-  tb.querySelectorAll('[data-edit]').forEach(b=>{
-    b.onclick = ()=>{
-      const id = b.getAttribute('data-edit');
-      const row = rows.find(x=> String(x.id)===String(id));
-      document.getElementById('id').value = row.id;
-      document.getElementById('name_ar').value = row.name_ar;
-      document.getElementById('name_en').value = row.name_en;
-      document.getElementById('price').value = row.price;
-      document.getElementById('calories').value = row.calories||0;
-      document.getElementById('img_url').value = row.img_url||'';
-      window.scrollTo({ top:0, behavior:'smooth' });
-    };
+
+  tbody.querySelectorAll('[data-edit]').forEach(btn => {
+    btn.onclick = () => editItem(btn.getAttribute('data-edit'));
   });
-  tb.querySelectorAll('[data-del]').forEach(b=>{
-    b.onclick = async ()=>{
-      const id = b.getAttribute('data-del');
-      if(!confirm('حذف العنصر #' + id + '?')) return;
-      await deleteItem(id);
-      await loadData();
+  
+  tbody.querySelectorAll('[data-del]').forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.getAttribute('data-del');
+      if (!confirm(`هل أنت متأكد من حذف العنصر #${id}؟`)) return;
+      try {
+        await deleteItem(id);
+        showAlert('تم حذف العنصر بنجاح', 'success');
+        await loadItems();
+      } catch (err) {
+        showAlert('فشل حذف العنصر', 'danger');
+      }
     };
   });
 }
 
-function fillOrders(rows){
-  cachedOrders = Array.isArray(rows) ? rows : [];
-  const tb = document.querySelector('#ordersTbl tbody');
-  tb.innerHTML = '';
-  if(!cachedOrders.length){
-    const tr = document.createElement('tr');
-    tr.innerHTML = '<td colspan="10" style="text-align:center;color:#777">لا توجد طلبات بعد.</td>';
-    tb.appendChild(tr);
+function editItem(id) {
+  const item = allItems.find(x => String(x.id) === String(id));
+  if (!item) return;
+  
+  currentEditId = id;
+  document.getElementById('item-id').value = id;
+  document.getElementById('name-ar').value = item.name_ar || '';
+  document.getElementById('name-en').value = item.name_en || '';
+  document.getElementById('price').value = item.price || '';
+  document.getElementById('calories').value = item.calories || '';
+  document.getElementById('img-url').value = item.img_url || '';
+  document.getElementById('category').value = item.category || '';
+  
+  if (item.img_url) {
+    const preview = document.getElementById('img-preview');
+    preview.src = item.img_url;
+    preview.classList.remove('hidden');
+  }
+  
+  const hasVariants = item.variants && item.variants.length > 0;
+  document.getElementById('has-variants').checked = hasVariants;
+  document.getElementById('variants-section').classList.toggle('hidden', !hasVariants);
+  
+  if (hasVariants) {
+    setVariantsData(item.variants);
+  }
+  
+  document.getElementById('form-title').textContent = `تعديل العنصر #${id}`;
+  document.getElementById('delete-current').classList.remove('hidden');
+  
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelEdit() {
+  currentEditId = null;
+  document.getElementById('item-form').reset();
+  document.getElementById('item-id').value = '';
+  document.getElementById('variants-container').innerHTML = '';
+  document.getElementById('variants-section').classList.add('hidden');
+  document.getElementById('has-variants').checked = false;
+  document.getElementById('img-preview').classList.add('hidden');
+  document.getElementById('form-title').textContent = 'إضافة عنصر جديد';
+  document.getElementById('delete-current').classList.add('hidden');
+  document.getElementById('alert-container').innerHTML = '';
+}
+
+async function saveItemForm(e) {
+  e.preventDefault();
+  
+  const nameAr = document.getElementById('name-ar').value.trim();
+  const nameEn = document.getElementById('name-en').value.trim();
+  const price = parseFloat(document.getElementById('price').value) || 0;
+  const calories = parseInt(document.getElementById('calories').value) || 0;
+  const imgUrl = document.getElementById('img-url').value.trim();
+  const category = document.getElementById('category').value.trim();
+  const hasVariants = document.getElementById('has-variants').checked;
+  
+  if (!nameAr || !nameEn) {
+    showAlert('يجب إدخال الاسم بالعربية والإنجليزية', 'danger');
     return;
   }
-  cachedOrders.forEach(order=>{
+  
+  const payload = {
+    name_ar: nameAr,
+    name_en: nameEn,
+    price: price,
+    calories: calories,
+    img_url: imgUrl,
+    category: category || null,
+    variants: hasVariants ? getVariantsData() : null
+  };
+  
+  try {
+    if (currentEditId) {
+      await updateItem(currentEditId, payload);
+      showAlert('تم تحديث العنصر بنجاح', 'success');
+    } else {
+      await addItem(payload);
+      showAlert('تم إضافة العنصر بنجاح', 'success');
+    }
+    cancelEdit();
+    await loadItems();
+  } catch (err) {
+    showAlert('حدث خطأ أثناء الحفظ', 'danger');
+  }
+}
+
+function fillOrdersTable(orders) {
+  allOrders = orders || [];
+  const tbody = document.querySelector('#orders-table tbody');
+  tbody.innerHTML = '';
+  
+  if (!allOrders.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted)">لا توجد طلبات بعد</td></tr>';
+    return;
+  }
+
+  allOrders.forEach(order => {
     const deviceInfo = (order && typeof order.device_info === 'object' && order.device_info) ? order.device_info : {};
     const deviceParts = [];
-    if(deviceInfo.type) deviceParts.push(deviceInfo.type);
-    if(deviceInfo.platform) deviceParts.push(deviceInfo.platform);
-    if(deviceInfo.language) deviceParts.push(deviceInfo.language);
+    if (deviceInfo.type) deviceParts.push(deviceInfo.type);
+    if (deviceInfo.platform) deviceParts.push(deviceInfo.platform);
     const deviceLabel = deviceParts.length ? deviceParts.join(' • ') : '-';
+    
     const loyaltySummary = (order && order.loyalty_summary && typeof order.loyalty_summary === 'object') ? order.loyalty_summary : {};
-    const drinks = Number(order.drink_units || loyaltySummary.drinkUnits || 0);
+    const drinks = Number(order.drink_units ?? (loyaltySummary.drinkUnits ?? 0));
+    
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${order.id}</td>
-      <td>${escapeHtml(formatDate(order.created_at))}</td>
+      <td style="font-size:12px">${escapeHtml(formatDate(order.created_at))}</td>
       <td>${escapeHtml(order.customer_name || order.customer_key || '-')}</td>
       <td>${escapeHtml(order.customer_phone || '-')}</td>
       <td>${escapeHtml(order.table_no || '-')}</td>
-      <td>${formatCurrency(order.total)}</td>
+      <td style="font-weight:700;color:var(--brand)">${formatCurrency(order.total)}</td>
       <td>${formatCurrency(order.loyalty_discount)}</td>
       <td>${drinks}</td>
-      <td>${escapeHtml(deviceLabel)}</td>
-      <td>${escapeHtml(order.ip_address || '-')}</td>`;
-    tb.appendChild(tr);
+      <td style="font-size:12px">${escapeHtml(deviceLabel)}</td>
+      <td style="font-size:11px">${escapeHtml(order.ip_address || '-')}</td>
+    `;
+    tbody.appendChild(tr);
   });
 }
 
-function fillCustomers(rows){
-  cachedCustomers = Array.isArray(rows) ? rows : [];
-  const tb = document.querySelector('#customersTbl tbody');
-  tb.innerHTML = '';
-  if(!cachedCustomers.length){
-    const tr = document.createElement('tr');
-    tr.innerHTML = '<td colspan="9" style="text-align:center;color:#777">لا توجد بيانات للعملاء بعد.</td>';
-    tb.appendChild(tr);
+function fillCustomersTable(customers) {
+  allCustomers = customers || [];
+  const tbody = document.querySelector('#customers-table tbody');
+  tbody.innerHTML = '';
+  
+  if (!allCustomers.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted)">لا توجد بيانات عملاء</td></tr>';
     return;
   }
-  cachedCustomers.forEach(customer=>{
+
+  allCustomers.forEach(customer => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${escapeHtml(customer.name || customer.customer_key || '-')}</td>
       <td>${escapeHtml(customer.phone || '-')}</td>
       <td>${customer.total_orders || 0}</td>
-      <td>${formatCurrency(customer.total_spent)}</td>
+      <td style="font-weight:700;color:var(--brand)">${formatCurrency(customer.total_spent)}</td>
       <td>${customer.total_drinks || 0}</td>
       <td>${customer.total_rewards || 0}</td>
-      <td>${escapeHtml(customer.last_device || '-')}</td>
-      <td>${escapeHtml(customer.last_ip || '-')}</td>
-      <td>${escapeHtml(formatDate(customer.last_order_at))}</td>`;
-    tb.appendChild(tr);
+      <td style="font-size:12px">${escapeHtml(customer.last_device || '-')}</td>
+      <td style="font-size:11px">${escapeHtml(customer.last_ip || '-')}</td>
+      <td style="font-size:12px">${escapeHtml(formatDate(customer.last_order_at))}</td>
+    `;
+    tbody.appendChild(tr);
   });
 }
 
-function exportOrdersCsv(){
-  if(!cachedOrders.length){
-    alert('لا توجد طلبات لتصديرها حالياً.');
+function updateStats() {
+  document.getElementById('stat-items').textContent = allItems.length;
+  document.getElementById('stat-orders').textContent = allOrders.length;
+  document.getElementById('stat-customers').textContent = allCustomers.length;
+}
+
+async function loadItems() {
+  try {
+    const items = await listItems();
+    fillItemsTable(Array.isArray(items) ? items : []);
+    updateStats();
+  } catch (err) {
+    console.error('Failed to load items', err);
+  }
+}
+
+async function loadOrders() {
+  try {
+    const orders = await listOrders();
+    fillOrdersTable(Array.isArray(orders) ? orders : []);
+    updateStats();
+  } catch (err) {
+    console.error('Failed to load orders', err);
+  }
+}
+
+async function loadCustomers() {
+  try {
+    const customers = await listCustomers();
+    fillCustomersTable(Array.isArray(customers) ? customers : []);
+    updateStats();
+  } catch (err) {
+    console.error('Failed to load customers', err);
+  }
+}
+
+async function loadAllData() {
+  if (!TOKEN) return;
+  
+  try {
+    console.log('Loading data from API...');
+    const [items, orders, customers] = await Promise.all([
+      loadItems(),
+      loadOrders(),
+      loadCustomers()
+    ]);
+    console.log('Data loaded successfully');
+  } catch (err) {
+    console.error('Failed to load data:', err);
+    alert('فشل تحميل البيانات. تحقق من الاتصال بقاعدة البيانات / Failed to load data. Check database connection');
+  }
+}
+
+function exportOrdersCsv() {
+  if (!allOrders.length) {
+    alert('لا توجد طلبات للتصدير');
     return;
   }
-  const rows = [ORDER_EXPORT_COLUMNS.map(col=>col.label).join(',')];
-  cachedOrders.forEach(order=>{
-    const line = ORDER_EXPORT_COLUMNS.map(col=>csvEscape(col.getter(order))).join(',');
-    rows.push(line);
+  const columns = [
+    { label: 'id', getter: o => o.id },
+    { label: 'created_at', getter: o => o.created_at || '' },
+    { label: 'table_no', getter: o => o.table_no || '' },
+    { label: 'customer_name', getter: o => o.customer_name || '' },
+    { label: 'customer_phone', getter: o => o.customer_phone || '' },
+    { label: 'total', getter: o => o.total ?? '' },
+    { label: 'loyalty_discount', getter: o => o.loyalty_discount ?? 0 },
+    { label: 'drink_units', getter: o => (o.drink_units ?? ((o.loyalty_summary && o.loyalty_summary.drinkUnits) ?? 0)) },
+    { label: 'ip_address', getter: o => o.ip_address || '' }
+  ];
+  const rows = [columns.map(col => col.label).join(',')];
+  allOrders.forEach(order => {
+    rows.push(columns.map(col => csvEscape(col.getter(order))).join(','));
   });
-  downloadCsv(`orders-${new Date().toISOString().slice(0,10)}.csv`, rows.join('\n'));
+  downloadCsv(`orders-${new Date().toISOString().slice(0, 10)}.csv`, rows.join('\n'));
 }
 
-function exportCustomersCsv(){
-  if(!cachedCustomers.length){
-    alert('لا توجد بيانات عملاء لتصديرها حالياً.');
+function exportCustomersCsv() {
+  if (!allCustomers.length) {
+    alert('لا توجد بيانات عملاء للتصدير');
     return;
   }
-  const rows = [CUSTOMER_EXPORT_COLUMNS.map(col=>col.label).join(',')];
-  cachedCustomers.forEach(customer=>{
-    const line = CUSTOMER_EXPORT_COLUMNS.map(col=>csvEscape(col.getter(customer))).join(',');
-    rows.push(line);
+  const columns = [
+    { label: 'customer_key', getter: c => c.customer_key || '' },
+    { label: 'name', getter: c => c.name || '' },
+    { label: 'phone', getter: c => c.phone || '' },
+    { label: 'total_orders', getter: c => c.total_orders || 0 },
+    { label: 'total_spent', getter: c => c.total_spent || 0 },
+    { label: 'total_drinks', getter: c => c.total_drinks || 0 },
+    { label: 'total_rewards', getter: c => c.total_rewards || 0 },
+    { label: 'last_order_at', getter: c => c.last_order_at || '' },
+    { label: 'last_device', getter: c => c.last_device || '' },
+    { label: 'last_ip', getter: c => c.last_ip || '' }
+  ];
+  const rows = [columns.map(col => col.label).join(',')];
+  allCustomers.forEach(customer => {
+    rows.push(columns.map(col => csvEscape(col.getter(customer))).join(','));
   });
-  downloadCsv(`customers-${new Date().toISOString().slice(0,10)}.csv`, rows.join('\n'));
+  downloadCsv(`customers-${new Date().toISOString().slice(0, 10)}.csv`, rows.join('\n'));
 }
 
-function isUnauthorizedResponse(payload){
-  return payload && typeof payload === 'object' && payload.error === 'unauthorized';
-}
-
-function handleUnauthorized(){
-  alert('انتهت صلاحية الجلسة. يرجى تسجيل الدخول مجدداً.');
-  TOKEN = '';
-  localStorage.removeItem('admin_token');
-  boot();
-}
-
-async function loadData(){
-  if(!TOKEN) return;
-  try{
-    const [items, orders, customers] = await Promise.all([listItems(), listOrders(), listCustomers()]);
-    if(isUnauthorizedResponse(orders) || isUnauthorizedResponse(customers)){
-      handleUnauthorized();
-      return;
-    }
-    fillItems(Array.isArray(items) ? items : []);
-    fillOrders(Array.isArray(orders) ? orders : []);
-    fillCustomers(Array.isArray(customers) ? customers : []);
-  }catch(err){
-    console.error('Failed to load data', err);
-    alert('تعذر تحميل البيانات. تحقق من الاتصال وحاول مجدداً.');
+function exportMenuJson() {
+  if (!allItems.length) {
+    alert('لا توجد عناصر للتصدير');
+    return;
   }
+  const json = JSON.stringify(allItems, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `menu-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
-async function saveItem(){
-  const id = document.getElementById('id').value.trim();
-  const payload = {
-    name_ar: document.getElementById('name_ar').value.trim(),
-    name_en: document.getElementById('name_en').value.trim(),
-    price: Number(document.getElementById('price').value || 0),
-    calories: Number(document.getElementById('calories').value || 0),
-    img_url: document.getElementById('img_url').value.trim()
-  };
-  if(!payload.name_ar || !payload.name_en){ alert('أكمل الاسم'); return; }
-  if(id) await updateItem(id, payload); else await addItem(payload);
-  document.querySelectorAll('#id,#name_ar,#name_en,#price,#calories,#img_url').forEach(el=> el.value='');
-  await loadData();
+async function boot() {
+  document.getElementById('login').classList.toggle('hidden', !!TOKEN);
+  document.getElementById('app').classList.toggle('hidden', !TOKEN);
+  if (!TOKEN) return;
+  await loadAllData();
 }
 
-async function boot(){
-  document.getElementById('login').style.display = TOKEN ? 'none' : 'block';
-  document.getElementById('app').style.display = TOKEN ? 'block' : 'none';
-  if(!TOKEN) return;
-  await loadData();
+// Event Listeners
+console.log('Admin dashboard script loaded');
+console.log('Attaching login event listener...');
+
+const loginBtn = document.getElementById('doLogin');
+if (loginBtn) {
+  loginBtn.onclick = login;
+  console.log('Login button found and event attached');
+} else {
+  console.error('Login button not found!');
 }
 
-document.getElementById('doLogin').onclick = login;
-document.getElementById('save').onclick = saveItem;
-const refreshBtn = document.getElementById('refreshBtn');
-if(refreshBtn) refreshBtn.onclick = loadData;
-const exportOrdersBtn = document.getElementById('exportOrdersBtn');
-if(exportOrdersBtn) exportOrdersBtn.onclick = exportOrdersCsv;
-const exportCustomersBtn = document.getElementById('exportCustomersBtn');
-if(exportCustomersBtn) exportCustomersBtn.onclick = exportCustomersCsv;
+document.getElementById('item-form').onsubmit = saveItemForm;
+document.getElementById('cancel-edit').onclick = cancelEdit;
+document.getElementById('delete-current').onclick = async () => {
+  if (!currentEditId) return;
+  if (!confirm(`هل أنت متأكد من حذف هذا العنصر؟`)) return;
+  try {
+    await deleteItem(currentEditId);
+    showAlert('تم حذف العنصر بنجاح', 'success');
+    cancelEdit();
+    await loadItems();
+  } catch (err) {
+    showAlert('فشل حذف العنصر', 'danger');
+  }
+};
+
+document.getElementById('has-variants').onchange = (e) => {
+  document.getElementById('variants-section').classList.toggle('hidden', !e.target.checked);
+};
+
+document.getElementById('add-variant').onclick = addVariantRow;
+
+document.getElementById('img-url').oninput = (e) => {
+  const preview = document.getElementById('img-preview');
+  if (e.target.value.trim()) {
+    preview.src = e.target.value.trim();
+    preview.classList.remove('hidden');
+  } else {
+    preview.classList.add('hidden');
+  }
+};
+
+document.getElementById('search-items').oninput = (e) => {
+  const query = e.target.value.toLowerCase();
+  const filtered = allItems.filter(item => 
+    (item.name_ar && item.name_ar.toLowerCase().includes(query)) ||
+    (item.name_en && item.name_en.toLowerCase().includes(query)) ||
+    (item.category && item.category.toLowerCase().includes(query))
+  );
+  fillItemsTable(filtered);
+};
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.onclick = () => switchTab(tab.dataset.tab);
+});
+
+document.getElementById('refresh-items').onclick = loadItems;
+document.getElementById('refresh-orders').onclick = loadOrders;
+document.getElementById('refresh-customers').onclick = loadCustomers;
+document.getElementById('export-orders').onclick = exportOrdersCsv;
+document.getElementById('export-customers').onclick = exportCustomersCsv;
+document.getElementById('export-menu').onclick = exportMenuJson;
 
 boot();
 </script>

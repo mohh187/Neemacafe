@@ -29,8 +29,16 @@ export default async (req) => {
   if (req.method === 'POST') {
     const body = await req.json();
     const [row] = await sql`
-      INSERT INTO items (name_ar,name_en,price,calories,img_url)
-      VALUES (${body.name_ar},${body.name_en},${body.price},${body.calories||0},${body.img_url||''})
+      INSERT INTO items (name_ar,name_en,price,calories,img_url,category,variants)
+      VALUES (
+        ${body.name_ar},
+        ${body.name_en},
+        ${body.price},
+        ${body.calories||0},
+        ${body.img_url||''},
+        ${body.category||''},
+        ${body.variants ? JSON.stringify(body.variants) : null}
+      )
       RETURNING *`;
     const r = okJSON(row, 201);
     addCORS(r);
@@ -41,9 +49,13 @@ export default async (req) => {
     const body = await req.json();
     const [row] = await sql`
       UPDATE items SET
-        name_ar=${body.name_ar}, name_en=${body.name_en},
-        price=${body.price}, calories=${body.calories||0},
-        img_url=${body.img_url||''}
+        name_ar=${body.name_ar},
+        name_en=${body.name_en},
+        price=${body.price},
+        calories=${body.calories||0},
+        img_url=${body.img_url||''},
+        category=${body.category||''},
+        variants=${body.variants ? JSON.stringify(body.variants) : null}
       WHERE id=${id} RETURNING *`;
     const r = okJSON(row);
     addCORS(r);

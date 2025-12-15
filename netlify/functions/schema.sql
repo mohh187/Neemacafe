@@ -4,8 +4,13 @@ CREATE TABLE IF NOT EXISTS items (
   name_en text NOT NULL,
   price numeric(10,2) NOT NULL,
   calories int DEFAULT 0,
-  img_url text DEFAULT ''
+  img_url text DEFAULT '',
+  category text DEFAULT '',
+  variants jsonb DEFAULT NULL
 );
+
+ALTER TABLE items ADD COLUMN IF NOT EXISTS category text DEFAULT '';
+ALTER TABLE items ADD COLUMN IF NOT EXISTS variants jsonb DEFAULT NULL;
 
 CREATE TABLE IF NOT EXISTS orders (
   id serial PRIMARY KEY,

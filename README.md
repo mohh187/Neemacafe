@@ -5,7 +5,7 @@ This repo contains two builds of the interactive Neema Café menu:
 - `index.html` – the production-ready build with the full loyalty and logging experience.
 - `menu` – the compact legacy build that shares the same functionality and strings.
 - `menu-data.js` – the shared catalogue of drinks and desserts that both builds render.
-- `admin/index.html` (متوفر أيضًا كـ `menu-admin.html` للترابط السابق) – لوحة تحكم باللغة العربية لتحديث بيانات المنيو مع مصادقة بسيطة وربط بقاعدة البيانات.
+- `admin/index.html` – Comprehensive Arabic menu management dashboard with full CRUD operations, category management, variant/options support, image preview, search functionality, and CSV export capabilities. Connects to `/api/items`, `/api/orders`, and `/api/customers` endpoints with authentication.
 - `order-status.html` – lightweight view Telegram uses when a waiter accepts or finishes an order.
 
 ## Latest enhancements
@@ -61,14 +61,37 @@ Including `menu-data.js` on the page ensures both menu builds use the same catal
 
 You now have two options when updating the menu:
 
-1. **لوحة التحكم (`/admin/`)** – صفحة تفاعلية تتصل بنقطة النهاية `/api/items` لإدارة العناصر (إضافة، تعديل، حذف) بعد إدخال كلمة المرور المطابقة للمتغير البيئي `ADMIN_PASSWORD`. نفس اللوحة تعرض آخر ٢٠٠ طلب تم إرسالها من خلال واجهة `/api/orders`.
-2. **تعديل الملف يدويًا** – ما زال بالإمكان تحرير `menu-data.js` مباشرة لتغيير الأسعار أو البطاقات في حال احتجت إلى بيانات افتراضية عند غياب قاعدة البيانات.
+1. **Admin Dashboard (`/admin/`)** – A modern, comprehensive web interface that connects to the `/api/items` endpoint for full menu management:
+   - **Add/Edit/Delete Items**: Complete CRUD operations with form validation
+   - **Category Management**: Assign items to categories (hot-coffee, hot-tea, cold-coffee, cold-mojito, cold-other, dessert-cake, dessert-side)
+   - **Variant/Options Support**: Add size variations, flavor options, or pricing tiers to any item
+   - **Image Management**: Live image preview and URL management
+   - **Search & Filter**: Quick search across all menu items
+   - **Bulk Operations**: Export menu as JSON, view and export orders/customers as CSV
+   - **Statistics Dashboard**: View total items, orders, and customers at a glance
+   - **Authentication**: Password-protected using the `ADMIN_PASSWORD` environment variable
+   - Access the dashboard at `/admin/` and log in with your admin password
+
+2. **Manual File Editing** – You can still edit `menu-data.js` directly to modify prices or items when you need default data without a database connection.
 
 ## Serverless API
 
-- `/api/items` – CRUD على عناصر المنيو، يتطلب ترويسة `Authorization: Bearer <ADMIN_PASSWORD>` للعمليات التي تغيّر البيانات.
-- `/api/orders` – استقبال الطلبات الجديدة من الواجهة الأمامية، وقراءة آخر الطلبات (استدعاءات القراءة تتطلب الآن نفس ترويسة التفويض المستخدمة في لوحة التحكم).
-- `/api/customers` – قائمة مجمعة لبيانات العملاء (عدد الطلبات، إجمالي الإنفاق، إجمالي المشروبات، آخر جهاز وآخر IP) للاستخدام داخل لوحة التحكم أو للتصدير.
+- `/api/items` – Full CRUD operations for menu items with support for:
+  - **GET**: Retrieve all items or a specific item by ID
+  - **POST**: Create new menu items with category and variant support
+  - **PUT**: Update existing items (requires `Authorization: Bearer <ADMIN_PASSWORD>`)
+  - **DELETE**: Remove items (requires `Authorization: Bearer <ADMIN_PASSWORD>`)
+  - **Fields**: `name_ar`, `name_en`, `price`, `calories`, `img_url`, `category`, `variants` (JSONB)
+  
+- `/api/orders` – Order management and retrieval:
+  - **POST**: Submit new orders from the frontend
+  - **GET**: Retrieve order history (requires `Authorization: Bearer <ADMIN_PASSWORD>`)
+  - Stores customer profile, total drinks, loyalty discounts, device info, language, and IP address
+  
+- `/api/customers` – Aggregated customer data endpoint:
+  - **GET**: List all customers with order count, total spent, total drinks, rewards, last device, and last IP
+  - Requires authorization header for access from admin dashboard
+  - Used for analytics and CSV export
 
 يستعمل كلا المسارين قاعدة بيانات PostgreSQL عبر Netlify Neon. استورد المخطط الموجود في `netlify/functions/schema.sql` لتجهيز الجداول المطلوبة (`items` و`orders`)، وتمت إضافة جدول `customers` وأعمدة إضافية داخل `orders` للاحتفاظ بملخصات الولاء، خصومات الولاء، بيانات الجهاز، وعناوين الـ IP.
 
