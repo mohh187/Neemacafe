@@ -4,16 +4,12 @@
     {
       "src": "dist/**/*",
       "use": "@vercel/static"
-    },
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "dest": "/netlify/functions/$1"
     },
     {
       "src": "/admin/(.*)",
@@ -23,6 +19,5 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ],
-  "outputDirectory": "dist"
+  ]
 }
