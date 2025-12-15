@@ -443,7 +443,11 @@ function setVariantsData(variants) {
 }
 
 function fillItemsTable(items) {
-  allItems = items || [];
+  // Filter items to only show valid categories
+  const validCategories = ['hot-coffee', 'hot-tea', 'cold-coffee', 'cold-mojito', 'cold-other', 'dessert-cake', 'dessert-side'];
+  const filteredItems = items.filter(item => validCategories.includes(item.category));
+  
+  allItems = filteredItems || [];
   const tbody = document.querySelector('#items-table tbody');
   tbody.innerHTML = '';
   
