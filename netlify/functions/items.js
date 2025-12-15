@@ -14,7 +14,7 @@ export default async (req) => {
   if (req.method === 'GET') {
     const rows = id
       ? await sql`SELECT * FROM items WHERE id=${id}`
-      : await sql`SELECT * FROM items ORDER BY id DESC`;
+      : await sql`SELECT * FROM items ORDER BY ordering ASC`;
     const r = okJSON(rows);
     addCORS(r);
     return r;
@@ -29,7 +29,7 @@ export default async (req) => {
   if (req.method === 'POST') {
     const body = await req.json();
     const [row] = await sql`
-      INSERT INTO items (name_ar,name_en,price,calories,img_url,category,variants)
+      INSERT INTO items (name_ar,name_en,price,calories,img_url,category,variants,ordering)
       VALUES (
         ${body.name_ar},
         ${body.name_en},
@@ -37,7 +37,8 @@ export default async (req) => {
         ${body.calories||0},
         ${body.img_url||''},
         ${body.category||''},
-        ${body.variants ? JSON.stringify(body.variants) : null}
+        ${body.variants ? JSON.stringify(body.variants) : null},
+        ${body.ordering||0}
       )
       RETURNING *`;
     const r = okJSON(row, 201);
@@ -55,7 +56,8 @@ export default async (req) => {
         calories=${body.calories||0},
         img_url=${body.img_url||''},
         category=${body.category||''},
-        variants=${body.variants ? JSON.stringify(body.variants) : null}
+        variants=${body.variants ? JSON.stringify(body.variants) : null},
+        ordering=${body.ordering||0}
       WHERE id=${id} RETURNING *`;
     const r = okJSON(row);
     addCORS(r);

@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS items (
   calories int DEFAULT 0,
   img_url text DEFAULT '',
   category text DEFAULT '',
-  variants jsonb DEFAULT NULL
+  variants jsonb DEFAULT NULL,
+  ordering int DEFAULT 0
 );
 
 ALTER TABLE items ADD COLUMN IF NOT EXISTS category text DEFAULT '';
