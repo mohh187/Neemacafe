@@ -502,6 +502,8 @@ function editItem(id) {
   
   currentEditId = id;
   document.getElementById('item-id').value = id;
+  // Store ordering in dataset for editing
+  document.getElementById('item-id').dataset.ordering = item.ordering || 0;
   document.getElementById('name-ar').value = item.name_ar || '';
   document.getElementById('name-en').value = item.name_en || '';
   document.getElementById('price').value = item.price || '';
@@ -532,7 +534,8 @@ function editItem(id) {
 function cancelEdit() {
   currentEditId = null;
   document.getElementById('item-form').reset();
-  document.getElementById('item-id').value = '';
+  // Clear ordering from dataset
+  delete document.getElementById('item-id').dataset.ordering;
   document.getElementById('variants-container').innerHTML = '';
   document.getElementById('variants-section').classList.add('hidden');
   document.getElementById('has-variants').checked = false;
@@ -571,6 +574,7 @@ async function saveItemForm(e) {
     return;
   }
   
+  // Preserve existing ordering when editing, assign new when adding
   const payload = {
     name_ar: nameAr,
     name_en: nameEn,
@@ -579,7 +583,7 @@ async function saveItemForm(e) {
     img_url: imgUrl,
     category: category || null,
     variants: hasVariants ? getVariantsData() : null,
-    ordering: await getNextOrdering()
+    ordering: currentEditId ? document.getElementById('item-id').dataset.ordering : await getNextOrdering()
   };
   
   try {
