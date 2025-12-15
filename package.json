@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "vercel-build": "npm run build",
     "img:upload": "node scripts/optimize-and-upload.mjs",
     "img:rewrite": "node scripts/update-menu-data.mjs",
     "deploy:netlify": "netlify deploy --build --prod --dir=${BUILD_DIR:-dist}",
