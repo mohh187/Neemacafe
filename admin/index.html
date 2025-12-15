@@ -542,6 +542,19 @@ function cancelEdit() {
   document.getElementById('alert-container').innerHTML = '';
 }
 
+// Helper to get next ordering value
+async function getNextOrdering() {
+  try {
+    const response = await fetch('/api/items');
+    const items = await response.json();
+    const maxOrder = Math.max(...items.map(item => item.ordering || 0), 0);
+    return maxOrder + 1;
+  } catch (error) {
+    console.error('Error getting max ordering:', error);
+    return 0;
+  }
+}
+
 async function saveItemForm(e) {
   e.preventDefault();
   
@@ -565,7 +578,8 @@ async function saveItemForm(e) {
     calories: calories,
     img_url: imgUrl,
     category: category || null,
-    variants: hasVariants ? getVariantsData() : null
+    variants: hasVariants ? getVariantsData() : null,
+    ordering: await getNextOrdering()
   };
   
   try {
@@ -580,6 +594,19 @@ async function saveItemForm(e) {
     await loadItems();
   } catch (err) {
     showAlert('حدث خطأ أثناء الحفظ', 'danger');
+  }
+}
+
+// Helper to get next ordering value
+async function getNextOrdering() {
+  try {
+    const response = await fetch('/api/items');
+    const items = await response.json();
+    const maxOrder = Math.max(...items.map(item => item.ordering || 0), 0);
+    return maxOrder + 1;
+  } catch (error) {
+    console.error('Error getting max ordering:', error);
+    return 0;
   }
 }
 
