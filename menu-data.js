@@ -63,7 +63,7 @@
           ],
           mixins:GINGER_LEMON_MIXINS
         },
-        {ar:'شاي مقنن', en:'Strong Tea', price:6, cal:2, img:IMG_DEFAULT},
+        {ar:'شاي مقنن', en:'Strong Tea', price:8, cal:2, img:IMG_DEFAULT},
         {ar:'شاي حليب', en:'Milk Tea', price:6, cal:140, img:IMG_DEFAULT},
         {ar:'هوت شوكلت', en:'Hot Chocolate', price:13, cal:300, img:IMG_DEFAULT},
         {ar:'ماتشا', en:'Matcha (Hot)', price:16, cal:180, img:'https://i.postimg.cc/SRCKyTF5/image.png'}
@@ -157,9 +157,9 @@
       ],
       side: [
         {ar:'ينسون', en:'Anise Tea', price:4, cal:5, img:'https://i.postimg.cc/9FfdSzpy/images.jpg'},
-        {ar:'بسكويت شاي كبير', en:'Tea Biscuit (Large)', price:8, cal:200, img:'https://i.postimg.cc/L8t8331D/4-1.png'},
-        {ar:'بسكويت شاي صغير', en:'Tea Biscuit (Small)', price:3, cal:100, img:'https://i.postimg.cc/L8t8331D/4-1.png'},
-        {ar:'لقيمات', en:'Luqaimat', price:13, cal:320, img:'https://i.postimg.cc/ZnmSR1fh/image.webp'}
+        {ar:'بسكويت شاي كبير', en:'Tea Biscuit (Large)', price:9, cal:200, img:'https://i.postimg.cc/L8t8331D/4-1.png'},
+        {ar:'بسكويت شاي صغير', en:'Tea Biscuit (Small)', price:5, cal:100, img:'https://i.postimg.cc/L8t8331D/4-1.png'},
+        {ar:'لقيمات', en:'Luqaimat', price:14, cal:320, img:'https://i.postimg.cc/ZnmSR1fh/image.webp'}
       ]
     }
   };
